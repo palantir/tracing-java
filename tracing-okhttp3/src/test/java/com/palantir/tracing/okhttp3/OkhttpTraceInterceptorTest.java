@@ -22,13 +22,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.palantir.conjure.java.api.tracing.OpenSpan;
-import com.palantir.conjure.java.api.tracing.Span;
-import com.palantir.conjure.java.api.tracing.SpanObserver;
-import com.palantir.conjure.java.api.tracing.SpanType;
-import com.palantir.conjure.java.api.tracing.TraceHttpHeaders;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
+import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.api.Span;
+import com.palantir.tracing.api.SpanObserver;
+import com.palantir.tracing.api.SpanType;
+import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
 import java.util.Optional;
 import okhttp3.Interceptor;

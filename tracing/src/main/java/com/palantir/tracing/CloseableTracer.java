@@ -16,7 +16,7 @@
 
 package com.palantir.tracing;
 
-import com.palantir.conjure.java.api.tracing.SpanType;
+import com.palantir.tracing.api.SpanType;
 
 /**
  * Wraps the {@link Tracer} methods in a closeable resource to enable the usage of the try-with-resources pattern.

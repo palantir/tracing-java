@@ -1,0 +1,14 @@
+apply plugin: "org.inferred.processors"
+
+apply from: "$rootDir/gradle/publish-jar.gradle"
+
+dependencies {
+    compile "com.fasterxml.jackson.core:jackson-databind"
+
+    testCompile "junit:junit"
+    testCompile "org.assertj:assertj-core"
+    testCompile "org.mockito:mockito-core"
+    testCompile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
+
+    processor "org.immutables:value"
+}

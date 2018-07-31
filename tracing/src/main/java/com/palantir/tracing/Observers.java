@@ -16,8 +16,8 @@
 
 package com.palantir.tracing;
 
-import com.palantir.conjure.java.api.tracing.Span;
-import com.palantir.conjure.java.api.tracing.SpanObserver;
+import com.palantir.tracing.api.Span;
+import com.palantir.tracing.api.SpanObserver;
 import java.util.concurrent.ExecutorService;
 
 public final class Observers {

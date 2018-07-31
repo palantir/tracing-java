@@ -33,8 +33,8 @@ import ch.qos.logback.core.Appender;
 // CHECKSTYLE:ON
 
 import com.google.common.collect.ImmutableMap;
-import com.palantir.conjure.java.api.tracing.Span;
-import com.palantir.conjure.java.api.tracing.SpanType;
+import com.palantir.tracing.api.Span;
+import com.palantir.tracing.api.SpanType;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;

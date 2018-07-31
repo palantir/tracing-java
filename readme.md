@@ -33,12 +33,12 @@ try {
 }
 ```
 
-The `tracing` library can be used independently of `conjure-java-jaxrs-client` or `conjure-java-retrofit2-client`:
+Example of how to use the `tracing` library:
 
 ```groovy
 // build.gradle
 dependencies {
-  compile "com.palantir.conjure.java.runtime:tracing:$version"
+  compile "com.palantir.tracing:tracing:$version"
 }
 ```
 ```java

@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Lists;
-import com.palantir.conjure.java.api.tracing.OpenSpan;
+import com.palantir.tracing.api.OpenSpan;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

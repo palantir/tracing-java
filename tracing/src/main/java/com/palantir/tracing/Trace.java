@@ -18,8 +18,8 @@ package com.palantir.tracing;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.palantir.conjure.java.api.tracing.OpenSpan;
-import com.palantir.conjure.java.api.tracing.SpanObserver;
+import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.api.SpanObserver;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
