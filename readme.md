@@ -1,6 +1,3 @@
-[![CircleCI Build Status](https://circleci.com/gh/palantir/java-tracing/tree/develop.svg?style=shield)](https://circleci.com/gh/palantir/java-tracing)
-[![Download](https://api.bintray.com/packages/palantir/releases/java-tracing/images/download.svg) ](https://bintray.com/palantir/releases/java-tracing/_latestVersion)
-
 # Usage
 
 Provides [Zipkin](https://github.com/openzipkin/zipkin)-style call tracing libraries. All `JaxRsClient` and
