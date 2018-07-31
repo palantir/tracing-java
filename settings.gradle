@@ -1,0 +1,6 @@
+rootProject.name = 'tracing-java'
+
+include 'tracing'
+include 'tracing-jaxrs'
+include 'tracing-okhttp3'
+include 'tracing-jersey'
