@@ -38,6 +38,11 @@ import org.glassfish.jersey.server.model.Resource;
 public final class TraceEnrichingFilter implements ContainerRequestFilter, ContainerResponseFilter {
     public static final TraceEnrichingFilter INSTANCE = new TraceEnrichingFilter();
 
+    /**
+     * This is the name of the trace id property we set on {@link ContainerRequestContext}.
+     */
+    public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
+
     @Context
     private ExtendedUriInfo uriInfo;
 
@@ -70,7 +75,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         }
 
         // Give asynchronous downstream handlers access to the trace id
-        requestContext.setProperty("com.palantir.conjure.java.traceId", Tracer.getTraceId());
+        requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
     }
 
     // Handles outgoing response
