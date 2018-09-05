@@ -6,7 +6,7 @@
 - **com.palantir.tracing:tracing-api** - constants and pure data objects
 - **com.palantir.tracing:tracing-jaxrs** - utilities to wrap `StreamingOutput` responses with a new trace.
 - **com.palantir.tracing:tracing-okhttp3** - `OkhttpTraceInterceptor`, which adds the appropriate headers to outgoing requests.
-- **com.palantir.tracing:tracing-jersey** - `TraceEnrichingFilter`, a jaxrs filter which reads headers from incoming requests and stores the traceId in the jaxrs request context under the key `com.palantir.tracing.traceId`.
+- **com.palantir.tracing:tracing-jersey** - `TraceEnrichingFilter`, a jaxrs filter which reads headers from incoming requests and writes headers to outgoing responses.  A traceId is stored in the jaxrs request context under the key `com.palantir.tracing.traceId`.
 
 Clients and servers propagate call trace ids across JVM boundaries according to the
 [Zipkin](https://github.com/openzipkin/zipkin) specification. In particular, clients insert `X-B3-TraceId: <Trace ID>`
@@ -22,20 +22,10 @@ dependencies {
   compile "com.palantir.tracing:tracing:$version"
 }
 ```
+
 ```java
 Tracer.subscribe("SLF4J", AsyncSlf4jSpanObserver.of(executor));
-try {
-    Tracer.startSpan("doSomeComputation");
-    doSomeComputation();
-} finally {
-    Tracer.completeSpan();
-}
-```
 
-In addition to cross-service call tracing, the `Tracer` library supports intra-thread tracing, for example:
-
-```java
-// Record tracing information for expensive doSomeComputation() call:
 try {
     Tracer.startSpan("doSomeComputation");
     doSomeComputation();  // may itself invoke cross-service or local traced calls
@@ -43,6 +33,8 @@ try {
     Tracer.completeSpan(); // triggers all span observers
 }
 ```
+
+The example above demonstrates how the `Tracer` library supports intra-thread tracing.
 
 ## Logging with SLF4J
 
