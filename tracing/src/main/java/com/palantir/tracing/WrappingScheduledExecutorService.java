@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class WrappingScheduledExecutorService extends WrappingExecutorService
         implements ScheduledExecutorService {
-    final ScheduledExecutorService delegate;
+    private final ScheduledExecutorService delegate;
 
     protected WrappingScheduledExecutorService(ScheduledExecutorService delegate) {
         super(delegate);
