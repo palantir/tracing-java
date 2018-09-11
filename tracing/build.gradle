@@ -26,14 +26,17 @@ dependencies {
     compile "com.fasterxml.jackson.module:jackson-module-afterburner"
     compile "com.google.guava:guava"
     compile "com.palantir.safe-logging:safe-logging"
+    compile "com.palantir.sls.versions:sls-versions"
     compile "org.slf4j:slf4j-api"
 
     testCompile "ch.qos.logback:logback-classic"
+    testCompile "com.palantir.remoting3:tracing"
+    testCompile "io.zipkin.java:zipkin"
     testCompile "junit:junit"
     testCompile "org.assertj:assertj-core"
     testCompile "org.jmock:jmock"
     testCompile "org.mockito:mockito-core"
-    testCompile "io.zipkin.java:zipkin"
-
+    
     processor "org.immutables:value"
 }
+

@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
+import com.palantir.sls.versions.OrderableSlsVersion;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -251,6 +253,29 @@ public final class TracerTest {
         Trace oldTrace = Tracer.getAndClearTrace();
         assertThat(oldTrace.getTraceId()).isEqualTo(startTrace);
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull(); // after clearing, it's empty
+    }
+
+    @Test
+    public void testGetRemotingTracerVersion() {
+        assertTrue(Tracer.getRemotingTracerVersion().isPresent());
+        assertEquals("3.43.0", Tracer.getRemotingTracerVersion().get().getValue());
+    }
+
+    @Test
+    public void testCompatibilityWithRemotingTracer() {
+        Tracer.checkForRemotingTracerCompatibility(Optional.of(OrderableSlsVersion.valueOf("3.43.0")));
+
+        Tracer.checkForRemotingTracerCompatibility(Optional.of(OrderableSlsVersion.valueOf("3.45.0")));
+
+        Tracer.checkForRemotingTracerCompatibility(Optional.empty());
+
+        try {
+            Tracer.checkForRemotingTracerCompatibility(Optional.of(OrderableSlsVersion.valueOf("3.42.0")));
+        } catch (IllegalStateException e) {
+            assertEquals(
+                    "Found incompatible remoting tracer version 3.42.0 in the classpath, expected 3.43.0 or greater",
+                    e.getMessage());
+        }
     }
 
     private static Span startAndCompleteSpan() {
