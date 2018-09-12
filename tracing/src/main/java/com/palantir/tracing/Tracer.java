@@ -42,9 +42,13 @@ import org.slf4j.MDC;
  * This class is thread-safe.
  */
 public final class Tracer {
+
     private static final Logger log = LoggerFactory.getLogger(Tracer.class);
     private static final OrderableSlsVersion MIN_COMPAT_REMOTING_TRACER_VER = OrderableSlsVersion.valueOf("3.43.0");
     private static final Optional<OrderableSlsVersion> REMOTING_TRACER_VER = getRemotingTracerVersion();
+
+    // system property used to disable compatibility check against remoting tracer
+    private static final String REMOTING_TRACER_COMPAT_CHECK_SYSTEM_PROPERTY = "tracing.remoting.compat.check.enabled";
 
     private Tracer() {
         checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
@@ -282,7 +286,11 @@ public final class Tracer {
     }
 
     protected static void checkForRemotingTracerCompatibility(Optional<OrderableSlsVersion> remotingTracerVer) {
-        if (remotingTracerVer.isPresent()
+        Boolean enableCompatCheck = Optional.ofNullable(
+                System.getProperty(REMOTING_TRACER_COMPAT_CHECK_SYSTEM_PROPERTY))
+                .map(Boolean::valueOf).orElse(Boolean.TRUE);
+
+        if (enableCompatCheck && remotingTracerVer.isPresent()
                 && VersionComparator.INSTANCE.compare(remotingTracerVer.get(), MIN_COMPAT_REMOTING_TRACER_VER) < 0) {
             throw new IllegalStateException(String.format(
                     "Found incompatible remoting tracer version %s in the classpath, expected %s or greater",

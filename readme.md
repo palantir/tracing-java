@@ -53,6 +53,18 @@ Note that span observers are static; a server typically subscribes span observer
 Libraries should never register span observers (since they can trample observers registered by consumers of the library
 whose themselves register observers).
 
+## Compatibility Check Against Remoting Tracer
+Prior to [http-remoting 3.43.0](https://github.com/palantir/http-remoting/releases/tag/3.43.0), remoting tracer has its
+own ThreadLocal to keep track of the current trace. This would result two ThreadLocals independently tracking their own
+ traces if any older version of `com.palantir.remoting3.tracing.Trace` were used in conjunction with 
+ `com.palantir.tracing.Tracer`. To prevent consumers from getting into this bad state, `com.palantir.tracing.Tracer` will
+ do compatibility check against remoting Tracer on class load and throws an exception if any older version of 
+ `com.palantir.remoting3.tracing.Trace` is found in the classpath.
+ 
+If you find it necessary to have both the older version of `com.palantir.remoting3.tracing.Trace` and 
+the `com.palantir.tracing.Tracer` in the classpath, you can disable this compatibility check by setting the 
+`tracing.remoting.compat.check.enabled` system property to `false`. 
+
 ## License
 
 This repository is made available under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).
