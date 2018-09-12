@@ -42,12 +42,13 @@ import org.slf4j.MDC;
  * This class is thread-safe.
  */
 public final class Tracer {
-
     private static final Logger log = LoggerFactory.getLogger(Tracer.class);
     private static final OrderableSlsVersion MIN_COMPAT_REMOTING_TRACER_VER = OrderableSlsVersion.valueOf("3.43.0");
     private static final Optional<OrderableSlsVersion> REMOTING_TRACER_VER = getRemotingTracerVersion();
 
-    private Tracer() {}
+    private Tracer() {
+        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
+    }
 
     // Thread-safe since thread-local
     private static final ThreadLocal<Trace> currentTrace = ThreadLocal.withInitial(() -> {
@@ -81,8 +82,6 @@ public final class Tracer {
      * #setSampler configured sampler} returns true.
      */
     public static void initTrace(Optional<Boolean> isObservable, String traceId) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         setTrace(createTrace(isObservable, traceId));
     }
 
@@ -91,8 +90,6 @@ public final class Tracer {
      * when the current trace is empty.
      */
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         Preconditions.checkState(currentTrace.get().isEmpty(),
                 "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         Preconditions.checkArgument(parentSpanId != null && !parentSpanId.isEmpty(),
@@ -118,8 +115,6 @@ public final class Tracer {
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      */
     public static OpenSpan startSpan(String operation) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         return startSpanInternal(operation, SpanType.LOCAL);
     }
 
@@ -146,8 +141,6 @@ public final class Tracer {
      * Does not construct the Span object if no subscriber will see it.
      */
     public static void fastCompleteSpan() {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         fastCompleteSpan(Collections.emptyMap());
     }
 
@@ -155,8 +148,6 @@ public final class Tracer {
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
      */
     public static void fastCompleteSpan(Map<String, String> metadata) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         popCurrentSpan()
                 .filter(openSpan -> currentTrace.get().isObservable())
                 .map(openSpan -> toSpan(openSpan, metadata))
@@ -168,7 +159,6 @@ public final class Tracer {
      * completed span.
      */
     public static Optional<Span> completeSpan() {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
 
         return completeSpan(Collections.emptyMap());
     }
@@ -177,8 +167,6 @@ public final class Tracer {
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
      */
     public static Optional<Span> completeSpan(Map<String, String> metadata) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         Optional<Span> maybeSpan = popCurrentSpan()
                 .map(openSpan -> toSpan(openSpan, metadata));
 
@@ -222,8 +210,6 @@ public final class Tracer {
      * with the given name, or null if there is no such observer.
      */
     public static synchronized SpanObserver subscribe(String name, SpanObserver observer) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         if (observers.containsKey(name)) {
             log.warn("Overwriting existing SpanObserver with name {} by new observer: {}",
                     SafeArg.of("name", name),
@@ -243,8 +229,6 @@ public final class Tracer {
      * observer if it existed, or null otherwise.
      */
     public static synchronized SpanObserver unsubscribe(String name) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         SpanObserver removedObserver = observers.remove(name);
         computeObserversList();
         return removedObserver;
@@ -256,22 +240,17 @@ public final class Tracer {
 
     /** Sets the sampler (for all threads). */
     public static void setSampler(TraceSampler sampler) {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         Tracer.sampler = sampler;
     }
 
     /** Returns the globally unique identifier for this thread's trace. */
     public static String getTraceId() {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
 
         return currentTrace.get().getTraceId();
     }
 
     /** Clears the current trace id and returns (a copy of) it. */
     public static Trace getAndClearTrace() {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         Trace trace = currentTrace.get();
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
@@ -283,8 +262,6 @@ public final class Tracer {
      * Tracer#completeSpan span completion}.
      */
     public static boolean isTraceObservable() {
-        checkForRemotingTracerCompatibility(REMOTING_TRACER_VER);
-
         return currentTrace.get().isObservable();
     }
 
@@ -316,7 +293,7 @@ public final class Tracer {
 
     protected static Optional<OrderableSlsVersion> getRemotingTracerVersion() {
         try {
-            Class<?>  object = Class.forName("com.palantir.remoting3.tracing.Tracer");
+            Class<?> object = Class.forName("com.palantir.remoting3.tracing.Tracer");
             Package objPackage = object.getPackage();
             return Optional.of(OrderableSlsVersion.valueOf(objPackage.getImplementationVersion()));
         } catch (ClassNotFoundException e) {
