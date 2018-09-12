@@ -276,6 +276,18 @@ public final class TracerTest {
                     "Found incompatible remoting tracer version 3.42.0 in the classpath, expected 3.43.0 or greater",
                     e.getMessage());
         }
+
+        // check disabled
+        System.setProperty("tracing.remoting.compat.check.enabled", "false");
+        Tracer.checkForRemotingTracerCompatibility(Optional.of(OrderableSlsVersion.valueOf("3.42.0")));
+
+        // check enabled
+        System.clearProperty("tracing.remoting.compat.check.enabled");
+        try {
+            Tracer.checkForRemotingTracerCompatibility(Optional.of(OrderableSlsVersion.valueOf("3.42.0")));
+        } catch (IllegalStateException e) {
+            // expected
+        }
     }
 
     private static Span startAndCompleteSpan() {
