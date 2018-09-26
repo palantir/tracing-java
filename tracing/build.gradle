@@ -35,5 +35,5 @@ dependencies {
     testCompile "org.mockito:mockito-core"
     testCompile "io.zipkin.java:zipkin"
 
-    processor "org.immutables:value"
+    annotationProcessor "org.immutables:value"
 }
