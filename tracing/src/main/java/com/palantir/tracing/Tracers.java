@@ -21,6 +21,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /** Utility methods for making {@link ExecutorService} and {@link Runnable} instances tracing-aware. */
 public final class Tracers {
@@ -101,6 +106,31 @@ public final class Tracers {
     /** Like {@link #wrap(Callable)}, but for Runnables. */
     public static Runnable wrap(Runnable delegate) {
         return new TracingAwareRunnable(delegate);
+    }
+
+    /** Like {@link #wrap(Callable)}, but for Functions. */
+    public static <T, R> Function<T, R> wrap(Function<T, R> delegate) {
+        return new TracingAwareFunction<>(delegate);
+    }
+
+    /** Like {@link #wrap(Callable)}, but for BiFunctions. */
+    public static <T, U, R> BiFunction<T, U, R> wrap(BiFunction<T, U, R> delegate) {
+        return new TracingAwareBiFunction<>(delegate);
+    }
+
+    /** Like {@link #wrap(Callable)}, but for Consumers. */
+    public static <T> Consumer<T> wrap(Consumer<T> delegate) {
+        return new TracingAwareConsumer<>(delegate);
+    }
+
+    /** Like {@link #wrap(Callable)}, but for BiConsumers. */
+    public static <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> delegate) {
+        return new TracingAwareBiConsumer<>(delegate);
+    }
+
+    /** Like {@link #wrap(Callable)}, but for Suppliers. */
+    public static <T> Supplier<T> wrap(Supplier<T> delegate) {
+        return new TracingAwareSupplier<>(delegate);
     }
 
     /**
@@ -239,6 +269,111 @@ public final class Tracers {
                 delegate.run();
                 return null;
             });
+        }
+    }
+
+    /**
+     * Wraps a given Function such that its execution operates with the {@link Trace thread-local Trace} of the thread
+     * that constructs the {@link TracingAwareFunction} instance rather than the thread that executes the function.
+     */
+    private static final class TracingAwareFunction<T, R> implements Function<T, R> {
+        private final Function<T, R> delegate;
+        private final DeferredTracer deferredTracer;
+
+        private TracingAwareFunction(Function<T, R> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer();
+        }
+
+        @Override
+        public R apply(T input) {
+            return deferredTracer.withTrace(() -> delegate.apply(input));
+        }
+    }
+
+    /**
+     * Wraps a given bi-function such that its execution operates with the {@link Trace thread-local Trace} of the
+     * thread that constructs the {@link TracingAwareBiFunction} instance rather than the thread that executes the
+     * bi-function.
+     */
+    private static final class TracingAwareBiFunction<T, U, R> implements BiFunction<T, U, R> {
+        private final BiFunction<T, U, R> delegate;
+        private final DeferredTracer deferredTracer;
+
+        private TracingAwareBiFunction(BiFunction<T, U, R> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer();
+        }
+
+        @Override
+        public R apply(T inputT, U inputU) {
+            return deferredTracer.withTrace(() -> delegate.apply(inputT, inputU));
+        }
+    }
+
+    /**
+     * Wraps a given consumer such that its execution operates with the {@link Trace thread-local Trace} of the
+     * thread that constructs the {@link TracingAwareConsumer} instance rather than the thread that executes the
+     * consumer.
+     */
+    private static final class TracingAwareConsumer<T> implements Consumer<T> {
+        private final Consumer<T> delegate;
+        private final DeferredTracer deferredTracer;
+
+        private TracingAwareConsumer(Consumer<T> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer();
+        }
+
+        @Override
+        public void accept(T input) {
+            deferredTracer.withTrace(() -> {
+                delegate.accept(input);
+                return null;
+            });
+        }
+    }
+
+    /**
+     * Wraps a given bi-consumer such that its execution operates with the {@link Trace thread-local Trace} of the
+     * thread that constructs the {@link TracingAwareBiConsumer} instance rather than the thread that executes the
+     * bi-consumer.
+     */
+    private static final class TracingAwareBiConsumer<T, U> implements BiConsumer<T, U> {
+        private final BiConsumer<T, U> delegate;
+        private final DeferredTracer deferredTracer;
+
+        private TracingAwareBiConsumer(BiConsumer<T, U> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer();
+        }
+
+        @Override
+        public void accept(T inputT, U inputU) {
+            deferredTracer.withTrace(() -> {
+                delegate.accept(inputT, inputU);
+                return null;
+            });
+        }
+    }
+
+    /**
+     * Wraps a given supplier such that its execution operates with the {@link Trace thread-local Trace} of the
+     * thread that constructs the {@link TracingAwareSupplier} instance rather than the thread that executes the
+     * supplier.
+     */
+    private static final class TracingAwareSupplier<T> implements Supplier<T> {
+        private final Supplier<T> delegate;
+        private final DeferredTracer deferredTracer;
+
+        private TracingAwareSupplier(Supplier<T> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer();
+        }
+
+        @Override
+        public T get() {
+            return deferredTracer.withTrace(delegate::get);
         }
     }
 
