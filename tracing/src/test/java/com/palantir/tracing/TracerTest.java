@@ -41,6 +41,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.MDC;
 
+@SuppressWarnings("CheckReturnValue")
 public final class TracerTest {
 
     @Mock
