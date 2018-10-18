@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-
-apply plugin: 'org.inferred.processors'
-
 apply from: "${rootDir}/gradle/publish-jar.gradle"
 
 dependencies {

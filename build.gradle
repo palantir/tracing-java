@@ -16,7 +16,7 @@
 
 buildscript {
     repositories {
-        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
         maven { url "http://palantir.bintray.com/releases" }
     }
 
@@ -26,41 +26,26 @@ buildscript {
         classpath 'com.netflix.nebula:gradle-dependency-lock-plugin:4.9.5'
         classpath 'com.netflix.nebula:nebula-publishing-plugin:5.1.5'
         classpath 'com.palantir.baseline:gradle-baseline-java:0.37.4'
+        classpath 'com.palantir.gradle.gitversion:gradle-git-version:0.11.0'
+        classpath 'gradle.plugin.org.inferred:gradle-processors:2.0.0'
     }
 }
 
-plugins {
-    id 'com.palantir.git-version' version '0.11.0'
-    id 'org.inferred.processors' version '1.2.15'
-}
-
-apply plugin: 'com.palantir.baseline-config' // provides baselineUpdateConfig task
-apply plugin: 'com.palantir.baseline-idea'
+apply plugin: 'com.palantir.git-version'
 apply plugin: 'com.palantir.baseline'
 
 repositories {
     maven { url  "http://palantir.bintray.com/releases" }
 }
 
-dependencies {
-}
-
 allprojects {
     version gitVersion()
     group 'com.palantir.tracing'
-
-    dependencyRecommendations {
-        strategy OverrideTransitives
-        propertiesFile file: project.rootProject.file('versions.props')
-    }
 }
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'com.palantir.baseline-checkstyle'
-    apply plugin: 'com.palantir.baseline-eclipse'
-    apply plugin: 'com.palantir.baseline-idea'
-    apply plugin: 'com.palantir.baseline-error-prone'
+    apply plugin: "org.inferred.processors"
 
     repositories {
         jcenter()
@@ -102,11 +87,7 @@ subprojects {
 
     configurations.errorprone {
         resolutionStrategy {
-            force 'com.google.guava:guava:21.0'
+            force 'com.google.guava:guava:23.6.1-jre'
         }
-    }
-
-    tasks.withType(JavaCompile) {
-        options.compilerArgs += ['-XepDisableWarningsInGeneratedCode']
     }
 }

@@ -69,6 +69,7 @@ public final class TracerTest {
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
         try {
             Tracer.initTrace(Optional.empty(), null);
+            fail("Didn't throw");
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessage("traceId must be non-empty: null");
         }

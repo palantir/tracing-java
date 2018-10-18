@@ -16,6 +16,8 @@
 
 package com.palantir.tracing;
 
+// CHECKSTYLE:OFF
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
@@ -50,6 +52,7 @@ import zipkin.BinaryAnnotation;
 import zipkin.Codec;
 import zipkin.Endpoint;
 
+// CHECKSTYLE:ON
 
 public final class AsyncSlf4jSpanObserverTest {
 

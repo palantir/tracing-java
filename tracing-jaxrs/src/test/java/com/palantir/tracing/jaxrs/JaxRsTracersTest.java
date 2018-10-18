@@ -28,7 +28,7 @@ public final class JaxRsTracersTest {
     @Test
     public void testWrappingStreamingOutput_streamingOutputTraceIsIsolated() throws Exception {
         Tracer.startSpan("outside");
-        StreamingOutput streamingOutput = JaxRsTracers.wrap((os) -> {
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
             Tracer.startSpan("inside"); // never completed
         });
         streamingOutput.write(new ByteArrayOutputStream());
@@ -38,7 +38,7 @@ public final class JaxRsTracersTest {
     @Test
     public void testWrappingStreamingOutput_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.startSpan("before-construction");
-        StreamingOutput streamingOutput = JaxRsTracers.wrap((os) -> {
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
         });
         Tracer.startSpan("after-construction");
