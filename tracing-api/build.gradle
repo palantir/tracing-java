@@ -10,5 +10,6 @@ dependencies {
     testCompile "org.mockito:mockito-core"
     testCompile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
 
-    processor "org.immutables:value"
+    annotationProcessor "org.immutables:value"
+    compileOnly 'org.immutables:value::annotations'
 }
