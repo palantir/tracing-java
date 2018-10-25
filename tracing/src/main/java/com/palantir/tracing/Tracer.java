@@ -46,11 +46,7 @@ public final class Tracer {
     private Tracer() {}
 
     // Thread-safe since thread-local
-    private static final ThreadLocal<Trace> currentTrace = ThreadLocal.withInitial(() -> {
-        Trace trace = createTrace(Optional.empty(), Tracers.randomId());
-        MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
-        return trace;
-    });
+    private static final ThreadLocal<Trace> currentTrace = new ThreadLocal<>();
 
     // Only access in a class-synchronized fashion
     private static final Map<String, SpanObserver> observers = new HashMap<>();
@@ -85,7 +81,8 @@ public final class Tracer {
      * when the current trace is empty.
      */
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
-        Preconditions.checkState(currentTrace.get().isEmpty(),
+        Trace current = getOrCreateCurrentTrace();
+        Preconditions.checkState(current.isEmpty(),
                 "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         Preconditions.checkArgument(parentSpanId != null && !parentSpanId.isEmpty(),
                 "parentTraceId must be non-empty: %s", parentSpanId);
@@ -95,7 +92,7 @@ public final class Tracer {
                 .parentSpanId(parentSpanId)
                 .type(type)
                 .build();
-        currentTrace.get().push(span);
+        current.push(span);
         return span;
     }
 
@@ -119,13 +116,14 @@ public final class Tracer {
                 .spanId(Tracers.randomId())
                 .type(type);
 
-        Optional<OpenSpan> prevState = currentTrace.get().top();
+        Trace trace = getOrCreateCurrentTrace();
+        Optional<OpenSpan> prevState = trace.top();
         if (prevState.isPresent()) {
             spanBuilder.parentSpanId(prevState.get().getSpanId());
         }
 
         OpenSpan span = spanBuilder.build();
-        currentTrace.get().push(span);
+        trace.push(span);
         return span;
     }
 
@@ -143,10 +141,12 @@ public final class Tracer {
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
      */
     public static void fastCompleteSpan(Map<String, String> metadata) {
-        popCurrentSpan()
-                .filter(openSpan -> currentTrace.get().isObservable())
-                .map(openSpan -> toSpan(openSpan, metadata))
-                .ifPresent(Tracer::notifyObservers);
+        if (isTraceObservable()) {
+            String traceId = getTraceId();
+            popCurrentSpan()
+                    .map(openSpan -> toSpan(openSpan, metadata, traceId))
+                    .ifPresent(Tracer::notifyObservers);
+        }
     }
 
     /**
@@ -161,15 +161,15 @@ public final class Tracer {
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
      */
     public static Optional<Span> completeSpan(Map<String, String> metadata) {
+        boolean observable = isTraceObservable();
+        Trace trace = currentTrace.get();
         Optional<Span> maybeSpan = popCurrentSpan()
-                .map(openSpan -> toSpan(openSpan, metadata));
+                .map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()));
 
         // Notify subscribers iff trace is observable
-        maybeSpan.ifPresent(span -> {
-            if (currentTrace.get().isObservable()) {
-                notifyObservers(span);
-            }
-        });
+        if (maybeSpan.isPresent() && observable) {
+            notifyObservers(maybeSpan.get());
+        }
 
         return maybeSpan;
     }
@@ -181,12 +181,20 @@ public final class Tracer {
     }
 
     private static Optional<OpenSpan> popCurrentSpan() {
-        return currentTrace.get().pop();
+        Trace trace = currentTrace.get();
+        if (trace != null) {
+            Optional<OpenSpan> span = trace.pop();
+            if (trace.isEmpty()) {
+                clearCurrentTrace();
+            }
+            return span;
+        }
+        return Optional.empty();
     }
 
-    private static Span toSpan(OpenSpan openSpan, Map<String, String> metadata) {
+    private static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {
         return Span.builder()
-                .traceId(getTraceId())
+                .traceId(traceId)
                 .spanId(openSpan.getSpanId())
                 .type(openSpan.type())
                 .parentSpanId(openSpan.getParentSpanId())
@@ -239,14 +247,13 @@ public final class Tracer {
 
     /** Returns the globally unique identifier for this thread's trace. */
     public static String getTraceId() {
-        return currentTrace.get().getTraceId();
+        return Preconditions.checkNotNull(currentTrace.get(), "There is no root span").getTraceId();
     }
 
     /** Clears the current trace id and returns (a copy of) it. */
     public static Trace getAndClearTrace() {
-        Trace trace = currentTrace.get();
-        currentTrace.remove();
-        MDC.remove(Tracers.TRACE_ID_KEY);
+        Trace trace = getOrCreateCurrentTrace();
+        clearCurrentTrace();
         return trace;
     }
 
@@ -255,12 +262,17 @@ public final class Tracer {
      * Tracer#completeSpan span completion}.
      */
     public static boolean isTraceObservable() {
-        return currentTrace.get().isObservable();
+        Trace trace = currentTrace.get();
+        return trace != null && trace.isObservable();
     }
 
     /** Returns an independent copy of this thread's {@link Trace}. */
-    static Trace copyTrace() {
-        return currentTrace.get().deepCopy();
+    static Optional<Trace> copyTrace() {
+        Trace trace = currentTrace.get();
+        if (trace != null) {
+            return Optional.of(trace.deepCopy());
+        }
+        return Optional.empty();
     }
 
     /**
@@ -274,4 +286,17 @@ public final class Tracer {
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
     }
 
+    private static Trace getOrCreateCurrentTrace() {
+        Trace trace = currentTrace.get();
+        if (trace == null) {
+            trace = createTrace(Optional.empty(), Tracers.randomId());
+            setTrace(trace);
+        }
+        return trace;
+    }
+
+    private static void clearCurrentTrace() {
+        currentTrace.remove();
+        MDC.remove(Tracers.TRACE_ID_KEY);
+    }
 }

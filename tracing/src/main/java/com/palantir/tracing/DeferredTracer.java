@@ -16,6 +16,8 @@
 
 package com.palantir.tracing;
 
+import java.util.Optional;
+
 /**
  * Utility class for capturing the current trace at time of construction, and then
  * running callables at some later time with that captured trace.
@@ -36,7 +38,7 @@ package com.palantir.tracing;
  * </pre>
  */
 public final class DeferredTracer {
-    private final Trace trace;
+    private final Optional<Trace> trace;
 
     public DeferredTracer() {
         this.trace = Tracer.copyTrace();
@@ -47,12 +49,19 @@ public final class DeferredTracer {
      * the time of construction of this {@link DeferredTracer}.
      */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
-        Trace originalTrace = Tracer.copyTrace();
-        Tracer.setTrace(trace);
+        if (!trace.isPresent()) {
+            return inner.call();
+        }
+        Optional<Trace> originalTrace = Tracer.copyTrace();
+        Tracer.setTrace(trace.get());
         try {
             return inner.call();
         } finally {
-            Tracer.setTrace(originalTrace);
+            if (originalTrace.isPresent()) {
+                Tracer.setTrace(originalTrace.get());
+            } else {
+                Tracer.getAndClearTrace();
+            }
         }
     }
 }

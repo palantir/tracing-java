@@ -63,6 +63,7 @@ public final class TracerTest {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.unsubscribe("1");
         Tracer.unsubscribe("2");
+        Tracer.getAndClearTrace();
     }
 
     @Test
@@ -164,23 +165,26 @@ public final class TracerTest {
         when(sampler.sample()).thenReturn(true, false);
         Tracer.subscribe("1", observer1);
 
-        Tracer.initTrace(Optional.empty(), Tracers.randomId());
-        verify(sampler).sample();
         Span span = startAndCompleteSpan();
+        verify(sampler).sample();
         verify(observer1).consume(span);
         verifyNoMoreInteractions(observer1, sampler);
 
         Mockito.reset(observer1, sampler);
-        Tracer.initTrace(Optional.empty(), Tracers.randomId());
-        verify(sampler).sample();
         startAndCompleteSpan(); // not sampled, see above
+        verify(sampler).sample();
         verifyNoMoreInteractions(observer1, sampler);
     }
 
     @Test
     public void testTraceCopyIsIndependent() throws Exception {
-        Trace trace = Tracer.copyTrace();
-        trace.push(mock(OpenSpan.class));
+        Tracer.startSpan("span");
+        try {
+            Trace trace = Tracer.copyTrace().get();
+            trace.push(mock(OpenSpan.class));
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
         assertThat(Tracer.completeSpan().isPresent()).isFalse();
     }
 
@@ -189,8 +193,9 @@ public final class TracerTest {
         Tracer.startSpan("operation");
         Tracer.setTrace(new Trace(true, "newTraceId"));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
-        assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
+        assertThat(Tracer.completeSpan()).isEmpty();
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
     }
 
     @Test
@@ -245,12 +250,17 @@ public final class TracerTest {
 
     @Test
     public void testClearAndGetTraceClearsMdc() {
-        String startTrace = Tracer.getTraceId();
-        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
+        Tracer.startSpan("test");
+        try {
+            String startTrace = Tracer.getTraceId();
+            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
 
-        Trace oldTrace = Tracer.getAndClearTrace();
-        assertThat(oldTrace.getTraceId()).isEqualTo(startTrace);
-        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull(); // after clearing, it's empty
+            Trace oldTrace = Tracer.getAndClearTrace();
+            assertThat(oldTrace.getTraceId()).isEqualTo(startTrace);
+            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull(); // after clearing, it's empty
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
     }
 
     private static Span startAndCompleteSpan() {
