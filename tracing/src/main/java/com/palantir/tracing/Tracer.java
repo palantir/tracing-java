@@ -143,9 +143,8 @@ public final class Tracer {
     public static void fastCompleteSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace != null) {
-            boolean observable = isTraceObservable();
             Optional<OpenSpan> span = popCurrentSpan();
-            if (observable) {
+            if (trace.isObservable()) {
                 span.map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()))
                         .ifPresent(Tracer::notifyObservers);
             }
@@ -164,13 +163,15 @@ public final class Tracer {
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
      */
     public static Optional<Span> completeSpan(Map<String, String> metadata) {
-        boolean observable = isTraceObservable();
         Trace trace = currentTrace.get();
+        if (trace == null) {
+            return Optional.empty();
+        }
         Optional<Span> maybeSpan = popCurrentSpan()
                 .map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()));
 
         // Notify subscribers iff trace is observable
-        if (maybeSpan.isPresent() && observable) {
+        if (maybeSpan.isPresent() && trace.isObservable()) {
             notifyObservers(maybeSpan.get());
         }
 
