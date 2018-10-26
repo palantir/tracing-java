@@ -118,6 +118,7 @@ public final class Tracer {
 
         Trace trace = getOrCreateCurrentTrace();
         Optional<OpenSpan> prevState = trace.top();
+        // Avoid lambda allocation in hot paths
         if (prevState.isPresent()) {
             spanBuilder.parentSpanId(prevState.get().getSpanId());
         }
@@ -172,6 +173,7 @@ public final class Tracer {
 
         // Notify subscribers iff trace is observable
         if (maybeSpan.isPresent() && trace.isObservable()) {
+            // Avoid lambda allocation in hot paths
             notifyObservers(maybeSpan.get());
         }
 
