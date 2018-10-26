@@ -67,8 +67,17 @@ public final class Tracer {
      */
     private static Trace createTrace(Optional<Boolean> isObservable, String traceId) {
         Preconditions.checkArgument(traceId != null && !traceId.isEmpty(), "traceId must be non-empty: %s", traceId);
-        boolean observable = isObservable.orElseGet(sampler::sample);
+        boolean observable = shouldObserve(isObservable);
         return new Trace(observable, traceId);
+    }
+
+    // Avoid lambda allocation on hot paths
+    @SuppressWarnings("OptionalIsPresent")
+    private static boolean shouldObserve(Optional<Boolean> isObservable) {
+        if (isObservable.isPresent()) {
+            return Boolean.TRUE.equals(isObservable.get());
+        }
+        return sampler.sample();
     }
 
     /**
