@@ -31,6 +31,8 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import org.assertj.core.util.Sets;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -261,6 +263,22 @@ public final class TracerTest {
         } finally {
             Tracer.fastCompleteSpan();
         }
+    }
+
+    @Test
+    public void testCompleteRootSpanCompletesTrace() {
+        Set<String> traceIds = Sets.newHashSet();
+        SpanObserver traceIdCaptor = span -> traceIds.add(span.getTraceId());
+        Tracer.subscribe("traceIds", traceIdCaptor);
+        try {
+            // Only one root span is allowed, the second span
+            // is expected to generate a second traceId
+            startAndCompleteSpan();
+            startAndCompleteSpan();
+        } finally {
+            Tracer.unsubscribe("traceIds");
+        }
+        assertThat(traceIds.size()).isEqualTo(2);
     }
 
     private static Span startAndCompleteSpan() {
