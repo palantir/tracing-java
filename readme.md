@@ -32,7 +32,9 @@ try {
 } finally {
     Tracer.completeSpan(); // triggers all span observers
 }
-```
+```'
+
+ThankYou
 
 The example above demonstrates how the `Tracer` library supports intra-thread tracing.
 
