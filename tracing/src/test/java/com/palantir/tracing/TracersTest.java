@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Lists;
 import com.palantir.tracing.api.OpenSpan;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -374,11 +375,12 @@ public final class TracersTest {
     }
 
     private static List<OpenSpan> getCurrentFullTrace() {
-        Trace trace = Tracer.copyTrace();
-        List<OpenSpan> spans = Lists.newArrayList();
-        while (!trace.isEmpty()) {
-            spans.add(trace.pop().get());
-        }
-        return spans;
+        return Tracer.copyTrace().map(trace -> {
+            List<OpenSpan> spans = Lists.newArrayList();
+            while (!trace.isEmpty()) {
+                spans.add(trace.pop().get());
+            }
+            return spans;
+        }).orElse(Collections.emptyList());
     }
 }
