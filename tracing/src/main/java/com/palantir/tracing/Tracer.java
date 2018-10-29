@@ -251,6 +251,11 @@ public final class Tracer {
         Tracer.sampler = sampler;
     }
 
+    /** Returns true if there is an active trace on this thread. */
+    public static boolean hasTraceId() {
+        return currentTrace.get() != null;
+    }
+
     /** Returns the globally unique identifier for this thread's trace. */
     public static String getTraceId() {
         return Preconditions.checkNotNull(currentTrace.get(), "There is no root span").getTraceId();

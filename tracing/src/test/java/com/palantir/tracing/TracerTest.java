@@ -281,6 +281,18 @@ public final class TracerTest {
         assertThat(traceIds.size()).isEqualTo(2);
     }
 
+    @Test
+    public void testHasTraceId() {
+        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        Tracer.startSpan("testSpan");
+        try {
+            assertThat(Tracer.hasTraceId()).isEqualTo(true);
+        } finally {
+            Tracer.completeSpan();
+        }
+        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+    }
+
     private static Span startAndCompleteSpan() {
         Tracer.startSpan("operation");
         return Tracer.completeSpan().get();
