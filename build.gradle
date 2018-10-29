@@ -36,6 +36,7 @@ apply plugin: 'com.palantir.git-version'
 apply plugin: 'com.palantir.baseline'
 
 repositories {
+    jcenter()
     maven { url  "http://palantir.bintray.com/releases" }
 }
 
