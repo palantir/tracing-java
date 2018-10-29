@@ -16,6 +16,8 @@
 
 package com.palantir.tracing;
 
+// CHECKSTYLE:OFF
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
@@ -23,15 +25,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-// CHECKSTYLE:OFF
-
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
-
-// CHECKSTYLE:ON
-
 import com.google.common.collect.ImmutableMap;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
@@ -55,6 +52,7 @@ import zipkin.BinaryAnnotation;
 import zipkin.Codec;
 import zipkin.Endpoint;
 
+// CHECKSTYLE:ON
 
 public final class AsyncSlf4jSpanObserverTest {
 
