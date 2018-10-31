@@ -54,7 +54,7 @@ public final class Tracer {
     private static volatile List<SpanObserver> observersList = ImmutableList.of();
 
     // Thread-safe since stateless
-    private static volatile TraceSampler sampler = AlwaysSampler.INSTANCE;
+    private static volatile TraceSampler sampler = NeverSampler.INSTANCE;
 
     /**
      * Creates a new trace, but does not set it as the current trace. The new trace is {@link Trace#isObservable

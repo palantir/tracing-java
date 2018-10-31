@@ -80,6 +80,7 @@ public final class AsyncSlf4jSpanObserverTest {
 
         originalLevel = logger.getLevel();
         logger.setLevel(Level.TRACE);
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
     }
 
     @After

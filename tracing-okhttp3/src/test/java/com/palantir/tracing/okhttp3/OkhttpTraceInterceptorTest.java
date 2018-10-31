@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.AlwaysSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.OpenSpan;
@@ -61,6 +62,7 @@ public final class OkhttpTraceInterceptorTest {
         Request request = new Request.Builder().url("http://localhost").build();
         when(chain.request()).thenReturn(request);
         Tracer.subscribe("", observer);
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
     }
 
     @After
