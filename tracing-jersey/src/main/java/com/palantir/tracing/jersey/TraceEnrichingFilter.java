@@ -88,6 +88,9 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
             Span span = maybeSpan.get();
             headers.putSingle(TraceHttpHeaders.TRACE_ID, span.getTraceId());
         } else {
+            // When the filter is called twice (e.g. an exception is thrown in a streaming call),
+            // the current trace will be empty. To allow clients to still get the trace ID corresponding to
+            // the failure, we retrieve it from the requestContext.
             Optional.ofNullable(requestContext.getProperty(TRACE_ID_PROPERTY_NAME))
                     .ifPresent(s -> headers.putSingle(TraceHttpHeaders.TRACE_ID, s));
         }
