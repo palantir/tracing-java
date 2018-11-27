@@ -87,6 +87,9 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         if (maybeSpan.isPresent()) {
             Span span = maybeSpan.get();
             headers.putSingle(TraceHttpHeaders.TRACE_ID, span.getTraceId());
+        } else {
+            Optional.ofNullable(requestContext.getProperty(TRACE_ID_PROPERTY_NAME))
+                    .ifPresent(s -> headers.putSingle(TraceHttpHeaders.TRACE_ID, s));
         }
     }
 
