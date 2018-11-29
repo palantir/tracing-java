@@ -81,4 +81,9 @@ public final class Trace {
     Trace deepCopy() {
         return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
     }
+
+    @Override
+    public String toString() {
+        return "Trace{stack=" + stack + ", isObservable=" + isObservable + ", traceId='" + traceId + "'}";
+    }
 }
