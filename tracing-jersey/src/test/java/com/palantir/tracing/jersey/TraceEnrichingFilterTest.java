@@ -49,6 +49,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.junit.After;
@@ -157,6 +158,36 @@ public final class TraceEnrichingFilterTest {
     }
 
     @Test
+    public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenFailing() {
+        Response response = target.path("/failing-trace").request().get();
+        assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID), not(nullValue()));
+        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID), is(nullValue()));
+        assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID), is(nullValue()));
+        verify(observer).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation(), is("GET /failing-trace"));
+    }
+
+    @Test
+    public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenStreaming() {
+        Response response = target.path("/streaming-trace").request().get();
+        assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID), not(nullValue()));
+        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID), is(nullValue()));
+        assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID), is(nullValue()));
+        verify(observer).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation(), is("GET /streaming-trace"));
+    }
+
+    @Test
+    public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenFailingToStream() {
+        Response response = target.path("/failing-streaming-trace").request().get();
+        assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID), not(nullValue()));
+        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID), is(nullValue()));
+        assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID), is(nullValue()));
+        verify(observer).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation(), is("GET /failing-streaming-trace"));
+    }
+
+    @Test
     public void testTraceState_withSamplingHeaderWithoutTraceIdDoesNotUseTraceSampler() {
         target.path("/trace").request()
                 .header(TraceHttpHeaders.IS_SAMPLED, "0")
@@ -216,13 +247,33 @@ public final class TraceEnrichingFilterTest {
 
     public static final class TracingTestResource implements TracingTestService {
         @Override
-        public void getTraceOperation() {}
+        public void getTraceOperation() {
+            throw new RuntimeException("FAIL");
+        }
 
         @Override
         public void postTraceOperation() {}
 
         @Override
         public void getTraceWithPathParam() {}
+
+        @Override
+        public void getFailingTraceOperation() {
+            throw new RuntimeException();
+        }
+
+        @Override
+        public StreamingOutput getFailingStreamingTraceOperation() {
+            return os -> {
+                throw new RuntimeException();
+            };
+        }
+
+        @Override
+        public StreamingOutput getStreamingTraceOperation() {
+            return os -> {
+            };
+        }
     }
 
     @Path("/")
@@ -240,5 +291,19 @@ public final class TraceEnrichingFilterTest {
         @GET
         @Path("/trace/{param}")
         void getTraceWithPathParam();
+
+        @GET
+        @Path("/failing-trace")
+        void getFailingTraceOperation();
+
+        @GET
+        @Path("/failing-streaming-trace")
+        @Produces(MediaType.APPLICATION_OCTET_STREAM)
+        StreamingOutput getFailingStreamingTraceOperation();
+
+        @GET
+        @Path("/streaming-trace")
+        @Produces(MediaType.APPLICATION_OCTET_STREAM)
+        StreamingOutput getStreamingTraceOperation();
     }
 }
