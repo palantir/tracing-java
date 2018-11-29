@@ -16,8 +16,11 @@
 
 package com.palantir.tracing;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.api.SpanType;
 import org.junit.Test;
 
 public final class TraceTest {
@@ -28,4 +31,17 @@ public final class TraceTest {
             .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    public void testToString() {
+        Trace trace = new Trace(true, "traceId");
+        trace.push(OpenSpan.builder()
+                .type(SpanType.LOCAL)
+                .spanId("spanId")
+                .operation("operation")
+                .startClockNanoSeconds(0L)
+                .startTimeMicroSeconds(0L)
+                .build());
+        assertThat(trace.toString()).isEqualTo("Trace{stack=[OpenSpan{operation=operation, startTimeMicroSeconds=0, "
+                + "startClockNanoSeconds=0, spanId=spanId, type=LOCAL}], isObservable=true, traceId='traceId'}");
+    }
 }
