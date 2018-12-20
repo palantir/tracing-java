@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class Tracers {
     /** The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
     public static final String TRACE_ID_KEY = "traceId";
+    private static final String ROOT_SPAN_OPERATION = "root";
     private static final char[] HEX_DIGITS =
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -148,8 +149,10 @@ public final class Tracers {
 
             try {
                 Tracer.initTrace(Optional.empty(), Tracers.randomId());
+                Tracer.startSpan(ROOT_SPAN_OPERATION);
                 return delegate.call();
             } finally {
+                Tracer.completeSpan();
                 // restore the trace
                 Tracer.setTrace(originalTrace);
             }
@@ -166,8 +169,10 @@ public final class Tracers {
 
             try {
                 Tracer.initTrace(Optional.empty(), Tracers.randomId());
+                Tracer.startSpan(ROOT_SPAN_OPERATION);
                 delegate.run();
             } finally {
+                Tracer.completeSpan();
                 // restore the trace
                 Tracer.setTrace(originalTrace);
             }
@@ -187,8 +192,10 @@ public final class Tracers {
 
             try {
                 Tracer.initTrace(Optional.empty(), traceId);
+                Tracer.startSpan(ROOT_SPAN_OPERATION);
                 delegate.run();
             } finally {
+                Tracer.completeSpan();
                 // restore the trace
                 Tracer.setTrace(originalTrace);
             }
