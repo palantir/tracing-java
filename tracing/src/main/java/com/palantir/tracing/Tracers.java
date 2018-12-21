@@ -152,7 +152,7 @@ public final class Tracers {
                 Tracer.startSpan(ROOT_SPAN_OPERATION);
                 return delegate.call();
             } finally {
-                Tracer.completeSpan();
+                Tracer.fastCompleteSpan();
                 // restore the trace
                 Tracer.setTrace(originalTrace);
             }
@@ -172,7 +172,7 @@ public final class Tracers {
                 Tracer.startSpan(ROOT_SPAN_OPERATION);
                 delegate.run();
             } finally {
-                Tracer.completeSpan();
+                Tracer.fastCompleteSpan();
                 // restore the trace
                 Tracer.setTrace(originalTrace);
             }
@@ -195,7 +195,7 @@ public final class Tracers {
                 Tracer.startSpan(ROOT_SPAN_OPERATION);
                 delegate.run();
             } finally {
-                Tracer.completeSpan();
+                Tracer.fastCompleteSpan();
                 // restore the trace
                 Tracer.setTrace(originalTrace);
             }
