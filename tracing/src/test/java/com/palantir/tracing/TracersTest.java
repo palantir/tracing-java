@@ -215,6 +215,22 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapCallableWithNewTrace_traceStateInsideCallableHasSpan() throws Exception {
+        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace(() -> {
+            return getCurrentFullTrace();
+        });
+
+        List<OpenSpan> spans = wrappedCallable.call();
+
+        assertThat(spans).hasSize(1);
+
+        OpenSpan span = spans.get(0);
+
+        assertThat(span.getOperation()).isEqualTo("root");
+        assertThat(span.getParentSpanId()).isEmpty();
+    }
+
+    @Test
     public void testWrapCallableWithNewTrace_traceStateRestoredWhenThrows() throws Exception {
         String traceIdBeforeConstruction = Tracer.getTraceId();
 
@@ -259,6 +275,24 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapRunnableWithNewTrace_traceStateInsideRunnableHasSpan() throws Exception {
+        List<List<OpenSpan>> spans = Lists.newArrayList();
+
+        Runnable wrappedRunnable = Tracers.wrapWithNewTrace(() -> {
+            spans.add(getCurrentFullTrace());
+        });
+
+        wrappedRunnable.run();
+
+        assertThat(spans.get(0)).hasSize(1);
+
+        OpenSpan span = spans.get(0).get(0);
+
+        assertThat(span.getOperation()).isEqualTo("root");
+        assertThat(span.getParentSpanId()).isEmpty();
+    }
+
+    @Test
     public void testWrapRunnableWithNewTrace_traceStateRestoredWhenThrows() throws Exception {
         String traceIdBeforeConstruction = Tracer.getTraceId();
 
@@ -294,6 +328,25 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapRunnableWithAlternateTraceId_traceStateInsideRunnableHasSpan() throws Exception {
+        List<List<OpenSpan>> spans = Lists.newArrayList();
+
+        String traceIdToUse = "someTraceId";
+        Runnable wrappedRunnable = Tracers.wrapWithAlternateTraceId(traceIdToUse, () -> {
+            spans.add(getCurrentFullTrace());
+        });
+
+        wrappedRunnable.run();
+
+        assertThat(spans.get(0)).hasSize(1);
+
+        OpenSpan span = spans.get(0).get(0);
+
+        assertThat(span.getOperation()).isEqualTo("root");
+        assertThat(span.getParentSpanId()).isEmpty();
+    }
+
+    @Test
     public void testWrapRunnableWithAlternateTraceId_traceStateRestoredWhenThrows() {
         String traceIdBeforeConstruction = Tracer.getTraceId();
         Runnable rawRunnable = () -> {
@@ -325,6 +378,7 @@ public final class TracersTest {
 
                 assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(newTraceId);
                 assertThat(seenTraceIds).doesNotContain(newTraceId);
+                assertThat(getCurrentFullTrace()).hasSize(1);
                 seenTraceIds.add(newTraceId);
                 return null;
             }
@@ -342,6 +396,7 @@ public final class TracersTest {
 
                 assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(newTraceId);
                 assertThat(seenTraceIds).doesNotContain(newTraceId);
+                assertThat(getCurrentFullTrace()).hasSize(1);
                 seenTraceIds.add(newTraceId);
             }
         };
