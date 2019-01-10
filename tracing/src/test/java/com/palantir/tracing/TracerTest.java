@@ -252,6 +252,19 @@ public final class TracerTest {
     }
 
     @Test
+    public void testGetAndClearTraceIfPresent() {
+        Trace trace = new Trace(true, "newTraceId");
+        Tracer.setTrace(trace);
+
+        Optional<Trace> nonEmptyTrace = Tracer.getAndClearTraceIfPresent();
+        assertThat(nonEmptyTrace).hasValue(trace);
+        assertThat(Tracer.hasTraceId()).isFalse();
+
+        Optional<Trace> emptyTrace = Tracer.getAndClearTraceIfPresent();
+        assertThat(emptyTrace).isEmpty();
+    }
+
+    @Test
     public void testClearAndGetTraceClearsMdc() {
         Tracer.startSpan("test");
         try {

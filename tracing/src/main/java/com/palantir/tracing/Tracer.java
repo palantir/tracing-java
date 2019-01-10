@@ -270,6 +270,13 @@ public final class Tracer {
         return Preconditions.checkNotNull(currentTrace.get(), "There is no root span").getTraceId();
     }
 
+    /** Clears the current trace id and returns it if present. */
+    static Optional<Trace> getAndClearTraceIfPresent() {
+        Optional<Trace> trace = Optional.ofNullable(currentTrace.get());
+        clearCurrentTrace();
+        return trace;
+    }
+
     /** Clears the current trace id and returns (a copy of) it. */
     public static Trace getAndClearTrace() {
         Trace trace = getOrCreateCurrentTrace();
