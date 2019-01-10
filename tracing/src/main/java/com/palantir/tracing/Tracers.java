@@ -145,7 +145,7 @@ public final class Tracers {
     public static <V> Callable<V> wrapWithNewTrace(Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
-            Trace originalTrace = Tracer.getAndClearTrace();
+            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTrace(Optional.empty(), Tracers.randomId());
@@ -153,8 +153,7 @@ public final class Tracers {
                 return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
-                // restore the trace
-                Tracer.setTrace(originalTrace);
+                restoreTrace(originalTrace);
             }
         };
     }
@@ -165,7 +164,7 @@ public final class Tracers {
     public static Runnable wrapWithNewTrace(Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
-            Trace originalTrace = Tracer.getAndClearTrace();
+            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTrace(Optional.empty(), Tracers.randomId());
@@ -173,8 +172,7 @@ public final class Tracers {
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
-                // restore the trace
-                Tracer.setTrace(originalTrace);
+                restoreTrace(originalTrace);
             }
         };
     }
@@ -188,7 +186,7 @@ public final class Tracers {
     public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
-            Trace originalTrace = Tracer.getAndClearTrace();
+            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTrace(Optional.empty(), traceId);
@@ -196,10 +194,22 @@ public final class Tracers {
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
-                // restore the trace
-                Tracer.setTrace(originalTrace);
+                restoreTrace(originalTrace);
             }
         };
+    }
+
+    /**
+     * Restores or clears trace state based on provided {@link Trace}. Used to cleanup trace state for
+     * {@link #wrapWithNewTrace} calls.
+     */
+    private static void restoreTrace(Optional<Trace> trace) {
+        if (trace.isPresent()) {
+            Tracer.setTrace(trace.get());
+        } else {
+            // Ignoring returned value, used to clear trace only
+            Tracer.getAndClearTraceIfPresent();
+        }
     }
 
     /**

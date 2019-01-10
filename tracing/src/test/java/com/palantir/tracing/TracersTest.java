@@ -24,6 +24,7 @@ import com.palantir.tracing.api.OpenSpan;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -42,6 +44,15 @@ public final class TracersTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         MDC.clear();
+
+        // Initialize a new trace for each test
+        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+    }
+
+    @After
+    public void after() {
+        // Clear out the old trace from each test
+        Tracer.getAndClearTraceIfPresent();
     }
 
     @Test
@@ -244,6 +255,14 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapCallableWithNewTrace_traceStateRestoredToCleared() throws Exception {
+        // Clear out the default initialized trace
+        Tracer.getAndClearTraceIfPresent();
+        Tracers.wrapWithNewTrace(() -> null).call();
+        assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableIsIsolated() throws Exception {
         String traceIdBeforeConstruction = Tracer.getTraceId();
 
@@ -307,6 +326,16 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapRunnableWithNewTrace_traceStateRestoredToCleared() {
+        // Clear out the default initialized trace
+        Tracer.getAndClearTraceIfPresent();
+        Tracers.wrapWithNewTrace(() -> {
+            // no-op
+        }).run();
+        assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
     public void testWrapRunnableWithAlternateTraceId_traceStateInsideRunnableUsesGivenTraceId() {
         String traceIdBeforeConstruction = Tracer.getTraceId();
         AtomicReference<String> traceId = new AtomicReference<>();
@@ -356,6 +385,16 @@ public final class TracersTest {
 
         assertThatThrownBy(() -> wrappedRunnable.run()).isInstanceOf(IllegalStateException.class);
         assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
+    }
+
+    @Test
+    public void testWrapRunnableWithAlternateTraceId_traceStateRestoredToCleared() {
+        // Clear out the default initialized trace
+        Tracer.getAndClearTraceIfPresent();
+        Tracers.wrapWithAlternateTraceId("someTraceId", () -> {
+            // no-op
+        }).run();
+        assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
