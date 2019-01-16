@@ -16,15 +16,17 @@
 
 package com.palantir.tracing;
 
-import com.google.common.base.Supplier;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
+import java.util.function.Supplier;
 
 // Taken from http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
-enum InetAddressSupplier implements Supplier<InetAddress> {
+enum InetAddressSupplier implements Supplier<InetAddress>,
+        // Guava supplier for compatibility
+        com.google.common.base.Supplier<InetAddress> {
     INSTANCE;
 
     @Override
