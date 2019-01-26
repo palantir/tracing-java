@@ -39,7 +39,7 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         String spanName = request.method();
         String httpRemotingPath = request.header(PATH_TEMPLATE_HEADER);
         if (httpRemotingPath != null) {
-            spanName = httpRemotingPath;
+            spanName = "OkHttp: " + httpRemotingPath;
             request = request.newBuilder().removeHeader(PATH_TEMPLATE_HEADER).build();
         }
 

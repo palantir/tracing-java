@@ -54,7 +54,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                 .map(Resource::getPath)
                 .orElse("(unknown)");
 
-        String operation = requestContext.getMethod() + " " + path;
+        String operation = "Jersey: " + requestContext.getMethod() + " " + path;
         // The following strings are all nullable
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
