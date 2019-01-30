@@ -7,6 +7,7 @@
 - **com.palantir.tracing:tracing-jaxrs** - utilities to wrap `StreamingOutput` responses with a new trace.
 - **com.palantir.tracing:tracing-okhttp3** - `OkhttpTraceInterceptor`, which adds the appropriate headers to outgoing requests.
 - **com.palantir.tracing:tracing-jersey** - `TraceEnrichingFilter`, a jaxrs filter which reads headers from incoming requests and writes headers to outgoing responses.  A traceId is stored in the jaxrs request context under the key `com.palantir.tracing.traceId`.
+- **com.palantir.tracing:tracing-undertow** - `TracedOperationHandler`, an Undertow handler reads headers from incoming requests and writes headers to outgoing responses.
 
 Clients and servers propagate call trace ids across JVM boundaries according to the
 [Zipkin](https://github.com/openzipkin/zipkin) specification. In particular, clients insert `X-B3-TraceId: <Trace ID>`
