@@ -95,12 +95,11 @@ public final class TracersTest {
 
     @Test
     public void testScheduledExecutorServiceWrapsCallablesWithNewTraces() throws Exception {
-        String someOperation = "operationToUse";
         ScheduledExecutorService wrappedService =
-                Tracers.wrapWithNewTrace(someOperation, Executors.newSingleThreadScheduledExecutor());
+                Tracers.wrapWithNewTrace("operationToUse", Executors.newSingleThreadScheduledExecutor());
 
-        Callable<Void> callable = newTraceExpectingCallable(someOperation);
-        Runnable runnable = newTraceExpectingRunnable(someOperation);
+        Callable<Void> callable = newTraceExpectingCallable("operationToUse");
+        Runnable runnable = newTraceExpectingRunnable("operationToUse");
 
         // Empty trace
         wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
@@ -122,12 +121,11 @@ public final class TracersTest {
 
     @Test
     public void testExecutorServiceWrapsCallablesWithNewTraces() throws Exception {
-        String someOperation = "operationToUse";
         ExecutorService wrappedService =
-                Tracers.wrapWithNewTrace(someOperation, Executors.newSingleThreadExecutor());
+                Tracers.wrapWithNewTrace("operationToUse", Executors.newSingleThreadExecutor());
 
-        Callable<Void> callable = newTraceExpectingCallable(someOperation);
-        Runnable runnable = newTraceExpectingRunnable(someOperation);
+        Callable<Void> callable = newTraceExpectingCallable("operationToUse");
+        Runnable runnable = newTraceExpectingRunnable("operationToUse");
 
         // Empty trace
         wrappedService.submit(callable).get();
@@ -245,8 +243,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallableWithNewTrace_traceStateInsideCallableHasGivenSpan() throws Exception {
-        String operationToUse = "someOperation";
-        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace(operationToUse, () -> {
+        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace("someOperation", () -> {
             return getCurrentFullTrace();
         });
 
@@ -256,7 +253,7 @@ public final class TracersTest {
 
         OpenSpan span = spans.get(0);
 
-        assertThat(span.getOperation()).isEqualTo(operationToUse);
+        assertThat(span.getOperation()).isEqualTo("someOperation");
         assertThat(span.getParentSpanId()).isEmpty();
     }
 
@@ -334,8 +331,7 @@ public final class TracersTest {
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableHasGivenSpan() throws Exception {
         List<List<OpenSpan>> spans = Lists.newArrayList();
 
-        String operationToUse = "someOperation";
-        Runnable wrappedRunnable = Tracers.wrapWithNewTrace(operationToUse, () -> {
+        Runnable wrappedRunnable = Tracers.wrapWithNewTrace("someOperation", () -> {
             spans.add(getCurrentFullTrace());
         });
 
@@ -345,7 +341,7 @@ public final class TracersTest {
 
         OpenSpan span = spans.get(0).get(0);
 
-        assertThat(span.getOperation()).isEqualTo(operationToUse);
+        assertThat(span.getOperation()).isEqualTo("someOperation");
         assertThat(span.getParentSpanId()).isEmpty();
     }
 
@@ -418,8 +414,7 @@ public final class TracersTest {
         List<List<OpenSpan>> spans = Lists.newArrayList();
 
         String traceIdToUse = "someTraceId";
-        String operationToUse = "someOperation";
-        Runnable wrappedRunnable = Tracers.wrapWithAlternateTraceId(traceIdToUse, operationToUse, () -> {
+        Runnable wrappedRunnable = Tracers.wrapWithAlternateTraceId(traceIdToUse, "someOperation", () -> {
             spans.add(getCurrentFullTrace());
         });
 
@@ -429,7 +424,7 @@ public final class TracersTest {
 
         OpenSpan span = spans.get(0).get(0);
 
-        assertThat(span.getOperation()).isEqualTo(operationToUse);
+        assertThat(span.getOperation()).isEqualTo("someOperation");
         assertThat(span.getParentSpanId()).isEmpty();
     }
 
