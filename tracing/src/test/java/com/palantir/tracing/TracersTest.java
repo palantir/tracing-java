@@ -95,12 +95,12 @@ public final class TracersTest {
 
     @Test
     public void testScheduledExecutorServiceWrapsCallablesWithNewTraces() throws Exception {
-        String someOperartion = "operationToUse";
+        String someOperation = "operationToUse";
         ScheduledExecutorService wrappedService =
-                Tracers.wrapWithNewTrace(someOperartion, Executors.newSingleThreadScheduledExecutor());
+                Tracers.wrapWithNewTrace(someOperation, Executors.newSingleThreadScheduledExecutor());
 
-        Callable<Void> callable = newTraceExpectingCallable(someOperartion);
-        Runnable runnable = newTraceExpectingRunnable(someOperartion);
+        Callable<Void> callable = newTraceExpectingCallable(someOperation);
+        Runnable runnable = newTraceExpectingRunnable(someOperation);
 
         // Empty trace
         wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
@@ -122,12 +122,12 @@ public final class TracersTest {
 
     @Test
     public void testExecutorServiceWrapsCallablesWithNewTraces() throws Exception {
-        String someOperartion = "operationToUse";
+        String someOperation = "operationToUse";
         ExecutorService wrappedService =
-                Tracers.wrapWithNewTrace(someOperartion, Executors.newSingleThreadExecutor());
+                Tracers.wrapWithNewTrace(someOperation, Executors.newSingleThreadExecutor());
 
-        Callable<Void> callable = newTraceExpectingCallable(someOperartion);
-        Runnable runnable = newTraceExpectingRunnable(someOperartion);
+        Callable<Void> callable = newTraceExpectingCallable(someOperation);
+        Runnable runnable = newTraceExpectingRunnable(someOperation);
 
         // Empty trace
         wrappedService.submit(callable).get();
