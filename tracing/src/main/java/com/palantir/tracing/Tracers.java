@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import com.google.errorprone.annotations.CompileTimeConstant;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -105,51 +106,74 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the provided executor service to make submitted tasks traceable with a fresh {@link Trace trace}
-     * for each execution, see {@link #wrapWithNewTrace(ExecutorService)}. This method should not be used to
-     * wrap a ScheduledExecutorService that has already been {@link #wrap(ExecutorService) wrapped}. If this is
-     * done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
-     * wrapping.
+     * Like {@link #wrapWithNewTrace(String, ExecutorService)}, but with a default initial span operation.
      */
     public static ExecutorService wrapWithNewTrace(ExecutorService executorService) {
+        return wrapWithNewTrace(ROOT_SPAN_OPERATION, executorService);
+    }
+
+    /**
+     * Wraps the provided executor service to make submitted tasks traceable with a fresh {@link Trace trace}
+     * for each execution, see {@link #wrapWithNewTrace(String, ExecutorService)}. This method should not be used to
+     * wrap a ScheduledExecutorService that has already been {@link #wrap(ExecutorService) wrapped}. If this is
+     * done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
+     * wrapping.  The given {@link String operation} is used to create the initial span.
+     */
+    public static ExecutorService wrapWithNewTrace(@CompileTimeConstant String operation,
+            ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
-                return wrapWithNewTrace(callable);
+                return wrapWithNewTrace(operation, callable);
             }
         };
     }
 
     /**
-     * Wraps the provided scheduled executor service to make submitted tasks traceable with a fresh {@link Trace trace}
-     * for each execution, see {@link #wrapWithNewTrace(ScheduledExecutorService)}. This method should not be used to
-     * wrap a ScheduledExecutorService that has already been {@link #wrap(ScheduledExecutorService) wrapped}. If this is
-     * done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
-     * wrapping.
+     * Like {@link #wrapWithNewTrace(String, ScheduledExecutorService)}, but with a default initial span operation.
      */
     public static ScheduledExecutorService wrapWithNewTrace(ScheduledExecutorService executorService) {
+        return wrapWithNewTrace(ROOT_SPAN_OPERATION, executorService);
+    }
+
+    /**
+     * Wraps the provided scheduled executor service to make submitted tasks traceable with a fresh {@link Trace trace}
+     * for each execution, see {@link #wrapWithNewTrace(String, ScheduledExecutorService)}. This method should not be
+     * used to wrap a ScheduledExecutorService that has already been {@link #wrap(ScheduledExecutorService) wrapped}.
+     * If this is done, a new trace will be generated for each execution, effectively bypassing the intent of the
+     * previous wrapping.  The given {@link String operation} is used to create the initial span.
+     */
+    public static ScheduledExecutorService wrapWithNewTrace(@CompileTimeConstant String operation,
+            ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
-                return wrapWithNewTrace(callable);
+                return wrapWithNewTrace(operation, callable);
             }
         };
+    }
+
+    /**
+     * Like {@link #wrapWithNewTrace(String, Callable)}, but with a default initial span operation.
+     */
+    public static <V> Callable<V> wrapWithNewTrace(Callable<V> delegate) {
+        return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
     }
 
     /**
      * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state} for its execution.
      * That is, the trace during its {@link Callable#call() execution} is entirely separate from the trace at
      * construction or any trace already set on the thread used to execute the callable. Each execution of the callable
-     * will have a fresh trace.
+     * will have a fresh trace. The given {@link String operation} is used to create the initial span.
      */
-    public static <V> Callable<V> wrapWithNewTrace(Callable<V> delegate) {
+    public static <V> Callable<V> wrapWithNewTrace(@CompileTimeConstant String operation, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTrace(Optional.empty(), Tracers.randomId());
-                Tracer.startSpan(ROOT_SPAN_OPERATION);
+                Tracer.startSpan(operation);
                 return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -159,16 +183,23 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrapWithNewTrace(Callable)}, but for Runnables.
+     * Like {@link #wrapWithAlternateTraceId(String, Runnable)}, but with a default initial span operation.
      */
     public static Runnable wrapWithNewTrace(Runnable delegate) {
+        return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
+    }
+
+    /**
+     * Like {@link #wrapWithNewTrace(String, Callable)}, but for Runnables.
+     */
+    public static Runnable wrapWithNewTrace(@CompileTimeConstant String operation, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTrace(Optional.empty(), Tracers.randomId());
-                Tracer.startSpan(ROOT_SPAN_OPERATION);
+                Tracer.startSpan(operation);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -178,19 +209,28 @@ public final class Tracers {
     }
 
     /**
+     * Like {@link #wrapWithAlternateTraceId(String, String, Runnable)}, but with a default initial span operation.
+     */
+    public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
+        return wrapWithAlternateTraceId(traceId, ROOT_SPAN_OPERATION, delegate);
+    }
+
+    /**
      * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state with the given traceId}
      * for its execution. That is, the trace during its {@link Runnable#run() execution} will use the traceId provided
      * instead of any trace already set on the thread used to execute the runnable. Each execution of the runnable
-     * will use a new {@link Trace tracing state} with the same given traceId.
+     * will use a new {@link Trace tracing state} with the same given traceId.  The given {@link String operation} is
+     * used to create the initial span.
      */
-    public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
+    public static Runnable wrapWithAlternateTraceId(String traceId, @CompileTimeConstant String operation, Runnable
+            delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTrace(Optional.empty(), traceId);
-                Tracer.startSpan(ROOT_SPAN_OPERATION);
+                Tracer.startSpan(operation);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
