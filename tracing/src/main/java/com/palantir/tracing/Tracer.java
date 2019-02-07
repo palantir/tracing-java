@@ -17,7 +17,6 @@
 package com.palantir.tracing;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.tracing.api.OpenSpan;
@@ -26,9 +25,9 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -50,8 +49,9 @@ public final class Tracer {
 
     // Only access in a class-synchronized fashion
     private static final Map<String, SpanObserver> observers = new HashMap<>();
-    // we want iterating through tracers to be very fast, and it's faster to iterate through a list than a Map.values()
-    private static volatile List<SpanObserver> observersList = ImmutableList.of();
+    // we want iterating through tracers to be very fast, and it's faster to pre-define observer execution
+    // when our observers are modified.
+    private static volatile Consumer<Span> compositeObserver = span -> { };
 
     // Thread-safe since stateless
     private static volatile TraceSampler sampler = AlwaysSampler.INSTANCE;
@@ -190,9 +190,7 @@ public final class Tracer {
     }
 
     private static void notifyObservers(Span span) {
-        for (SpanObserver observer : observersList) {
-            observer.consume(span);
-        }
+        compositeObserver.accept(span);
     }
 
     private static Optional<OpenSpan> popCurrentSpan() {
@@ -252,7 +250,23 @@ public final class Tracer {
     }
 
     private static void computeObserversList() {
-        observersList = ImmutableList.copyOf(observers.values());
+        Consumer<Span> newCompositeObserver = span -> { };
+        for (Map.Entry<String, SpanObserver> entry : observers.entrySet()) {
+            String observerName = entry.getKey();
+            SpanObserver spanObserver = entry.getValue();
+            newCompositeObserver = newCompositeObserver.andThen(span -> {
+                try {
+                    spanObserver.consume(span);
+                } catch (RuntimeException e) {
+                    log.error("Failed to invoke observer {} registered as {}",
+                            SafeArg.of("observer", spanObserver),
+                            SafeArg.of("name", observerName),
+                            e);
+                }
+            });
+        }
+        // Single volatile write, updating observers should not disrupt tracing
+        compositeObserver = newCompositeObserver;
     }
 
     /** Sets the sampler (for all threads). */

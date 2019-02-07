@@ -63,6 +63,7 @@ public final class TracerTest {
     public void after() {
         Tracer.initTrace(Optional.of(true), Tracers.randomId());
         Tracer.setSampler(AlwaysSampler.INSTANCE);
+        Tracer.unsubscribe("0");
         Tracer.unsubscribe("1");
         Tracer.unsubscribe("2");
         Tracer.getAndClearTrace();
@@ -250,6 +251,23 @@ public final class TracerTest {
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
         assertThat(spanCaptor.getValue().getMetadata()).isEqualTo(metadata);
     }
+
+    @Test
+    public void testObserversThrow() {
+        Tracer.subscribe("0", span -> {
+            throw new IllegalStateException("0");
+        });
+        Tracer.subscribe("1", observer1);
+        Tracer.subscribe("2", span -> {
+            throw new IllegalStateException("2");
+        });
+        String operation = "operation";
+        Tracer.startSpan(operation);
+        Tracer.fastCompleteSpan();
+        verify(observer1).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
+    }
+
 
     @Test
     public void testGetAndClearTraceIfPresent() {
