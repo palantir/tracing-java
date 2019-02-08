@@ -281,7 +281,7 @@ public final class Tracer {
 
     /** Returns the globally unique identifier for this thread's trace. */
     public static String getTraceId() {
-        return Preconditions.checkNotNull(currentTrace.get(), "There is no root span").getTraceId();
+        return Preconditions.checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
     }
 
     /** Clears the current trace id and returns it if present. */
