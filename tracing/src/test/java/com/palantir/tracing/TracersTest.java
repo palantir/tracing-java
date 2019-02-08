@@ -136,32 +136,6 @@ public final class TracersTest {
     }
 
     @Test
-    public void testWrapScheduledExecutorServiceWithNewTrace() throws Exception {
-        ScheduledExecutorService wrappedService =
-                Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadScheduledExecutor());
-
-        Callable<Void> callable = newTraceExpectingCallable("operation");
-        Runnable runnable = newTraceExpectingRunnable("operation");
-
-        // Empty trace
-        wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
-
-        wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
-
-        // Non-empty trace
-        Tracer.startSpan("foo");
-        Tracer.startSpan("bar");
-        Tracer.startSpan("baz");
-        wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-    }
-
-    @Test
     public void testWrapExecutorServiceWithNewTrace() throws Exception {
         ExecutorService wrappedService =
                 Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadExecutor());
@@ -188,33 +162,29 @@ public final class TracersTest {
     }
 
     @Test
-    public void testWrapRunnable_runnableTraceIsIsolated() throws Exception {
-        Tracer.startSpan("outside");
-        Runnable runnable = Tracers.wrap(() -> {
-            Tracer.startSpan("inside"); // never completed
-        });
-        runnable.run();
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
-    }
+    public void testWrapScheduledExecutorServiceWithNewTrace() throws Exception {
+        ScheduledExecutorService wrappedService =
+                Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadScheduledExecutor());
 
-    @Test
-    public void testWrapRunnable_traceStateIsCapturedAtConstructionTime() throws Exception {
-        Tracer.startSpan("before-construction");
-        Runnable runnable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
-        });
-        Tracer.startSpan("after-construction");
-        runnable.run();
-    }
+        Callable<Void> callable = newTraceExpectingCallable("operation");
+        Runnable runnable = newTraceExpectingRunnable("operation");
 
-    @Test
-    public void testWrapRunnable_startsNewSpan() throws Exception {
-        Tracer.startSpan("outside");
-        Runnable runnable = Tracers.wrap("operation", () -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation");
-        });
-        runnable.run();
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+        // Empty trace
+        wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
+
+        wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
+
+        // Non-empty trace
+        Tracer.startSpan("foo");
+        Tracer.startSpan("bar");
+        Tracer.startSpan("baz");
+        wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
+        Tracer.completeSpan();
+        Tracer.completeSpan();
+        Tracer.completeSpan();
     }
 
     @Test
@@ -241,6 +211,36 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallable_withSpan() throws Exception {
+        Tracer.startSpan("outside");
+        Runnable runnable = Tracers.wrap("operation", () -> {
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation");
+        });
+        runnable.run();
+        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+    }
+
+    @Test
+    public void testWrapRunnable_runnableTraceIsIsolated() throws Exception {
+        Tracer.startSpan("outside");
+        Runnable runnable = Tracers.wrap(() -> {
+            Tracer.startSpan("inside"); // never completed
+        });
+        runnable.run();
+        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+    }
+
+    @Test
+    public void testWrapRunnable_traceStateIsCapturedAtConstructionTime() throws Exception {
+        Tracer.startSpan("before-construction");
+        Runnable runnable = Tracers.wrap(() -> {
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
+        });
+        Tracer.startSpan("after-construction");
+        runnable.run();
+    }
+
+    @Test
+    public void testWrapRunnable_startsNewSpan() throws Exception {
         Tracer.startSpan("outside");
         Runnable runnable = Tracers.wrap("operation", () -> {
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation");
