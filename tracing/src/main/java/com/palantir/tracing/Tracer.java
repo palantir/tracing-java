@@ -16,7 +16,10 @@
 
 package com.palantir.tracing;
 
-import com.google.common.base.Preconditions;
+import static com.palantir.logsafe.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkNotNull;
+import static com.palantir.logsafe.Preconditions.checkState;
+
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.tracing.api.OpenSpan;
@@ -62,7 +65,9 @@ public final class Tracer {
      * configured sampler} returns true.
      */
     private static Trace createTrace(Optional<Boolean> isObservable, String traceId) {
-        Preconditions.checkArgument(traceId != null && !traceId.isEmpty(), "traceId must be non-empty: %s", traceId);
+        checkArgument(traceId != null && !traceId.isEmpty(),
+                "traceId must be non-empty",
+                SafeArg.of("traceId", traceId));
         boolean observable = shouldObserve(isObservable);
         return new Trace(observable, traceId);
     }
@@ -91,10 +96,11 @@ public final class Tracer {
      */
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
         Trace current = getOrCreateCurrentTrace();
-        Preconditions.checkState(current.isEmpty(),
+        checkState(current.isEmpty(),
                 "Cannot start a span with explicit parent if the current thread's trace is non-empty");
-        Preconditions.checkArgument(parentSpanId != null && !parentSpanId.isEmpty(),
-                "parentTraceId must be non-empty: %s", parentSpanId);
+        checkArgument(parentSpanId != null && !parentSpanId.isEmpty(),
+                "parentSpanId must be non-empty",
+                SafeArg.of("parentSpanId", parentSpanId));
         OpenSpan span = OpenSpan.builder()
                 .spanId(Tracers.randomId())
                 .operation(operation)
@@ -281,7 +287,7 @@ public final class Tracer {
 
     /** Returns the globally unique identifier for this thread's trace. */
     public static String getTraceId() {
-        return Preconditions.checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
+        return checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
     }
 
     /** Clears the current trace id and returns it if present. */

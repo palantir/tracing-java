@@ -15,7 +15,7 @@
  */
 package com.palantir.tracing;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;

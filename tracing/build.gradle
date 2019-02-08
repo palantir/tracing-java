@@ -23,10 +23,12 @@ dependencies {
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
     compile "com.fasterxml.jackson.module:jackson-module-afterburner"
     compile "com.google.guava:guava"
+    compile "com.palantir.safe-logging:preconditions"
     compile "com.palantir.safe-logging:safe-logging"
     compile "org.slf4j:slf4j-api"
 
     testCompile "ch.qos.logback:logback-classic"
+    testCompile "com.palantir.safe-logging:preconditions-assertj"
     testCompile "junit:junit"
     testCompile "org.assertj:assertj-core"
     testCompile "org.jmock:jmock"
