@@ -16,8 +16,9 @@
 
 package com.palantir.tracing.undertow;
 
+import static com.palantir.logsafe.Preconditions.checkNotNull;
+
 import com.google.common.base.Strings;
-import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.SpanType;
@@ -54,8 +55,8 @@ public final class TracedOperationHandler implements HttpHandler {
     private final HttpHandler delegate;
 
     public TracedOperationHandler(HttpHandler delegate, String operation) {
-        this.delegate = Preconditions.checkNotNull(delegate, "A delegate HttpHandler is required");
-        this.operation = "Undertow: " + Preconditions.checkNotNull(operation, "Operation name is required");
+        this.delegate = checkNotNull(delegate, "A delegate HttpHandler is required");
+        this.operation = "Undertow: " + checkNotNull(operation, "Operation name is required");
     }
 
     @Override

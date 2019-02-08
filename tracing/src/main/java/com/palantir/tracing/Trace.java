@@ -16,7 +16,7 @@
 
 package com.palantir.tracing;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkArgument;
 
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanObserver;

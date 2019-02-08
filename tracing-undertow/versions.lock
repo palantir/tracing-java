@@ -50,10 +50,10 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.1.3",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava",
-                "com.palantir.safe-logging:preconditions"
+                "com.palantir.safe-logging:safe-logging"
             ]
         },
         "com.google.guava:guava": {
@@ -70,10 +70,13 @@
             ]
         },
         "com.palantir.safe-logging:preconditions": {
-            "locked": "1.3.0"
+            "locked": "1.8.1",
+            "transitive": [
+                "com.palantir.tracing:tracing"
+            ]
         },
         "com.palantir.safe-logging:safe-logging": {
-            "locked": "1.3.0",
+            "locked": "1.8.1",
             "transitive": [
                 "com.palantir.safe-logging:preconditions",
                 "com.palantir.tracing:tracing"

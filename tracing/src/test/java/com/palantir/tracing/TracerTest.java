@@ -16,8 +16,8 @@
 
 package com.palantir.tracing;
 
+import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -71,33 +71,21 @@ public final class TracerTest {
 
     @Test
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
-        try {
-            Tracer.initTrace(Optional.empty(), null);
-            fail("Didn't throw");
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("traceId must be non-empty: null");
-        }
+        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Optional.empty(), null))
+                .hasLogMessage("traceId must be non-empty")
+                .hasArgs();
 
-        try {
-            Tracer.initTrace(Optional.empty(), "");
-            fail("Didn't throw");
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("traceId must be non-empty: ");
-        }
+        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Optional.empty(), ""))
+                .hasLogMessage("traceId must be non-empty")
+                .hasArgs();
 
-        try {
-            Tracer.startSpan("op", null, null);
-            fail("Didn't throw");
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("parentTraceId must be non-empty: null");
-        }
+        assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", null, null))
+                .hasLogMessage("parentSpanId must be non-empty")
+                .hasArgs();
 
-        try {
-            Tracer.startSpan("op", "", null);
-            fail("Didn't throw");
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessage("parentTraceId must be non-empty: ");
-        }
+        assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", "", null))
+                .hasLogMessage("parentSpanId must be non-empty")
+                .hasArgs();
     }
 
     @Test

@@ -16,8 +16,9 @@
 
 package com.palantir.tracing;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkArgument;
 
+import com.palantir.logsafe.SafeArg;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -29,7 +30,9 @@ public final class RandomSampler implements TraceSampler {
     private final float rate;
 
     public RandomSampler(float rate) {
-        checkArgument(rate >= 0 && rate <= 1, "rate should be between 0 and 1: was %s", rate);
+        checkArgument(rate >= 0 && rate <= 1,
+                "Rate should be between 0 and 1",
+                SafeArg.of("rate", rate));
         this.rate = rate;
     }
 
