@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import com.google.errorprone.annotations.CompileTimeConstant;
 import java.util.Optional;
 
 /**
@@ -39,9 +40,19 @@ import java.util.Optional;
  */
 public final class DeferredTracer {
     private final Optional<Trace> trace;
+    private final Optional<String> operation;
 
     public DeferredTracer() {
+        this(Optional.empty());
+    }
+
+    public DeferredTracer(@CompileTimeConstant String operation) {
+        this(Optional.of(operation));
+    }
+
+    DeferredTracer(Optional<String> operation) {
         this.trace = Tracer.copyTrace();
+        this.operation = operation;
     }
 
     /**
@@ -54,9 +65,11 @@ public final class DeferredTracer {
         }
         Optional<Trace> originalTrace = Tracer.copyTrace();
         Tracer.setTrace(trace.get());
+        operation.ifPresent(Tracer::startSpan);
         try {
             return inner.call();
         } finally {
+            operation.ifPresent(op -> Tracer.fastCompleteSpan());
             if (originalTrace.isPresent()) {
                 Tracer.setTrace(originalTrace.get());
             } else {

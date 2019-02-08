@@ -77,6 +77,19 @@ public final class Tracers {
     }
 
     /**
+     * Like {@link #wrap(ExecutorService)}, but using the given {@link String operation} is used to create a span for
+     * submitted tasks.
+     */
+    public static ExecutorService wrap(@CompileTimeConstant String operation, ExecutorService executorService) {
+        return new WrappingExecutorService(executorService) {
+            @Override
+            protected <T> Callable<T> wrapTask(Callable<T> callable) {
+                return wrap(operation, callable);
+            }
+        };
+    }
+
+    /**
      * Wraps the provided scheduled executor service to make submitted tasks traceable, see {@link
      * #wrap(ScheduledExecutorService)}. This method should not be used to wrap a ScheduledExecutorService that has
      * already been {@link #wrapWithNewTrace(ScheduledExecutorService) wrapped with new trace}. If this is done, a new
@@ -92,21 +105,57 @@ public final class Tracers {
     }
 
     /**
+     * Like {@link #wrap(ScheduledExecutorService)}, but using the given {@link String operation} is used to create a
+     * span for submitted tasks.
+     */
+    public static ScheduledExecutorService wrap(@CompileTimeConstant String operation,
+            ScheduledExecutorService executorService) {
+        return new WrappingScheduledExecutorService(executorService) {
+            @Override
+            protected <T> Callable<T> wrapTask(Callable<T> callable) {
+                return wrap(operation, callable);
+            }
+        };
+    }
+
+    /**
      * Wraps the given {@link Callable} such that it uses the thread-local {@link Trace tracing state} at the time of
      * it's construction during its {@link Callable#call() execution}.
      */
     public static <V> Callable<V> wrap(Callable<V> delegate) {
-        return new TracingAwareCallable<>(delegate);
-    }
-
-    /** Like {@link #wrap(Callable)}, but for Runnables. */
-    public static Runnable wrap(Runnable delegate) {
-        return new TracingAwareRunnable(delegate);
+        return new TracingAwareCallable<>(Optional.empty(), delegate);
     }
 
     /**
-     * Like {@link #wrapWithNewTrace(String, ExecutorService)}, but with a default initial span operation.
+     * Like {@link #wrap(Callable)}, but using the given {@link String operation} is used to create a span for the
+     * execution.
      */
+    public static <V> Callable<V> wrap(@CompileTimeConstant String operation, Callable<V> delegate) {
+        return new TracingAwareCallable<>(Optional.of(operation), delegate);
+    }
+
+    /**
+     * Wraps the given {@link Runnable} such that it uses the thread-local {@link Trace tracing state} at the time of
+     * it's construction during its {@link Runnable#run()} execution}.
+     */
+    public static Runnable wrap(Runnable delegate) {
+        return new TracingAwareRunnable(Optional.empty(), delegate);
+    }
+
+    /**
+     * Like {@link #wrap(Runnable)}, but using the given {@link String operation} is used to create a span for the
+     * execution.
+     */
+    public static Runnable wrap(@CompileTimeConstant String operation, Runnable delegate) {
+        return new TracingAwareRunnable(Optional.of(operation), delegate);
+    }
+
+    /**
+     * Deprecated.
+     *
+     * @deprecated Use {@link #wrapWithNewTrace(String, ExecutorService)}
+     */
+    @Deprecated
     public static ExecutorService wrapWithNewTrace(ExecutorService executorService) {
         return wrapWithNewTrace(ROOT_SPAN_OPERATION, executorService);
     }
@@ -116,7 +165,7 @@ public final class Tracers {
      * for each execution, see {@link #wrapWithNewTrace(String, ExecutorService)}. This method should not be used to
      * wrap a ScheduledExecutorService that has already been {@link #wrap(ExecutorService) wrapped}. If this is
      * done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
-     * wrapping.  The given {@link String operation} is used to create the initial span.
+     * wrapping. The given {@link String operation} is used to create the initial span.
      */
     public static ExecutorService wrapWithNewTrace(String operation, ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
@@ -128,8 +177,11 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrapWithNewTrace(String, ScheduledExecutorService)}, but with a default initial span operation.
+     * Deprecated.
+     *
+     * @deprecated Use {@link #wrapWithNewTrace(String, ScheduledExecutorService)}
      */
+    @Deprecated
     public static ScheduledExecutorService wrapWithNewTrace(ScheduledExecutorService executorService) {
         return wrapWithNewTrace(ROOT_SPAN_OPERATION, executorService);
     }
@@ -139,7 +191,7 @@ public final class Tracers {
      * for each execution, see {@link #wrapWithNewTrace(String, ScheduledExecutorService)}. This method should not be
      * used to wrap a ScheduledExecutorService that has already been {@link #wrap(ScheduledExecutorService) wrapped}.
      * If this is done, a new trace will be generated for each execution, effectively bypassing the intent of the
-     * previous wrapping.  The given {@link String operation} is used to create the initial span.
+     * previous wrapping. The given {@link String operation} is used to create the initial span.
      */
     public static ScheduledExecutorService wrapWithNewTrace(String operation,
             ScheduledExecutorService executorService) {
@@ -152,8 +204,11 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrapWithNewTrace(String, Callable)}, but with a default initial span operation.
+     * Deprecated.
+     *
+     * @deprecated Use {@link #wrapWithNewTrace(String, Callable)}
      */
+    @Deprecated
     public static <V> Callable<V> wrapWithNewTrace(Callable<V> delegate) {
         return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
     }
@@ -181,14 +236,20 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrapWithAlternateTraceId(String, Runnable)}, but with a default initial span operation.
+     * Deprecated.
+     *
+     * @deprecated Use {@link #wrapWithNewTrace(String, Runnable)}
      */
+    @Deprecated
     public static Runnable wrapWithNewTrace(Runnable delegate) {
         return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
     }
 
     /**
-     * Like {@link #wrapWithNewTrace(String, Callable)}, but for Runnables.
+     * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state} for its execution.
+     * That is, the trace during its {@link Runnable#run() execution} is entirely separate from the trace at
+     * construction or any trace already set on the thread used to execute the runnable. Each execution of the runnable
+     * will have a fresh trace. The given {@link String operation} is used to create the initial span.
      */
     public static Runnable wrapWithNewTrace(String operation, Runnable delegate) {
         return () -> {
@@ -207,8 +268,11 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrapWithAlternateTraceId(String, String, Runnable)}, but with a default initial span operation.
+     * Deprecated.
+     *
+     * @deprecated Use {@link #wrapWithAlternateTraceId(String, String, Runnable)}
      */
+    @Deprecated
     public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
         return wrapWithAlternateTraceId(traceId, ROOT_SPAN_OPERATION, delegate);
     }
@@ -264,9 +328,9 @@ public final class Tracers {
         private final Callable<V> delegate;
         private final DeferredTracer deferredTracer;
 
-        TracingAwareCallable(Callable<V> delegate) {
+        TracingAwareCallable(Optional<String> operation, Callable<V> delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer();
+            this.deferredTracer = new DeferredTracer(operation);
         }
 
         @Override
@@ -283,9 +347,9 @@ public final class Tracers {
         private final Runnable delegate;
         private DeferredTracer deferredTracer;
 
-        TracingAwareRunnable(Runnable delegate) {
+        TracingAwareRunnable(Optional<String> operation, Runnable delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer();
+            this.deferredTracer = new DeferredTracer(operation);
         }
 
         @Override
