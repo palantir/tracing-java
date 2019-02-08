@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.palantir.logsafe.SafeArg;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -74,19 +73,19 @@ public final class TracerTest {
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
         assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Optional.empty(), null))
                 .hasLogMessage("traceId must be non-empty")
-                .hasArgs(SafeArg.of("traceId", null));
+                .hasArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Optional.empty(), ""))
                 .hasLogMessage("traceId must be non-empty")
-                .hasArgs(SafeArg.of("traceId", ""));
+                .hasArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", null, null))
                 .hasLogMessage("parentSpanId must be non-empty")
-                .hasArgs(SafeArg.of("parentSpanId", null));
+                .hasArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", "", null))
                 .hasLogMessage("parentSpanId must be non-empty")
-                .hasArgs(SafeArg.of("parentSpanId", ""));
+                .hasArgs();
     }
 
     @Test

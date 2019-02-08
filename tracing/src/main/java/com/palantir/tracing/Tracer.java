@@ -20,6 +20,7 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
+import com.google.common.base.Strings;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.tracing.api.OpenSpan;
@@ -65,9 +66,7 @@ public final class Tracer {
      * configured sampler} returns true.
      */
     private static Trace createTrace(Optional<Boolean> isObservable, String traceId) {
-        checkArgument(traceId != null && !traceId.isEmpty(),
-                "traceId must be non-empty",
-                SafeArg.of("traceId", traceId));
+        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(isObservable);
         return new Trace(observable, traceId);
     }
@@ -98,9 +97,7 @@ public final class Tracer {
         Trace current = getOrCreateCurrentTrace();
         checkState(current.isEmpty(),
                 "Cannot start a span with explicit parent if the current thread's trace is non-empty");
-        checkArgument(parentSpanId != null && !parentSpanId.isEmpty(),
-                "parentSpanId must be non-empty",
-                SafeArg.of("parentSpanId", parentSpanId));
+        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
         OpenSpan span = OpenSpan.builder()
                 .spanId(Tracers.randomId())
                 .operation(operation)
