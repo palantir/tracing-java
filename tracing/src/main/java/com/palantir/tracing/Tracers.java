@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import com.google.errorprone.annotations.CompileTimeConstant;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -119,8 +118,7 @@ public final class Tracers {
      * done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
      * wrapping.  The given {@link String operation} is used to create the initial span.
      */
-    public static ExecutorService wrapWithNewTrace(@CompileTimeConstant String operation,
-            ExecutorService executorService) {
+    public static ExecutorService wrapWithNewTrace(String operation, ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
@@ -143,7 +141,7 @@ public final class Tracers {
      * If this is done, a new trace will be generated for each execution, effectively bypassing the intent of the
      * previous wrapping.  The given {@link String operation} is used to create the initial span.
      */
-    public static ScheduledExecutorService wrapWithNewTrace(@CompileTimeConstant String operation,
+    public static ScheduledExecutorService wrapWithNewTrace(String operation,
             ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
@@ -166,7 +164,7 @@ public final class Tracers {
      * construction or any trace already set on the thread used to execute the callable. Each execution of the callable
      * will have a fresh trace. The given {@link String operation} is used to create the initial span.
      */
-    public static <V> Callable<V> wrapWithNewTrace(@CompileTimeConstant String operation, Callable<V> delegate) {
+    public static <V> Callable<V> wrapWithNewTrace(String operation, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -192,7 +190,7 @@ public final class Tracers {
     /**
      * Like {@link #wrapWithNewTrace(String, Callable)}, but for Runnables.
      */
-    public static Runnable wrapWithNewTrace(@CompileTimeConstant String operation, Runnable delegate) {
+    public static Runnable wrapWithNewTrace(String operation, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -222,7 +220,7 @@ public final class Tracers {
      * will use a new {@link Trace tracing state} with the same given traceId.  The given {@link String operation} is
      * used to create the initial span.
      */
-    public static Runnable wrapWithAlternateTraceId(String traceId, @CompileTimeConstant String operation, Runnable
+    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable
             delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
