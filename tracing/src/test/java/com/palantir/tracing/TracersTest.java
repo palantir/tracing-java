@@ -190,11 +190,11 @@ public final class TracersTest {
     @Test
     public void testWrapCallable_callableTraceIsIsolated() throws Exception {
         Tracer.startSpan("outside");
-        Callable<Void> runnable = Tracers.wrap(() -> {
+        Callable<Void> callable = Tracers.wrap(() -> {
             Tracer.startSpan("inside"); // never completed
             return null;
         });
-        runnable.call();
+        callable.call();
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
     }
 
