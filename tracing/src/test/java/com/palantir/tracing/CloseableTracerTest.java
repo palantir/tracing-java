@@ -18,6 +18,8 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.api.SpanType;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +35,19 @@ public final class CloseableTracerTest {
     @Test
     public void startsAndClosesSpan() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo")) {
-            assertThat(Tracer.copyTrace().get().top()).isNotEmpty();
+            OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+            assertThat(openSpan.getOperation()).isEqualTo("foo");
+            assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
+        }
+        assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+    }
+
+    @Test
+    public void startsAndClosesSpanWithType() {
+        try (CloseableTracer tracer = CloseableTracer.startSpan("foo", SpanType.CLIENT_OUTGOING)) {
+            OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+            assertThat(openSpan.getOperation()).isEqualTo("foo");
+            assertThat(openSpan.type()).isEqualTo(SpanType.CLIENT_OUTGOING);
         }
         assertThat(Tracer.getAndClearTrace().top()).isEmpty();
     }
