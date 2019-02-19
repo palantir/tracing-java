@@ -26,7 +26,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class Tracers {
     /** The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
     public static final String TRACE_ID_KEY = "traceId";
-    private static final String ROOT_SPAN_OPERATION = "root";
+    private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
+    private static final String DEFAULT_EXECUTOR_SPAN_OPERATION = "executor";
     private static final char[] HEX_DIGITS =
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -68,12 +69,7 @@ public final class Tracers {
      * #wrap wrapped} in order to be trace-aware.
      */
     public static ExecutorService wrap(ExecutorService executorService) {
-        return new WrappingExecutorService(executorService) {
-            @Override
-            protected <T> Callable<T> wrapTask(Callable<T> callable) {
-                return wrap(callable);
-            }
-        };
+        return wrap(DEFAULT_EXECUTOR_SPAN_OPERATION, executorService);
     }
 
     /**
@@ -96,12 +92,7 @@ public final class Tracers {
      * trace will be generated for each execution, effectively bypassing the intent of this method.
      */
     public static ScheduledExecutorService wrap(ScheduledExecutorService executorService) {
-        return new WrappingScheduledExecutorService(executorService) {
-            @Override
-            protected <T> Callable<T> wrapTask(Callable<T> callable) {
-                return wrap(callable);
-            }
-        };
+        return wrap(DEFAULT_EXECUTOR_SPAN_OPERATION, executorService);
     }
 
     /**
@@ -157,7 +148,7 @@ public final class Tracers {
      */
     @Deprecated
     public static ExecutorService wrapWithNewTrace(ExecutorService executorService) {
-        return wrapWithNewTrace(ROOT_SPAN_OPERATION, executorService);
+        return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, executorService);
     }
 
     /**
@@ -183,7 +174,7 @@ public final class Tracers {
      */
     @Deprecated
     public static ScheduledExecutorService wrapWithNewTrace(ScheduledExecutorService executorService) {
-        return wrapWithNewTrace(ROOT_SPAN_OPERATION, executorService);
+        return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, executorService);
     }
 
     /**
@@ -210,7 +201,7 @@ public final class Tracers {
      */
     @Deprecated
     public static <V> Callable<V> wrapWithNewTrace(Callable<V> delegate) {
-        return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
+        return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
     /**
@@ -242,7 +233,7 @@ public final class Tracers {
      */
     @Deprecated
     public static Runnable wrapWithNewTrace(Runnable delegate) {
-        return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
+        return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
     /**
@@ -274,7 +265,7 @@ public final class Tracers {
      */
     @Deprecated
     public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
-        return wrapWithAlternateTraceId(traceId, ROOT_SPAN_OPERATION, delegate);
+        return wrapWithAlternateTraceId(traceId, DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
     /**

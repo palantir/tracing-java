@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import com.google.errorprone.annotations.CompileTimeConstant;
 import java.util.Optional;
 
 /**
@@ -46,7 +45,7 @@ public final class DeferredTracer {
         this(Optional.empty());
     }
 
-    public DeferredTracer(@CompileTimeConstant String operation) {
+    public DeferredTracer(String operation) {
         this(Optional.of(operation));
     }
 
