@@ -20,6 +20,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.tracing.api.OpenSpan;
 import java.util.Collections;
 import java.util.HashSet;
@@ -27,11 +32,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -447,6 +454,292 @@ public final class TracersTest {
         Tracers.wrapWithAlternateTraceId("someTraceId", () -> {
             // no-op
         }).run();
+        assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
+    public void testWrappingFutureCallback_futureCallbackTraceIsIsolated() throws Exception {
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                Tracer.startSpan("inside"); // never completed
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                Tracer.startSpan("inside"); // never completed
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Tracer.startSpan("outside");
+        FutureCallback<Void> successCallback = Tracers.wrap(futureCallback);
+        Futures.addCallback(success, successCallback, MoreExecutors.directExecutor());
+        success.get();
+        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+
+        Tracer.getAndClearTrace();
+        Tracer.startSpan("outside");
+        FutureCallback<Void> failureCallback = Tracers.wrap(futureCallback);
+        Futures.addCallback(failure, failureCallback, MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+    }
+
+    @Test
+    public void testWrappingFutureCallback_traceStateIsCapturedAtConstructionTime() throws Exception {
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Tracer.startSpan("before-construction");
+        FutureCallback<Void> successCallback = Tracers.wrap(futureCallback);
+        Tracer.startSpan("after-construction");
+        Futures.addCallback(success, successCallback, MoreExecutors.directExecutor());
+        success.get();
+
+        Tracer.startSpan("before-construction");
+        FutureCallback<Void> failureCallback = Tracers.wrap(futureCallback);
+        Tracer.startSpan("after-construction");
+        Futures.addCallback(failure, failureCallback, MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+    }
+
+    @Test
+    public void testWrapFutureCallbackWithNewTrace_traceStateInsideFutureCallbackIsIsolated() throws Exception {
+        List<String> traceIds = Lists.newArrayList();
+
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                traceIds.add(Tracer.getTraceId());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                traceIds.add(Tracer.getTraceId());
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        String traceIdBeforeConstruction = Tracer.getTraceId();
+        Futures.addCallback(success, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        success.get();
+        Futures.addCallback(success, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        success.get();
+
+        String successTraceIdFirstCall = traceIds.get(0);
+        String successTraceIdSecondCall = traceIds.get(1);
+
+        String successTraceIdAfterCalls = Tracer.getTraceId();
+
+        assertThat(successTraceIdFirstCall)
+                .isNotEqualTo(traceIdBeforeConstruction)
+                .isNotEqualTo(successTraceIdAfterCalls)
+                .isNotEqualTo(successTraceIdSecondCall);
+
+        assertThat(successTraceIdSecondCall)
+                .isNotEqualTo(traceIdBeforeConstruction)
+                .isNotEqualTo(successTraceIdAfterCalls);
+
+        assertThat(traceIdBeforeConstruction)
+                .isEqualTo(successTraceIdAfterCalls);
+
+        traceIds.clear();
+
+        Futures.addCallback(failure, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+        Futures.addCallback(failure, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+
+        String failureTraceIdFirstCall = traceIds.get(0);
+        String failureTraceIdSecondCall = traceIds.get(1);
+
+        String failureTraceIdAfterCalls = Tracer.getTraceId();
+
+        assertThat(failureTraceIdFirstCall)
+                .isNotEqualTo(traceIdBeforeConstruction)
+                .isNotEqualTo(failureTraceIdAfterCalls)
+                .isNotEqualTo(failureTraceIdSecondCall);
+
+        assertThat(failureTraceIdSecondCall)
+                .isNotEqualTo(traceIdBeforeConstruction)
+                .isNotEqualTo(failureTraceIdAfterCalls);
+
+        assertThat(traceIdBeforeConstruction)
+                .isEqualTo(failureTraceIdAfterCalls);
+    }
+
+    @Test
+    public void testWrapFutureCallbackWithNewTrace_traceStateInsideFutureCallbackHasSpan() throws Exception {
+        List<List<OpenSpan>> spans = Lists.newArrayList();
+
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                spans.add(getCurrentFullTrace());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                spans.add(getCurrentFullTrace());
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Futures.addCallback(success, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        success.get();
+        List<OpenSpan> successSpans = spans.get(0);
+        assertThat(successSpans).hasSize(1);
+        OpenSpan successSpan = successSpans.get(0);
+        assertThat(successSpan.getOperation()).isEqualTo("root");
+        assertThat(successSpan.getParentSpanId()).isEmpty();
+
+        Futures.addCallback(failure, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+        List<OpenSpan> failureSpans = spans.get(1);
+        assertThat(failureSpans).hasSize(1);
+        OpenSpan failureSpan = failureSpans.get(0);
+        assertThat(failureSpan.getOperation()).isEqualTo("root");
+        assertThat(failureSpan.getParentSpanId()).isEmpty();
+    }
+
+    @Test
+    public void testWrapFutureCallbackWithNewTrace_traceStateInsideFutureCallbackHasGivenSpan() throws Exception {
+        List<List<OpenSpan>> spans = Lists.newArrayList();
+
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                spans.add(getCurrentFullTrace());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                spans.add(getCurrentFullTrace());
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Futures.addCallback(success, Tracers.wrapWithNewTrace("someOperation", futureCallback),
+                MoreExecutors.directExecutor());
+        success.get();
+        List<OpenSpan> successSpans = spans.get(0);
+        assertThat(successSpans).hasSize(1);
+        OpenSpan successSpan = successSpans.get(0);
+        assertThat(successSpan.getOperation()).isEqualTo("someOperation");
+        assertThat(successSpan.getParentSpanId()).isEmpty();
+
+        Futures.addCallback(failure, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+        List<OpenSpan> failureSpans = spans.get(0);
+        assertThat(failureSpans).hasSize(1);
+        OpenSpan failureSpan = failureSpans.get(0);
+        assertThat(failureSpan.getOperation()).isEqualTo("someOperation");
+        assertThat(failureSpan.getParentSpanId()).isEmpty();
+    }
+
+    @Test
+    public void testWrapFutureCallbackWithNewTrace_traceStateRestoredWhenThrows() throws Exception {
+        String traceIdBeforeConstruction = Tracer.getTraceId();
+
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                throw new IllegalStateException();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                throw new IllegalStateException();
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Futures.addCallback(success, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        success.get();
+        assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
+
+        Futures.addCallback(failure, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
+        assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
+    }
+
+    @Test
+    public void testWrapFutureCallbackWithNewTrace_traceStateRestoredToCleared() throws Exception {
+        // Clear out the default initialized trace
+        Tracer.getAndClearTraceIfPresent();
+
+        FutureCallback<Void> futureCallback = new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@NullableDecl Void result) {
+                Tracer.startSpan("inside");
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                Tracer.startSpan("inside");
+            }
+        };
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
+        ListenableFuture<Void> failure = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Futures.addCallback(success, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        success.get();
+        assertThat(Tracer.hasTraceId()).isFalse();
+
+        Futures.addCallback(failure, Tracers.wrapWithNewTrace(futureCallback), MoreExecutors.directExecutor());
+        assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
         assertThat(Tracer.hasTraceId()).isFalse();
     }
 
