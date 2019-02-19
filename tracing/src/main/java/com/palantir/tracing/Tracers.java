@@ -80,7 +80,7 @@ public final class Tracers {
      * Like {@link #wrap(ExecutorService)}, but using the given {@link String operation} is used to create a span for
      * submitted tasks.
      */
-    public static ExecutorService wrap(@CompileTimeConstant String operation, ExecutorService executorService) {
+    public static ExecutorService wrap(String operation, ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
@@ -108,7 +108,7 @@ public final class Tracers {
      * Like {@link #wrap(ScheduledExecutorService)}, but using the given {@link String operation} is used to create a
      * span for submitted tasks.
      */
-    public static ScheduledExecutorService wrap(@CompileTimeConstant String operation,
+    public static ScheduledExecutorService wrap(String operation,
             ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
@@ -130,7 +130,7 @@ public final class Tracers {
      * Like {@link #wrap(Callable)}, but using the given {@link String operation} is used to create a span for the
      * execution.
      */
-    public static <V> Callable<V> wrap(@CompileTimeConstant String operation, Callable<V> delegate) {
+    public static <V> Callable<V> wrap(String operation, Callable<V> delegate) {
         return new TracingAwareCallable<>(Optional.of(operation), delegate);
     }
 
@@ -146,7 +146,7 @@ public final class Tracers {
      * Like {@link #wrap(Runnable)}, but using the given {@link String operation} is used to create a span for the
      * execution.
      */
-    public static Runnable wrap(@CompileTimeConstant String operation, Runnable delegate) {
+    public static Runnable wrap(String operation, Runnable delegate) {
         return new TracingAwareRunnable(Optional.of(operation), delegate);
     }
 
