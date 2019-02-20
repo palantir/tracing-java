@@ -214,50 +214,6 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrapWithNewTrace(Callable)}, but for Guava's FutureCallback.
-     */
-    public static <V> FutureCallback<V> wrapWithNewTrace(FutureCallback<V> delegate) {
-        return wrapWithNewTrace(ROOT_SPAN_OPERATION, delegate);
-    }
-
-    /**
-     * Like {@link #wrapWithNewTrace(String, Callable)}, but for Guava's FutureCallback.
-     */
-    public static <V> FutureCallback<V> wrapWithNewTrace(String operation, FutureCallback<V> delegate) {
-        return new FutureCallback<V>() {
-            @Override
-            public void onSuccess(@NullableDecl V result) {
-                // clear the existing trace and keep it around for restoration when we're done
-                Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-                try {
-                    Tracer.initTrace(Optional.empty(), Tracers.randomId());
-                    Tracer.startSpan(operation);
-                    delegate.onSuccess(result);
-                } finally {
-                    Tracer.fastCompleteSpan();
-                    restoreTrace(originalTrace);
-                }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-                // clear the existing trace and keep it around for restoration when we're done
-                Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-                try {
-                    Tracer.initTrace(Optional.empty(), Tracers.randomId());
-                    Tracer.startSpan(operation);
-                    delegate.onFailure(throwable);
-                } finally {
-                    Tracer.fastCompleteSpan();
-                    restoreTrace(originalTrace);
-                }
-            }
-        };
-    }
-
-    /**
      * Like {@link #wrapWithAlternateTraceId(String, String, Runnable)}, but with a default initial span operation.
      */
     public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
