@@ -135,9 +135,9 @@ public final class Tracers {
         return new TracingAwareRunnable(Optional.empty(), delegate);
     }
 
-    /** Like {@link #wrap(Callable)}, but for Guava's FutureCallback. */
-    public static <V> FutureCallback<V> wrap(FutureCallback<V> delegate) {
-        return new TracingAwareFutureCallback<>(delegate);
+    /** Like {@link #wrap(String, Callable)}, but for Guava's FutureCallback. */
+    public static <V> FutureCallback<V> wrap(String operation, FutureCallback<V> delegate) {
+        return new TracingAwareFutureCallback<>(operation, delegate);
     }
 
     /**
@@ -368,9 +368,9 @@ public final class Tracers {
         private final FutureCallback<V> delegate;
         private DeferredTracer deferredTracer;
 
-        TracingAwareFutureCallback(FutureCallback<V> delegate) {
+        TracingAwareFutureCallback(String operation, FutureCallback<V> delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer();
+            this.deferredTracer = new DeferredTracer(operation);
         }
 
         @Override

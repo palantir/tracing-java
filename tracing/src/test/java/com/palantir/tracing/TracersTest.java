@@ -528,7 +528,7 @@ public final class TracersTest {
 
 
         Tracer.startSpan("outside");
-        FutureCallback<Void> successCallback = Tracers.wrap(futureCallback);
+        FutureCallback<Void> successCallback = Tracers.wrap("successCallback", futureCallback);
         Futures.addCallback(success, successCallback, Executors.newSingleThreadExecutor());
         success.get();
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
@@ -555,7 +555,7 @@ public final class TracersTest {
         });
 
         Tracer.startSpan("outside");
-        FutureCallback<Void> failureCallback = Tracers.wrap(futureCallback);
+        FutureCallback<Void> failureCallback = Tracers.wrap("failureCallback", futureCallback);
         Futures.addCallback(failure, failureCallback, Executors.newSingleThreadExecutor());
         assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
@@ -580,7 +580,7 @@ public final class TracersTest {
         ListenableFuture<Void> success = listeningExecutorService.submit(() -> null);
 
         Tracer.startSpan("before-construction");
-        FutureCallback<Void> successCallback = Tracers.wrap(futureCallback);
+        FutureCallback<Void> successCallback = Tracers.wrap("successCallback", futureCallback);
         Tracer.startSpan("after-construction");
         Futures.addCallback(success, successCallback, Executors.newSingleThreadExecutor());
         success.get();
@@ -607,7 +607,7 @@ public final class TracersTest {
         });
 
         Tracer.startSpan("before-construction");
-        FutureCallback<Void> failureCallback = Tracers.wrap(futureCallback);
+        FutureCallback<Void> failureCallback = Tracers.wrap("failureCallback", futureCallback);
         Tracer.startSpan("after-construction");
         Futures.addCallback(failure, failureCallback, Executors.newSingleThreadExecutor());
         assertThatThrownBy(failure::get).isInstanceOf(ExecutionException.class);
