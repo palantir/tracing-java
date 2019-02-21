@@ -36,7 +36,15 @@ public final class CloseableTracer implements AutoCloseable {
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      */
     public static CloseableTracer startSpan(String operation) {
-        Tracer.startSpan(operation);
+        return startSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType},
+     * labeled with the provided operation.
+     */
+    public static CloseableTracer startSpan(String operation, SpanType spanType) {
+        Tracer.startSpan(operation, spanType);
         return INSTANCE;
     }
 
