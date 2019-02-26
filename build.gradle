@@ -86,4 +86,8 @@ subprojects {
         }
     }
     tasks.check.dependsOn(javadoc)
+
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += ['-Xlint:deprecation', '-Werror']
+    }
 }
