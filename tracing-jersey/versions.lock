@@ -210,6 +210,9 @@
                 "org.glassfish.jersey.core:jersey-server"
             ]
         },
+        "org.immutables:value": {
+            "locked": "2.3.10"
+        },
         "org.javassist:javassist": {
             "locked": "3.18.1-GA",
             "transitive": [

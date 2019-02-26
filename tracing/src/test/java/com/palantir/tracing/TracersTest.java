@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.MDC;
 
+@SuppressWarnings("deprecation")
 public final class TracersTest {
 
     @Before

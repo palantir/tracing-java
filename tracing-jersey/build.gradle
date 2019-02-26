@@ -25,4 +25,7 @@ dependencies {
     testCompile "junit:junit"
     testCompile "org.hamcrest:hamcrest-all"
     testCompile "org.mockito:mockito-core"
+
+    compileOnly "org.immutables:value::annotations"
+    testCompileOnly "org.immutables:value::annotations"
 }

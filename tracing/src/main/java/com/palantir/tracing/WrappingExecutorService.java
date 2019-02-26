@@ -17,7 +17,6 @@ package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ForwardingExecutorService;
 import java.util.Collection;
@@ -66,8 +65,10 @@ abstract class WrappingExecutorService implements ExecutorService {
         return () -> {
             try {
                 wrapped.call();
+            } catch (RuntimeException | Error e) {
+                throw e;
             } catch (Exception e) {
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             }
         };
     }
