@@ -73,7 +73,7 @@ public abstract class AsyncSpanObserver implements SpanObserver {
                     log.trace("Failed to notify observer", error);
                     numInflights.decrementAndGet();
                 }
-            });
+            }, MoreExecutors.directExecutor());
         } else {
             log.trace("Failed to notify span observer since the maximum number of allowed concurrent observations was "
                     + "exceeded", SafeArg.of("maxInflights", maxInflights));
