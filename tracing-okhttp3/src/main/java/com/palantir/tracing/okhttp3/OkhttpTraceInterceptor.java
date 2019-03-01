@@ -56,7 +56,7 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         try {
             response = chain.proceed(tracedRequest.build());
         } finally {
-            Tracer.completeSpan();
+            Tracer.fastCompleteSpan();
         }
 
         return response;

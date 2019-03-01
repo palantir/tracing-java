@@ -21,6 +21,7 @@ import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.tracing.api.OpenSpan;
@@ -167,14 +168,18 @@ public final class Tracer {
     /**
      * Completes and returns the current span (if it exists) and notifies all {@link #observers subscribers} about the
      * completed span.
+     * If the return value is not used, prefer {@link Tracer#fastCompleteSpan()}.
      */
+    @CheckReturnValue
     public static Optional<Span> completeSpan() {
         return completeSpan(Collections.emptyMap());
     }
 
     /**
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
+     * If the return value is not used, prefer {@link Tracer#fastCompleteSpan(Map)}.
      */
+    @CheckReturnValue
     public static Optional<Span> completeSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace == null) {
