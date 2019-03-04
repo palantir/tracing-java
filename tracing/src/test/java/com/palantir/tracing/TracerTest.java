@@ -122,7 +122,7 @@ public final class TracerTest {
     public void testDoesNotNotifyObserversWhenCompletingNonexistingSpan() throws Exception {
         Tracer.subscribe("1", observer1);
         Tracer.subscribe("2", observer2);
-        Tracer.completeSpan(); // no active span.
+        Tracer.fastCompleteSpan(); // no active span.
         verifyNoMoreInteractions(observer1, observer2);
     }
 
@@ -308,7 +308,7 @@ public final class TracerTest {
         try {
             assertThat(Tracer.hasTraceId()).isEqualTo(true);
         } finally {
-            Tracer.completeSpan();
+            Tracer.fastCompleteSpan();
         }
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
     }

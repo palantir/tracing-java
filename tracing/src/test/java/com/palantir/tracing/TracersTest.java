@@ -71,9 +71,9 @@ public final class TracersTest {
         Tracer.startSpan("baz");
         wrappedService.submit(traceExpectingCallableWithSpan("executor")).get();
         wrappedService.submit(traceExpectingRunnableWithSpan("executor")).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
     }
 
     @Test
@@ -91,9 +91,9 @@ public final class TracersTest {
         Tracer.startSpan("baz");
         wrappedService.submit(traceExpectingCallableWithSpan("operation")).get();
         wrappedService.submit(traceExpectingRunnableWithSpan("operation")).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
     }
 
     @Test
@@ -111,9 +111,9 @@ public final class TracersTest {
         Tracer.startSpan("baz");
         wrappedService.schedule(traceExpectingCallableWithSpan("executor"), 0, TimeUnit.SECONDS).get();
         wrappedService.schedule(traceExpectingRunnableWithSpan("executor"), 0, TimeUnit.SECONDS).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
     }
 
     @Test
@@ -131,9 +131,9 @@ public final class TracersTest {
         Tracer.startSpan("baz");
         wrappedService.schedule(traceExpectingCallableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
         wrappedService.schedule(traceExpectingRunnableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
     }
 
     @Test
@@ -157,9 +157,9 @@ public final class TracersTest {
         Tracer.startSpan("baz");
         wrappedService.submit(callable).get();
         wrappedService.submit(runnable).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
     }
 
     @Test
@@ -183,9 +183,9 @@ public final class TracersTest {
         Tracer.startSpan("baz");
         wrappedService.schedule(callable, 0, TimeUnit.SECONDS).get();
         wrappedService.schedule(runnable, 0, TimeUnit.SECONDS).get();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
-        Tracer.completeSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
     }
 
     @Test

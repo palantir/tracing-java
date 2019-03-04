@@ -89,7 +89,7 @@ public final class OkhttpTraceInterceptorTest {
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         } finally {
-            Tracer.completeSpan();
+            Tracer.fastCompleteSpan();
         }
 
         verify(chain).request();
