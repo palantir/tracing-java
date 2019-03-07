@@ -27,7 +27,6 @@ public final class Tracers {
     /** The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
     public static final String TRACE_ID_KEY = "traceId";
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
-    private static final String DEFAULT_EXECUTOR_SPAN_OPERATION = "executor";
     private static final char[] HEX_DIGITS =
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
@@ -69,7 +68,12 @@ public final class Tracers {
      * #wrap wrapped} in order to be trace-aware.
      */
     public static ExecutorService wrap(ExecutorService executorService) {
-        return wrap(DEFAULT_EXECUTOR_SPAN_OPERATION, executorService);
+        return new WrappingExecutorService(executorService) {
+            @Override
+            protected <T> Callable<T> wrapTask(Callable<T> callable) {
+                return wrap(callable);
+            }
+        };
     }
 
     /**
@@ -92,7 +96,12 @@ public final class Tracers {
      * trace will be generated for each execution, effectively bypassing the intent of this method.
      */
     public static ScheduledExecutorService wrap(ScheduledExecutorService executorService) {
-        return wrap(DEFAULT_EXECUTOR_SPAN_OPERATION, executorService);
+        return new WrappingScheduledExecutorService(executorService) {
+            @Override
+            protected <T> Callable<T> wrapTask(Callable<T> callable) {
+                return wrap(callable);
+            }
+        };
     }
 
     /**

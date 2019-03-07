@@ -62,15 +62,15 @@ public final class TracersTest {
                 Tracers.wrap(Executors.newSingleThreadExecutor());
 
         // Empty trace
-        wrappedService.submit(traceExpectingCallableWithSpan("executor")).get();
-        wrappedService.submit(traceExpectingRunnableWithSpan("executor")).get();
+        wrappedService.submit(traceExpectingCallable()).get();
+        wrappedService.submit(traceExpectingCallable()).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSpan("executor")).get();
-        wrappedService.submit(traceExpectingRunnableWithSpan("executor")).get();
+        wrappedService.submit(traceExpectingCallable()).get();
+        wrappedService.submit(traceExpectingCallable()).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -102,15 +102,15 @@ public final class TracersTest {
                 Tracers.wrap(Executors.newSingleThreadScheduledExecutor());
 
         // Empty trace
-        wrappedService.schedule(traceExpectingCallableWithSpan("executor"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSpan("executor"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSpan("executor"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSpan("executor"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
