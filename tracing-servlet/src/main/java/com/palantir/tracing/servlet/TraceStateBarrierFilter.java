@@ -17,6 +17,7 @@
 package com.palantir.tracing.servlet;
 
 import com.palantir.logsafe.SafeArg;
+import com.palantir.logsafe.UnsafeArg;
 import com.palantir.tracing.Trace;
 import com.palantir.tracing.Tracer;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +51,9 @@ public final class TraceStateBarrierFilter implements Filter {
             throws IOException, ServletException {
         if (Tracer.hasTraceId()) {
             Trace leakedTrace = Tracer.getAndClearTrace();
-            log.debug("Clearing leaked trace trace {}", traceArg(leakedTrace));
+            if (log.isDebugEnabled()) {
+                log.debug("Clearing leaked trace trace {}", SafeArg.of("trace", toLoggableValue(leakedTrace)));
+            }
         }
         try {
             chain.doFilter(request, response);
@@ -58,15 +62,23 @@ public final class TraceStateBarrierFilter implements Filter {
                 Trace leakedTrace = Tracer.getAndClearTrace();
                 log.warn("This operation has leaked Tracer state. Tracer.startSpan was executed without "
                                 + "Tracer.completeSpan, resulting in both loss of span data and spans using "
-                                + "completion information from incorrect operations. Trace: {}",
-                        traceArg(leakedTrace));
+                                + "completion information from incorrect operations. Trace: {}, Path: {}",
+                        SafeArg.of("trace", toLoggableValue(leakedTrace)),
+                        UnsafeArg.of("path", getPath(request)));
             }
         }
     }
 
-    private static SafeArg<String> traceArg(Trace trace) {
+    private static String toLoggableValue(Trace trace) {
         // Use the trace toString value, the Trace object is not meant to be JSON serializable
-        return SafeArg.of("trace", Objects.toString(trace));
+        return Objects.toString(trace);
+    }
+
+    private static String getPath(ServletRequest request) {
+        if (request instanceof HttpServletRequest) {
+            return ((HttpServletRequest) request).getRequestURI();
+        }
+        return "Unknown";
     }
 
     @Override
