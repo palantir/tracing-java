@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Guarantees clean {@link Tracer} thread state for incoming requests.
  * This {@link Filter} logs at <pre>DEBUG</pre> level when another a leaked trace is
- * encountered on the pooled server thread, and <pre>WARN</pre> level when the
- * operation wrapped by this filter has leaked state.
+ * encountered on the pooled server thread, as well as when the operation wrapped by
+ * this filter has leaked state.
  */
 public final class TraceStateBarrierFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(TraceStateBarrierFilter.class);
@@ -60,11 +60,13 @@ public final class TraceStateBarrierFilter implements Filter {
         } finally {
             if (Tracer.hasTraceId()) {
                 Trace leakedTrace = Tracer.getAndClearTrace();
-                log.warn("This operation has leaked Tracer state. Tracer.startSpan was executed without "
-                                + "Tracer.completeSpan, resulting in both loss of span data and spans using "
-                                + "completion information from incorrect operations. Trace: {}, Path: {}",
-                        SafeArg.of("trace", toLoggableValue(leakedTrace)),
-                        UnsafeArg.of("path", getPath(request)));
+                if (log.isDebugEnabled()) {
+                    log.debug("This operation has leaked Tracer state. Tracer.startSpan was executed without "
+                                    + "Tracer.completeSpan, resulting in both loss of span data and spans using "
+                                    + "completion information from incorrect operations. Trace: {}, Path: {}",
+                            SafeArg.of("trace", toLoggableValue(leakedTrace)),
+                            UnsafeArg.of("path", getPath(request)));
+                }
             }
         }
     }
