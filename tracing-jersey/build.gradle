@@ -17,9 +17,12 @@
 apply from: "${rootDir}/gradle/publish-jar.gradle"
 
 dependencies {
+    compile "org.glassfish.jersey.core:jersey-server"
     compile project(":tracing")
 
-    compile "org.glassfish.jersey.core:jersey-server"
+    implementation 'com.google.guava:guava'
+    implementation 'javax.ws.rs:javax.ws.rs-api'
+    implementation project(':tracing-api')
 
     testCompile "io.dropwizard:dropwizard-testing"
     testCompile "junit:junit"

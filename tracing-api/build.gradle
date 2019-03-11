@@ -2,6 +2,7 @@ apply from: "$rootDir/gradle/publish-jar.gradle"
 
 dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind"
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
 
     testCompile "junit:junit"
     testCompile "org.assertj:assertj-core"

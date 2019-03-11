@@ -560,20 +560,6 @@ public final class TracersTest {
         };
     }
 
-    private static Runnable traceExpectingRunnable() {
-        final String outsideTraceId = Tracer.getTraceId();
-        final List<OpenSpan> outsideTrace = getCurrentTrace();
-
-        return () -> {
-            String traceId = Tracer.getTraceId();
-            List<OpenSpan> trace = getCurrentTrace();
-
-            assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(trace).isEqualTo(outsideTrace);
-            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
-        };
-    }
-
     private static Callable<Void> traceExpectingCallableWithSpan(String operation) {
         final String outsideTraceId = Tracer.getTraceId();
         final List<OpenSpan> outsideTrace = getCurrentTrace();
