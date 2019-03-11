@@ -38,8 +38,8 @@ import org.slf4j.LoggerFactory;
  * encountered on the pooled server thread, as well as when the operation wrapped by
  * this filter has leaked state.
  */
-public final class TraceStateBarrierFilter implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(TraceStateBarrierFilter.class);
+public final class LeakedTraceFilter implements Filter {
+    private static final Logger log = LoggerFactory.getLogger(LeakedTraceFilter.class);
 
     @Override
     public void init(FilterConfig filterConfig) {

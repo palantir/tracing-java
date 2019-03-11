@@ -44,7 +44,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class TraceStateBarrierFilterTest {
+public class LeakedTraceFilterTest {
     @ClassRule
     public static final DropwizardAppRule<Configuration> APP =
             new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
@@ -74,7 +74,7 @@ public class TraceStateBarrierFilterTest {
         Response response = target.path("/previous-request-leaked").request().get();
         // Verify that we detected a leak
         assertThat(response.getHeaderString("Pre-Leak")).isEqualTo("true");
-        // But the barrier filter fixes thread state prior to allowing our servlet to execute
+        // But the leaked trace filter fixes thread state prior to allowing our servlet to execute
         assertThat(response.getHeaderString("Servlet-Has-Trace")).isEqualTo("false");
         assertThat(response.getHeaderString("Post-Leak")).isEqualTo("false");
         response.close();
@@ -86,7 +86,7 @@ public class TraceStateBarrierFilterTest {
         assertThat(response.getHeaderString("Pre-Leak")).isEqualTo("false");
         // Validate the test executed the leaky servlet
         assertThat(response.getHeaderString("Leaky-Invoked")).isEqualTo("true");
-        // Barrier filter must clean the leak before the test filter is invoked.
+        // Leaked trace filter must clean the leak before the test filter is invoked.
         assertThat(response.getHeaderString("Post-Leak")).isEqualTo("false");
         response.close();
     }
@@ -102,7 +102,7 @@ public class TraceStateBarrierFilterTest {
                 public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                         throws IOException, ServletException {
                     // Open a span to simulate a thread from another request
-                    // leaving bad data without the barrier filter applied.
+                    // leaving bad data without the leaked trace filter applied.
                     Tracer.startSpan("previous request leaked");
                     chain.doFilter(request, response);
                 }
@@ -134,7 +134,7 @@ public class TraceStateBarrierFilterTest {
             }).addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
 
             // Register the filter we're testing
-            env.servlets().addFilter("traceBarrier", new TraceStateBarrierFilter())
+            env.servlets().addFilter("leakedTraceFilter", new LeakedTraceFilter())
                     .addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
 
             env.servlets().addServlet("alwaysLeaks", new HttpServlet() {
