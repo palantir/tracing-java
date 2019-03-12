@@ -270,7 +270,7 @@ public final class Tracers {
     /**
      * Deprecated.
      *
-     * @deprecated Use {@link #wrapWithAlternateTraceId(String, String, Runnable)}
+     * @deprecated Use {@link #wrapWithAlternateTraceId(String, Optional, String, Runnable)}
      */
     @Deprecated
     public static Runnable wrapWithAlternateTraceId(String traceId, Runnable delegate) {
@@ -278,20 +278,33 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state with the given traceId}
-     * for its execution. That is, the trace during its {@link Runnable#run() execution} will use the traceId provided
-     * instead of any trace already set on the thread used to execute the runnable. Each execution of the runnable
-     * will use a new {@link Trace tracing state} with the same given traceId.  The given {@link String operation} is
-     * used to create the initial span.
+     * Deprecated.
+     *
+     * @deprecated Use {@link #wrapWithAlternateTraceId(String, Optional, String, Runnable)}
      */
-    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable
-            delegate) {
+    @Deprecated
+    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable delegate) {
+        return wrapWithAlternateTraceId(traceId, Optional.empty(), operation, delegate);
+    }
+
+    /**
+     * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state with the give traceId
+     * and observability} for its execution. That is, the trace during its {@link Runnable#run() execution} will use
+     * the traceId provided instead of any trace already set on the thread used to execute the runnable. Each
+     * execution of the runnable will use a new {@link Trace tracing state} with the same given traceId.  The given
+     * {@link String operation} is used to create the initial span.
+     */
+    public static Runnable wrapWithAlternateTraceId(
+            String traceId,
+            Optional<Boolean> isObservable,
+            String operation,
+            Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Optional.empty(), traceId);
+                Tracer.initTrace(isObservable, traceId);
                 Tracer.startSpan(operation);
                 delegate.run();
             } finally {

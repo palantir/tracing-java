@@ -19,6 +19,7 @@ package com.palantir.tracing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.palantir.tracing.api.OpenSpan;
 import java.util.Collections;
@@ -499,6 +500,18 @@ public final class TracersTest {
             // no-op
         }).run();
         assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
+    public void testWrapRunnableWithAlternateTraceId_traceStateInsideRunnableHasGivenObservableState() {
+        for (Boolean isObservable : ImmutableList.of(true, false)) {
+            Tracers.wrapWithAlternateTraceId(
+                    "someTraceId",
+                    Optional.of(isObservable),
+                    "operation",
+                    () -> assertThat(Tracer.isTraceObservable()).isEqualTo(isObservable)
+            ).run();
+        }
     }
 
     @Test
