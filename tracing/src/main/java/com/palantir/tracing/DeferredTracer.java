@@ -52,41 +52,37 @@ public final class DeferredTracer implements Serializable {
 
     private final String traceId;
     private final boolean isObservable;
+    @Nullable
     private final String operation;
     @Nullable
     private final String parentSpanId;
 
-    /** Create a new deferred tracer without specifying an operation.
-     * @deprecated use {@link #DeferredTracer(String)}.
-     */
-    @Deprecated
     public DeferredTracer() {
-        this(UNKNOWN_OPERATION);
-    }
-
-    /** Create a new deferred tracer, optionally specifying an operation.
-     * @deprecated use {@link #DeferredTracer(String)}.
-     */
-    @Deprecated
-    public DeferredTracer(Optional<String> operation) {
-        this(operation.orElse(UNKNOWN_OPERATION));
+        this(Optional.empty());
     }
 
     public DeferredTracer(String operation) {
+        this(Optional.of(operation));
+    }
+
+    /**
+     * Create a new deferred tracer, optionally specifying an operation.
+     * If no operation is specified, will attempt to use the parent span's operation name.
+     */
+    public DeferredTracer(Optional<String> operation) {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
             this.traceId = trace.getTraceId();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
-
+            this.operation = operation.orElse(trace.top().map(OpenSpan::getOperation).orElse(UNKNOWN_OPERATION));
         } else {
             this.traceId = null;
             this.isObservable = false;
             this.parentSpanId = null;
+            this.operation = null;
         }
-
-        this.operation = operation;
     }
 
     /**
