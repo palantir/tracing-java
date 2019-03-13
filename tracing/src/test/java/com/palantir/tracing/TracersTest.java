@@ -545,38 +545,6 @@ public final class TracersTest {
         };
     }
 
-    private static Callable<Void> traceExpectingCallable() {
-        final String outsideTraceId = Tracer.getTraceId();
-        final List<OpenSpan> outsideTrace = getCurrentTrace();
-
-        return () -> {
-            String traceId = Tracer.getTraceId();
-            List<OpenSpan> trace = getCurrentTrace();
-
-            assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(trace).isEqualTo(outsideTrace);
-            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
-            return null;
-        };
-    }
-
-    private static Callable<Void> traceExpectingCallableWithSpan(String operation) {
-        final String outsideTraceId = Tracer.getTraceId();
-        final List<OpenSpan> outsideTrace = getCurrentTrace();
-
-        return () -> {
-            String traceId = Tracer.getTraceId();
-            List<OpenSpan> trace = getCurrentTrace();
-            OpenSpan span = trace.remove(trace.size() - 1);
-
-            assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(trace).isEqualTo(outsideTrace);
-            assertThat(span.getOperation()).isEqualTo(operation);
-            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
-            return null;
-        };
-    }
-
     private static Callable<Void> traceExpectingCallableWithSingleSpan(String operation) {
         final String outsideTraceId = Tracer.getTraceId();
 
@@ -590,22 +558,6 @@ public final class TracersTest {
             assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
             return null;
-        };
-    }
-
-    private static Runnable traceExpectingRunnableWithSpan(String operation) {
-        final String outsideTraceId = Tracer.getTraceId();
-        final List<OpenSpan> outsideTrace = getCurrentTrace();
-
-        return () -> {
-            String traceId = Tracer.getTraceId();
-            List<OpenSpan> trace = getCurrentTrace();
-            OpenSpan span = trace.remove(trace.size() - 1);
-
-            assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(trace).isEqualTo(outsideTrace);
-            assertThat(span.getOperation()).isEqualTo(operation);
-            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
         };
     }
 
