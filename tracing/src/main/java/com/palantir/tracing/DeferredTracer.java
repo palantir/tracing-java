@@ -48,8 +48,9 @@ public final class DeferredTracer implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String UNKNOWN_OPERATION = "deferred";
+    private static final String DEFAULT_OPERATION = "deferred";
 
+    @Nullable
     private final String traceId;
     private final boolean isObservable;
     @Nullable
@@ -76,7 +77,7 @@ public final class DeferredTracer implements Serializable {
             this.traceId = trace.getTraceId();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
-            this.operation = operation.orElse(trace.top().map(OpenSpan::getOperation).orElse(UNKNOWN_OPERATION));
+            this.operation = operation.orElse(trace.top().map(OpenSpan::getOperation).orElse(DEFAULT_OPERATION));
         } else {
             this.traceId = null;
             this.isObservable = false;
