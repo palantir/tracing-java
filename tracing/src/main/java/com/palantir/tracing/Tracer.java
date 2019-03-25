@@ -331,8 +331,18 @@ public final class Tracer {
     static void setTrace(Trace trace) {
         currentTrace.set(trace);
 
-        // Give SLF4J appenders access to the trace id
+        // Give SLF4J appenders access to the trace id and if trace is being sampled
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
+        setTraceSampledMdcIfObservable(trace.isObservable());
+    }
+
+    private static void setTraceSampledMdcIfObservable(boolean isObservable) {
+        if (isObservable) {
+            MDC.put(Tracers.TRACE_SAMPLED_KEY, "1");
+        } else {
+            // To ensure MDC state is cleared when trace is not observable
+            MDC.remove(Tracers.TRACE_SAMPLED_KEY);
+        }
     }
 
     private static Trace getOrCreateCurrentTrace() {
@@ -347,5 +357,6 @@ public final class Tracer {
     private static void clearCurrentTrace() {
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
+        MDC.remove(Tracers.TRACE_SAMPLED_KEY);
     }
 }

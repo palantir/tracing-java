@@ -26,6 +26,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class Tracers {
     /** The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
     public static final String TRACE_ID_KEY = "traceId";
+    public static final String TRACE_SAMPLED_KEY = "traceSampled";
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
     private static final char[] HEX_DIGITS =
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
