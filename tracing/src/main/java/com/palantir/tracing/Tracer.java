@@ -331,13 +331,14 @@ public final class Tracer {
     static void setTrace(Trace trace) {
         currentTrace.set(trace);
 
-        // Give SLF4J appenders access to the trace id and if trace is being sampled
+        // Give log appenders access to the trace id and whether the trace is being sampled
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
     }
 
-    private static void setTraceSampledMdcIfObservable(boolean isObservable) {
-        if (isObservable) {
+    private static void setTraceSampledMdcIfObservable(boolean observable) {
+        if (observable) {
+            // Set to 1 to be consistent with values associated with http header key TraceHttpHeaders.IS_SAMPLED
             MDC.put(Tracers.TRACE_SAMPLED_KEY, "1");
         } else {
             // To ensure MDC state is cleared when trace is not observable
