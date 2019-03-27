@@ -69,8 +69,8 @@ public final class TracersTest {
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("baz")).get();
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("baz")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("deferred")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("deferred")).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -109,8 +109,8 @@ public final class TracersTest {
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("baz"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("baz"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSingleSpan("deferred"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("deferred"), 0, TimeUnit.SECONDS).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -203,7 +203,7 @@ public final class TracersTest {
     public void testWrapCallable_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.startSpan("before-construction");
         Callable<Void> callable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("deferred");
             return null;
         });
         Tracer.startSpan("after-construction");
@@ -234,7 +234,7 @@ public final class TracersTest {
     public void testWrapRunnable_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.startSpan("before-construction");
         Runnable runnable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("deferred");
         });
         Tracer.startSpan("after-construction");
         runnable.run();

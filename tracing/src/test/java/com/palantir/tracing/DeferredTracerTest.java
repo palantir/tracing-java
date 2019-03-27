@@ -32,7 +32,7 @@ public class DeferredTracerTest {
     public void testIsSerializable() throws IOException, ClassNotFoundException {
         Tracer.initTrace(Optional.empty(), "defaultTraceId");
 
-        DeferredTracer deferredTracer = new DeferredTracer();
+        DeferredTracer deferredTracer = new DeferredTracer("operation");
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(baos)) {
