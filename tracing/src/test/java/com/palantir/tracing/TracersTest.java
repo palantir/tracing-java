@@ -62,15 +62,15 @@ public final class TracersTest {
                 Tracers.wrap(Executors.newSingleThreadExecutor());
 
         // Empty trace
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("deferred")).get();
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("deferred")).get();
+        wrappedService.submit(traceExpectingCallable()).get();
+        wrappedService.submit(traceExpectingCallable()).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("baz")).get();
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("baz")).get();
+        wrappedService.submit(traceExpectingCallable()).get();
+        wrappedService.submit(traceExpectingCallable()).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -82,15 +82,15 @@ public final class TracersTest {
                 Tracers.wrap("operation", Executors.newSingleThreadExecutor());
 
         // Empty trace
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("operation")).get();
-        wrappedService.submit(traceExpectingRunnableWithSingleSpan("operation")).get();
+        wrappedService.submit(traceExpectingCallableWithSpan("operation")).get();
+        wrappedService.submit(traceExpectingRunnableWithSpan("operation")).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("operation")).get();
-        wrappedService.submit(traceExpectingRunnableWithSingleSpan("operation")).get();
+        wrappedService.submit(traceExpectingCallableWithSpan("operation")).get();
+        wrappedService.submit(traceExpectingRunnableWithSpan("operation")).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -102,15 +102,15 @@ public final class TracersTest {
                 Tracers.wrap(Executors.newSingleThreadScheduledExecutor());
 
         // Empty trace
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("deferred"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("deferred"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("baz"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("baz"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallable(), 0, TimeUnit.SECONDS).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -122,15 +122,15 @@ public final class TracersTest {
                 Tracers.wrap("operation", Executors.newSingleThreadScheduledExecutor());
 
         // Empty trace
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -545,33 +545,45 @@ public final class TracersTest {
         };
     }
 
-    private static Callable<Void> traceExpectingCallableWithSingleSpan(String operation) {
+    private static Callable<Void> traceExpectingCallable() {
         final String outsideTraceId = Tracer.getTraceId();
 
         return () -> {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
-            OpenSpan span = trace.remove(trace.size() - 1);
-            assertThat(trace.size()).isEqualTo(0);
 
             assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(span.getOperation()).isEqualTo(operation);
+            assertThat(trace).isEmpty();
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
             return null;
         };
     }
 
-    private static Runnable traceExpectingRunnableWithSingleSpan(String operation) {
+    private static Callable<Void> traceExpectingCallableWithSpan(String operation) {
         final String outsideTraceId = Tracer.getTraceId();
 
         return () -> {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
-            OpenSpan span = trace.remove(trace.size() - 1);
-            assertThat(trace.size()).isEqualTo(0);
 
             assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(span.getOperation()).isEqualTo(operation);
+            assertThat(trace).hasSize(1);
+            assertThat(trace.get(0).getOperation()).isEqualTo(operation);
+            assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
+            return null;
+        };
+    }
+
+    private static Runnable traceExpectingRunnableWithSpan(String operation) {
+        final String outsideTraceId = Tracer.getTraceId();
+
+        return () -> {
+            String traceId = Tracer.getTraceId();
+            List<OpenSpan> trace = getCurrentTrace();
+
+            assertThat(traceId).isEqualTo(outsideTraceId);
+            assertThat(trace).hasSize(1);
+            assertThat(trace.get(0).getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
         };
     }

@@ -48,8 +48,6 @@ public final class DeferredTracer implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String DEFAULT_OPERATION = "deferred";
-
     @Nullable
     private final String traceId;
     private final boolean isObservable;
@@ -68,7 +66,6 @@ public final class DeferredTracer implements Serializable {
 
     /**
      * Create a new deferred tracer, optionally specifying an operation.
-     * If no operation is specified, will attempt to use the parent span's operation name.
      */
     public DeferredTracer(Optional<String> operation) {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
@@ -77,7 +74,7 @@ public final class DeferredTracer implements Serializable {
             this.traceId = trace.getTraceId();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
-            this.operation = operation.orElse(trace.top().map(OpenSpan::getOperation).orElse(DEFAULT_OPERATION));
+            this.operation = operation.orElse(null);
         } else {
             this.traceId = null;
             this.isObservable = false;
@@ -98,16 +95,20 @@ public final class DeferredTracer implements Serializable {
         Optional<Trace> originalTrace = Tracer.copyTrace();
 
         Tracer.setTrace(new Trace(isObservable, traceId));
-        if (parentSpanId != null) {
-            Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
-        } else {
-            Tracer.startSpan(operation);
+        if (operation != null) {
+            if (parentSpanId != null) {
+                Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
+            } else {
+                Tracer.startSpan(operation);
+            }
         }
 
         try {
             return inner.call();
         } finally {
-            Tracer.fastCompleteSpan();
+            if (operation != null) {
+                Tracer.fastCompleteSpan();
+            }
             if (originalTrace.isPresent()) {
                 Tracer.setTrace(originalTrace.get());
             } else {
