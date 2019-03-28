@@ -48,7 +48,7 @@ public final class DeferredTracer implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String DEFAULT_OPERATION = "deferred";
+    private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
 
     @Nullable
     private final String traceId;
