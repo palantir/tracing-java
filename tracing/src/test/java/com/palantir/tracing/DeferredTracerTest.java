@@ -18,11 +18,13 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Lists;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 
@@ -31,6 +33,7 @@ public class DeferredTracerTest {
     @Test
     public void testIsSerializable() throws IOException, ClassNotFoundException {
         Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        Tracer.startSpan("defaultOperation");
 
         DeferredTracer deferredTracer = new DeferredTracer();
 
@@ -48,5 +51,36 @@ public class DeferredTracerTest {
             String trace = deserialized.withTrace(() -> Tracer.getTraceId());
             assertThat(trace).isEqualTo("defaultTraceId");
         }
+    }
+
+    @Test
+    public void doesNotLeakSpans() {
+        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        Trace originalTrace = Tracer.getAndClearTrace();
+        Tracer.setTrace(originalTrace);
+        DeferredTracer deferredTracer = new DeferredTracer();
+        assertThat(originalTrace.top()).isEmpty();
+
+        deferredTracer.withTrace(() -> {
+            Trace traceCopy = Tracer.copyTrace().get();
+            assertThat(traceCopy.pop())
+                    .isPresent()
+                    .hasValueSatisfying(span -> span.getSpanId().equals("deferred-run"));
+            return null;
+        });
+    }
+
+    @Test
+    public void completesBothDeferredSpans() {
+        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        DeferredTracer deferredTracer = new DeferredTracer();
+        List<String> observedSpans = Lists.newArrayList();
+        Tracer.subscribe(
+                TracerTest.class.getName(),
+                span -> observedSpans.add(span.getOperation()));
+
+        deferredTracer.withTrace(() -> null);
+        Tracer.unsubscribe(TracerTest.class.getName());
+        assertThat(observedSpans).containsExactly("deferred-enqueue", "deferred-run");
     }
 }

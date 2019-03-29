@@ -16,11 +16,8 @@
 
 package com.palantir.tracing;
 
-import com.palantir.tracing.api.OpenSpan;
-import com.palantir.tracing.api.SpanType;
 import java.io.Serializable;
 import java.util.Optional;
-import javax.annotation.Nullable;
 
 /**
  * Utility class for capturing the current trace at time of construction, and then
@@ -38,9 +35,6 @@ import javax.annotation.Nullable;
  *     return null;
  * });
  *
- * N.b. the captured trace is restored without the full stack of spans, and so it's not possible to complete spans
- * not started within the deferred context.
- *
  * </code>
  * </pre>
  */
@@ -50,13 +44,8 @@ public final class DeferredTracer implements Serializable {
 
     private static final String DEFAULT_OPERATION = "deferred";
 
-    @Nullable
-    private final String traceId;
-    private final boolean isObservable;
-    @Nullable
+    private final Trace deferredTrace;
     private final String operation;
-    @Nullable
-    private final String parentSpanId;
 
     public DeferredTracer() {
         this(Optional.empty());
@@ -71,19 +60,11 @@ public final class DeferredTracer implements Serializable {
      * If no operation is specified, will attempt to use the parent span's operation name.
      */
     public DeferredTracer(Optional<String> operation) {
-        Optional<Trace> maybeTrace = Tracer.copyTrace();
-        if (maybeTrace.isPresent()) {
-            Trace trace = maybeTrace.get();
-            this.traceId = trace.getTraceId();
-            this.isObservable = trace.isObservable();
-            this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
-            this.operation = operation.orElse(trace.top().map(OpenSpan::getOperation).orElse(DEFAULT_OPERATION));
-        } else {
-            this.traceId = null;
-            this.isObservable = false;
-            this.parentSpanId = null;
-            this.operation = null;
-        }
+        this.operation = operation.orElse(DEFAULT_OPERATION);
+        // Necessary to preserve the trace between "enqueue" and "run"
+        Tracer.startSpan(this.operation + "-enqueue");
+        deferredTrace = Tracer.copyTrace().get();
+        Tracer.fastDiscardSpan(); // span will completed in the deferred execution
     }
 
     /**
@@ -91,28 +72,17 @@ public final class DeferredTracer implements Serializable {
      * the time of construction of this {@link DeferredTracer}.
      */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
-        if (traceId == null) {
-            return inner.call();
-        }
-
-        Optional<Trace> originalTrace = Tracer.copyTrace();
-
-        Tracer.setTrace(new Trace(isObservable, traceId));
-        if (parentSpanId != null) {
-            Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
-        } else {
-            Tracer.startSpan(operation);
-        }
-
+        Trace originalTrace = Tracer.getAndClearTrace();
+        Tracer.setTrace(deferredTrace);
+        // Finish the enqueue span
+        Tracer.fastCompleteSpan();
+        Tracer.startSpan(operation + "-run");
         try {
             return inner.call();
         } finally {
+            // Finish the run span
             Tracer.fastCompleteSpan();
-            if (originalTrace.isPresent()) {
-                Tracer.setTrace(originalTrace.get());
-            } else {
-                Tracer.getAndClearTrace();
-            }
+            Tracer.setTrace(originalTrace);
         }
     }
 }
