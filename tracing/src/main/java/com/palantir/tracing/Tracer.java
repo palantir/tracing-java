@@ -141,6 +141,14 @@ public final class Tracer {
         return span;
     }
 
+    /** Discards the current span without emitting it. */
+    static void fastDiscardSpan() {
+        Trace trace = currentTrace.get();
+        if (trace != null) {
+            popCurrentSpan();
+        }
+    }
+
     /**
      * Completes the current span (if it exists) and notifies all {@link #observers subscribers} about the
      * completed span.
@@ -149,14 +157,6 @@ public final class Tracer {
      */
     public static void fastCompleteSpan() {
         fastCompleteSpan(Collections.emptyMap());
-    }
-
-    /** Discards the current span without emitting it. */
-    static void fastDiscardSpan() {
-        Trace trace = currentTrace.get();
-        if (trace != null) {
-            popCurrentSpan();
-        }
     }
 
     /**
