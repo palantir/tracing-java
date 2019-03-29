@@ -16,8 +16,29 @@
 
 package com.palantir.tracing;
 
+import com.google.common.annotations.Beta;
 import java.util.Optional;
 
+/**
+ * Utility for tracking an operation that will be run asynchronously. It tracks the time it spent before
+ * {@link #withTrace} is called.
+ * <pre>
+ * <code>
+ * AsyncTracer asyncTracer = new AsyncTracer();
+ *
+ * //...
+ *
+ * // some time later
+ * asyncTracer.withTrace(() -> {
+ *     doThings();
+ *     System.out.println(Tracer.getTraceId()); // prints trace id at time of construction of async tracer
+ *     return null;
+ * });
+ *
+ * </code>
+ * </pre>
+ */
+@Beta
 public final class AsyncTracer {
 
     private static final String DEFAULT_OPERATION = "async";

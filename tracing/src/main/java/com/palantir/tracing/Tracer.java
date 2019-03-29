@@ -144,9 +144,8 @@ public final class Tracer {
     /** Discards the current span without emitting it. */
     static void fastDiscardSpan() {
         Trace trace = currentTrace.get();
-        if (trace != null) {
-            popCurrentSpan();
-        }
+        checkNotNull(trace, "Expected current trace to exist");
+        checkState(popCurrentSpan().isPresent(), "Expected span to exist before discarding");
     }
 
     /**
