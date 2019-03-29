@@ -59,6 +59,7 @@ import zipkin.Endpoint;
 
 public final class AsyncSlf4jSpanObserverTest {
 
+    private static final String TEST_OBSERVER = "test";
     private static final AsyncSlf4jSpanObserver.ZipkinCompatEndpoint DUMMY_ENDPOINT =
             ImmutableZipkinCompatEndpoint.builder()
                     .serviceName("")
@@ -83,17 +84,19 @@ public final class AsyncSlf4jSpanObserverTest {
 
         originalLevel = logger.getLevel();
         logger.setLevel(Level.TRACE);
+        Tracer.unsubscribe(TEST_OBSERVER);
     }
 
     @After
     public void after() {
         logger.setLevel(originalLevel);
+        Tracer.unsubscribe(TEST_OBSERVER);
     }
 
     @Test
     public void testJsonFormatToLog() throws Exception {
         DeterministicScheduler executor = new DeterministicScheduler();
-        Tracer.subscribe("", AsyncSlf4jSpanObserver.of(
+        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
                 "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
         Tracer.startSpan("operation");
         Span span = Tracer.completeSpan().get();
@@ -109,13 +112,12 @@ public final class AsyncSlf4jSpanObserverTest {
         assertThat(event.getValue().getFormattedMessage())
                 .isEqualTo(AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, expectedEndpoint).toJson());
         verifyNoMoreInteractions(appender);
-        Tracer.unsubscribe("");
     }
 
     @Test
     public void testDefaultConstructorDeterminesIpAddress() throws Exception {
         DeterministicScheduler executor = new DeterministicScheduler();
-        Tracer.subscribe("", AsyncSlf4jSpanObserver.of("serviceName", executor));
+        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of("serviceName", executor));
         Tracer.startSpan("operation");
         Span span = Tracer.completeSpan().get();
 
@@ -134,7 +136,6 @@ public final class AsyncSlf4jSpanObserverTest {
 
         assertThat(event.getValue().getFormattedMessage())
                 .isEqualTo(AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, expectedEndpoint.build()).toJson());
-        Tracer.unsubscribe("");
     }
 
     @Test
@@ -225,7 +226,7 @@ public final class AsyncSlf4jSpanObserverTest {
     @Test
     public void testCompleteSpanAfterExecutorShutdown() {
         ExecutorService executor = MoreExecutors.newDirectExecutorService();
-        Tracer.subscribe("", AsyncSlf4jSpanObserver.of(
+        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
                 "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
         OpenSpan span1 = Tracer.startSpan("operation");
         assertThat(Tracer.completeSpan()).isPresent().get()
@@ -242,7 +243,7 @@ public final class AsyncSlf4jSpanObserverTest {
     @Test
     public void testFastCompleteSpanAfterExecutorShutdown() {
         ExecutorService executor = MoreExecutors.newDirectExecutorService();
-        Tracer.subscribe("", AsyncSlf4jSpanObserver.of(
+        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
                 "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
         OpenSpan span1 = Tracer.startSpan("operation");
         assertThat(Tracer.completeSpan()).isPresent().get()
