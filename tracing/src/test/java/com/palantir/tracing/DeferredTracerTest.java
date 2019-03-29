@@ -31,7 +31,6 @@ public class DeferredTracerTest {
     @Test
     public void testIsSerializable() throws IOException, ClassNotFoundException {
         Tracer.initTrace(Optional.empty(), "defaultTraceId");
-        Tracer.startSpan("defaultOperation");
 
         DeferredTracer deferredTracer = new DeferredTracer();
 
@@ -50,5 +49,4 @@ public class DeferredTracerTest {
             assertThat(trace).isEqualTo("defaultTraceId");
         }
     }
-
 }
