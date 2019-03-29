@@ -20,9 +20,7 @@ import java.util.Optional;
 
 public final class AsyncTracer {
 
-    private static final long serialVersionUID = 1L;
-
-    private static final String DEFAULT_OPERATION = "deferred";
+    private static final String DEFAULT_OPERATION = "async";
 
     private final Trace deferredTrace;
     private final String operation;

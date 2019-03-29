@@ -20,7 +20,6 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanObserver;
-import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -29,9 +28,7 @@ import java.util.Optional;
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
  * not thread-safe and is intended to be used in a thread-local context.
  */
-public final class Trace implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public final class Trace {
 
     private final Deque<OpenSpan> stack;
     private final boolean isObservable;

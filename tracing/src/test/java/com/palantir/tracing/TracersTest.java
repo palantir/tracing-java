@@ -60,18 +60,17 @@ public final class TracersTest {
     public void testWrapExecutorService() throws Exception {
         ExecutorService wrappedService =
                 Tracers.wrap(Executors.newSingleThreadExecutor());
-        Tracer.startSpan("parentSpan");
 
         // Empty trace
-        wrappedService.submit(traceExpectingCallableWithSpan("deferred")).get();
-        wrappedService.submit(traceExpectingCallableWithSpan("deferred")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("deferred")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("deferred")).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSpan("deferred")).get();
-        wrappedService.submit(traceExpectingCallableWithSpan("deferred")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("baz")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("baz")).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -81,18 +80,17 @@ public final class TracersTest {
     public void testWrapExecutorService_withSpan() throws Exception {
         ExecutorService wrappedService =
                 Tracers.wrap("operation", Executors.newSingleThreadExecutor());
-        Tracer.startSpan("parentSpan");
 
         // Empty trace
-        wrappedService.submit(traceExpectingCallableWithSpan("operation")).get();
-        wrappedService.submit(traceExpectingRunnableWithSpan("operation")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("operation")).get();
+        wrappedService.submit(traceExpectingRunnableWithSingleSpan("operation")).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSpan("operation")).get();
-        wrappedService.submit(traceExpectingRunnableWithSpan("operation")).get();
+        wrappedService.submit(traceExpectingCallableWithSingleSpan("operation")).get();
+        wrappedService.submit(traceExpectingRunnableWithSingleSpan("operation")).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -102,18 +100,17 @@ public final class TracersTest {
     public void testWrapScheduledExecutorService() throws Exception {
         ScheduledExecutorService wrappedService =
                 Tracers.wrap(Executors.newSingleThreadScheduledExecutor());
-        Tracer.startSpan("parentSpan");
 
         // Empty trace
-        wrappedService.schedule(traceExpectingCallableWithSpan("deferred"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSpan("deferred"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSingleSpan("deferred"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("deferred"), 0, TimeUnit.SECONDS).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSpan("deferred"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSpan("deferred"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSingleSpan("baz"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("baz"), 0, TimeUnit.SECONDS).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -123,18 +120,17 @@ public final class TracersTest {
     public void testWrapScheduledExecutorService_withSpan() throws Exception {
         ScheduledExecutorService wrappedService =
                 Tracers.wrap("operation", Executors.newSingleThreadScheduledExecutor());
-        Tracer.startSpan("parentSpan");
 
         // Empty trace
-        wrappedService.schedule(traceExpectingCallableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
 
         // Non-empty trace
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -144,7 +140,6 @@ public final class TracersTest {
     public void testWrapExecutorServiceWithNewTrace() throws Exception {
         ExecutorService wrappedService =
                 Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadExecutor());
-        Tracer.startSpan("parentSpan");
 
         Callable<Void> callable = newTraceExpectingCallable("operation");
         Runnable runnable = newTraceExpectingRunnable("operation");
@@ -171,7 +166,6 @@ public final class TracersTest {
     public void testWrapScheduledExecutorServiceWithNewTrace() throws Exception {
         ScheduledExecutorService wrappedService =
                 Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadScheduledExecutor());
-        Tracer.startSpan("parentSpan");
 
         Callable<Void> callable = newTraceExpectingCallable("operation");
         Runnable runnable = newTraceExpectingRunnable("operation");
@@ -209,7 +203,6 @@ public final class TracersTest {
     public void testWrapCallable_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.startSpan("before-construction");
         Callable<Void> callable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("deferred-run");
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
             return null;
         });
@@ -221,7 +214,7 @@ public final class TracersTest {
     public void testWrapCallable_withSpan() throws Exception {
         Tracer.startSpan("outside");
         Runnable runnable = Tracers.wrap("operation", () -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation-run");
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation");
         });
         runnable.run();
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
@@ -241,7 +234,6 @@ public final class TracersTest {
     public void testWrapRunnable_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.startSpan("before-construction");
         Runnable runnable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("deferred-run");
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
         });
         Tracer.startSpan("after-construction");
@@ -252,7 +244,7 @@ public final class TracersTest {
     public void testWrapRunnable_startsNewSpan() throws Exception {
         Tracer.startSpan("outside");
         Runnable runnable = Tracers.wrap("operation", () -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation-run");
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("operation");
         });
         runnable.run();
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
@@ -553,35 +545,33 @@ public final class TracersTest {
         };
     }
 
-    private static Callable<Void> traceExpectingCallableWithSpan(String operation) {
+    private static Callable<Void> traceExpectingCallableWithSingleSpan(String operation) {
         final String outsideTraceId = Tracer.getTraceId();
-        final List<OpenSpan> outsideTrace = getCurrentTrace();
 
         return () -> {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
             OpenSpan span = trace.remove(trace.size() - 1);
+            assertThat(trace.size()).isEqualTo(0);
 
             assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(trace).isEqualTo(outsideTrace);
-            assertThat(span.getOperation()).isEqualTo(operation + "-run");
+            assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
             return null;
         };
     }
 
-    private static Runnable traceExpectingRunnableWithSpan(String operation) {
+    private static Runnable traceExpectingRunnableWithSingleSpan(String operation) {
         final String outsideTraceId = Tracer.getTraceId();
-        final List<OpenSpan> outsideTrace = getCurrentTrace();
 
         return () -> {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
             OpenSpan span = trace.remove(trace.size() - 1);
+            assertThat(trace.size()).isEqualTo(0);
 
             assertThat(traceId).isEqualTo(outsideTraceId);
-            assertThat(trace).isEqualTo(outsideTrace);
-            assertThat(span.getOperation()).isEqualTo(operation + "-run");
+            assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
         };
     }

@@ -16,7 +16,6 @@
 
 package com.palantir.tracing.api;
 
-import java.io.Serializable;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -26,9 +25,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
-public abstract class OpenSpan implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public abstract class OpenSpan {
 
     /**
      * Returns a description of the operation for this event.
