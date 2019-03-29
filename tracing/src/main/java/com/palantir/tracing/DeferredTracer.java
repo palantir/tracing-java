@@ -61,7 +61,6 @@ public final class DeferredTracer implements Serializable {
      */
     public DeferredTracer(Optional<String> operation) {
         this.operation = operation.orElse(DEFAULT_OPERATION);
-        // Necessary to preserve the trace between "enqueue" and "run"
         Tracer.startSpan(this.operation + "-enqueue");
         deferredTrace = Tracer.copyTrace().get();
         Tracer.fastDiscardSpan(); // span will completed in the deferred execution
