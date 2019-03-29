@@ -25,10 +25,9 @@ import org.junit.Test;
 
 public class AsyncTracerTest {
     @Test
-    public void doesNotLeakSpans() {
+    public void doesNotLeakEnqueueSpan() {
         Tracer.initTrace(Optional.empty(), "defaultTraceId");
-        Trace originalTrace = Tracer.getAndClearTrace();
-        Tracer.setTrace(originalTrace);
+        Trace originalTrace = getTrace();
         AsyncTracer deferredTracer = new AsyncTracer();
         assertThat(originalTrace.top()).isEmpty();
 
@@ -47,11 +46,11 @@ public class AsyncTracerTest {
         AsyncTracer asyncTracer = new AsyncTracer();
         List<String> observedSpans = Lists.newArrayList();
         Tracer.subscribe(
-                TracerTest.class.getName(),
+                AsyncTracerTest.class.getName(),
                 span -> observedSpans.add(span.getOperation()));
 
         asyncTracer.withTrace(() -> null);
-        Tracer.unsubscribe(TracerTest.class.getName());
+        Tracer.unsubscribe(AsyncTracerTest.class.getName());
         assertThat(observedSpans).containsExactly("async-enqueue", "async-run");
     }
 
@@ -61,6 +60,7 @@ public class AsyncTracerTest {
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");
+        Trace originalTrace = getTrace();
         AsyncTracer asyncTracer = new AsyncTracer();
 
         asyncTracer.withTrace(() -> {
@@ -79,5 +79,24 @@ public class AsyncTracerTest {
                     .hasValueSatisfying(span -> span.getSpanId().equals("foo"));
             return null;
         });
+
+        assertThat(originalTrace.pop())
+                .isPresent()
+                .hasValueSatisfying(span -> span.getSpanId().equals("baz"));
+        assertThat(originalTrace.pop())
+                .isPresent()
+                .hasValueSatisfying(span -> span.getSpanId().equals("bar"));
+        assertThat(originalTrace.pop())
+                .isPresent()
+                .hasValueSatisfying(span -> span.getSpanId().equals("foo"));
+    }
+
+    /**
+     * Get reference to the current trace.
+     */
+    private Trace getTrace() {
+        Trace originalTrace = Tracer.getAndClearTrace();
+        Tracer.setTrace(originalTrace);
+        return originalTrace;
     }
 }
