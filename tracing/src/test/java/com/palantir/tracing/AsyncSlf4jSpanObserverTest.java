@@ -30,6 +30,8 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.net.Inet4Address;
@@ -37,6 +39,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.After;
@@ -217,6 +220,38 @@ public final class AsyncSlf4jSpanObserverTest {
                 annotation -> annotation.key(),
                 annotation -> annotation.value()));
         assertThat(annotationMap).isEqualTo(spanMetadata);
+    }
+
+    @Test
+    public void testCompleteSpanAfterExecutorShutdown() {
+        ExecutorService executor = MoreExecutors.newDirectExecutorService();
+        Tracer.subscribe("", AsyncSlf4jSpanObserver.of(
+                "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
+        OpenSpan span1 = Tracer.startSpan("operation");
+        assertThat(Tracer.completeSpan()).isPresent().get()
+                .extracting("spanId", "operation")
+                .contains(span1.getSpanId(), span1.getOperation());
+
+        OpenSpan span2 = Tracer.startSpan("operation");
+        executor.shutdown();
+        assertThat(Tracer.completeSpan()).isPresent().get()
+                .extracting("spanId", "operation")
+                .contains(span2.getSpanId(), span2.getOperation());
+    }
+
+    @Test
+    public void testFastCompleteSpanAfterExecutorShutdown() {
+        ExecutorService executor = MoreExecutors.newDirectExecutorService();
+        Tracer.subscribe("", AsyncSlf4jSpanObserver.of(
+                "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
+        OpenSpan span1 = Tracer.startSpan("operation");
+        assertThat(Tracer.completeSpan()).isPresent().get()
+                .extracting("spanId", "operation")
+                .contains(span1.getSpanId(), span1.getOperation());
+
+        Tracer.startSpan("operation");
+        executor.shutdown();
+        Tracer.fastCompleteSpan();
     }
 
     private static AsyncSlf4jSpanObserver.ZipkinCompatSpan zipkinSpan(long start, long duration, SpanType type) {
