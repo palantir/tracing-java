@@ -69,7 +69,7 @@ public final class AsyncTracer {
 
     /**
      * Runs the given callable with the current trace at
-     * the time of construction of this {@link DeferredTracer}.
+     * the time of construction of this {@link AsyncTracer}.
      */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
         Trace originalTrace = Tracer.getAndClearTrace();
