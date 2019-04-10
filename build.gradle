@@ -67,6 +67,8 @@ subprojects {
 
     tasks.withType(JavaCompile) {
         options.compilerArgs += ['-Xlint:deprecation', '-Werror']
+
+        // necessary until https://github.com/google/error-prone/pull/1107
         options.errorprone.errorproneArgs += '-Xep:Finally:OFF'
     }
 }
