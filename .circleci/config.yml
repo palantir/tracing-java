@@ -40,12 +40,12 @@ jobs:
       - store_artifacts: { path: ~/artifacts }
 
   build-12:
-    docker: [{ image: 'circleci/openjdk:12' }]
+    docker: [{ image: 'openjdk:12' }]
     resource_class: xlarge
     environment:
       GRADLE_OPTS: -Dorg.gradle.console=plain -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
-      CIRCLE_TEST_REPORTS: /home/circleci/junit
-      CIRCLE_ARTIFACTS: /home/circleci/artifacts
+      CIRCLE_TEST_REPORTS: /root/junit
+      CIRCLE_ARTIFACTS: /root/artifacts
       _JAVA_OPTIONS: '-XX:ActiveProcessorCount=8 -Xmx2048m'
     steps:
       - checkout
