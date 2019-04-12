@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -220,6 +221,8 @@ public final class TraceEnrichingFilterTest {
         TraceEnrichingFilter.INSTANCE.filter(request);
         assertThat(MDC.get(Tracers.TRACE_ID_KEY), is("traceId"));
         verify(request).setProperty(TraceEnrichingFilter.TRACE_ID_PROPERTY_NAME, "traceId");
+        // Note: this will be set to a random value; we want to check whether the value is being set
+        verify(request).setProperty(eq(TraceEnrichingFilter.SAMPLED_PROPERTY_NAME), anyBoolean());
     }
 
     @Test
