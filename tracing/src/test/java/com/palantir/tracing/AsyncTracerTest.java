@@ -32,8 +32,8 @@ public class AsyncTracerTest {
         assertThat(originalTrace.top()).isEmpty();
 
         deferredTracer.withTrace(() -> {
-            Trace traceCopy = Tracer.copyTrace().get();
-            assertThat(traceCopy.pop())
+            Trace currentTrace = Tracer.getAndClearTrace();
+            assertThat(currentTrace.pop())
                     .isPresent()
                     .hasValueSatisfying(span -> span.getSpanId().equals("async-run"));
             return null;
@@ -64,17 +64,17 @@ public class AsyncTracerTest {
         AsyncTracer asyncTracer = new AsyncTracer();
 
         asyncTracer.withTrace(() -> {
-            Trace traceCopy = Tracer.copyTrace().get();
-            assertThat(traceCopy.pop())
+            Trace currentTrace = Tracer.getAndClearTrace();
+            assertThat(currentTrace.pop())
                     .isPresent()
                     .hasValueSatisfying(span -> span.getSpanId().equals("async-run"));
-            assertThat(traceCopy.pop())
+            assertThat(currentTrace.pop())
                     .isPresent()
                     .hasValueSatisfying(span -> span.getSpanId().equals("baz"));
-            assertThat(traceCopy.pop())
+            assertThat(currentTrace.pop())
                     .isPresent()
                     .hasValueSatisfying(span -> span.getSpanId().equals("bar"));
-            assertThat(traceCopy.pop())
+            assertThat(currentTrace.pop())
                     .isPresent()
                     .hasValueSatisfying(span -> span.getSpanId().equals("foo"));
             return null;
@@ -89,6 +89,20 @@ public class AsyncTracerTest {
         assertThat(originalTrace.pop())
                 .isPresent()
                 .hasValueSatisfying(span -> span.getSpanId().equals("foo"));
+    }
+
+    @Test
+    public void doesNotIncludeRunSpan() {
+        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        Tracer.startSpan("defaultOperation");
+        AsyncTracer asyncTracer = new AsyncTracer("operation", false);
+        asyncTracer.withTrace(() -> {
+            Trace currentTrace = Tracer.getAndClearTrace();
+            assertThat(currentTrace.pop())
+                    .isPresent()
+                    .hasValueSatisfying(span -> span.getSpanId().equals("defaultOperation"));
+            return null;
+        });
     }
 
     /**

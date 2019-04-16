@@ -47,6 +47,7 @@ public final class AsyncTracer {
 
     private final Trace deferredTrace;
     private final String operation;
+    private final boolean createRunSpan;
 
     public AsyncTracer() {
         this(Optional.empty());
@@ -56,12 +57,21 @@ public final class AsyncTracer {
         this(Optional.of(operation));
     }
 
+    public AsyncTracer(String operation, boolean createRunSpan) {
+        this(Optional.of(operation), createRunSpan);
+    }
+
+    public AsyncTracer(Optional<String> operation) {
+        this(operation, true);
+    }
+
     /**
      * Create a new deferred tracer, optionally specifying an operation.
      * If no operation is specified, will attempt to use the parent span's operation name.
      */
-    public AsyncTracer(Optional<String> operation) {
+    public AsyncTracer(Optional<String> operation, boolean createRunSpan) {
         this.operation = operation.orElse(DEFAULT_OPERATION);
+        this.createRunSpan = createRunSpan;
         Tracer.startSpan(this.operation + "-enqueue");
         deferredTrace = Tracer.copyTrace().get();
         Tracer.fastDiscardSpan(); // span will completed in the deferred execution
@@ -76,12 +86,17 @@ public final class AsyncTracer {
         Tracer.setTrace(deferredTrace);
         // Finish the enqueue span
         Tracer.fastCompleteSpan();
-        Tracer.startSpan(operation + "-run");
+        if (createRunSpan) {
+            Tracer.startSpan(operation + "-run");
+        }
+
         try {
             return inner.call();
         } finally {
-            // Finish the run span
-            Tracer.fastCompleteSpan();
+            if (createRunSpan) {
+                // Finish the run span
+                Tracer.fastCompleteSpan();
+            }
             Tracer.setTrace(originalTrace);
         }
     }
