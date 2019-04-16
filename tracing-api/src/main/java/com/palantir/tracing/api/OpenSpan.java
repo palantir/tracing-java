@@ -16,6 +16,7 @@
 
 package com.palantir.tracing.api;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -27,6 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
 public abstract class OpenSpan {
+    private static final Clock CLOCK = Clock.systemUTC();
 
     /**
      * Returns a description of the operation for this event.
@@ -71,13 +73,12 @@ public abstract class OpenSpan {
      */
     public static Builder builder() {
         return new Builder()
-                // TODO(rfink): Use direct access to system microseconds when moving to Java8 / Java9
                 .startTimeMicroSeconds(getNowInMicroSeconds())
                 .startClockNanoSeconds(System.nanoTime());
     }
 
     private static long getNowInMicroSeconds() {
-        Instant now = Instant.now();
+        Instant now = CLOCK.instant();
         return (1000000 * now.getEpochSecond()) + (now.getNano() / 1000);
     }
 
