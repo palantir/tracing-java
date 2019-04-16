@@ -29,6 +29,7 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -67,6 +68,13 @@ public final class TracerTest {
         Tracer.unsubscribe("1");
         Tracer.unsubscribe("2");
         Tracer.getAndClearTrace();
+    }
+
+    @Test
+    public void foo() {
+        Instant now = Instant.now();
+        long epochMicros = 1000000 * now.getEpochSecond() + now.getNano() / 1000;
+        System.out.println(Instant.ofEpochMilli(epochMicros / 1000));
     }
 
     @Test
