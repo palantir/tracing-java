@@ -130,6 +130,22 @@ public class TracedOperationHandlerTest {
     }
 
     @Test
+    public void whenTraceIsAlreadySampled_setsAttachment() throws Exception {
+        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
+        handler.handleRequest(exchange);
+
+        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT)).isEqualTo(true);
+    }
+
+    @Test
+    public void whenTraceIsAlreadyNotSampled_setsAttachment() throws Exception {
+        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "0");
+        handler.handleRequest(exchange);
+
+        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT)).isEqualTo(false);
+    }
+
+    @Test
     public void whenSamplingDecisionHasNotBeenMade_callsSampler() throws Exception {
         handler.handleRequest(exchange);
         verify(traceSampler).sample();
