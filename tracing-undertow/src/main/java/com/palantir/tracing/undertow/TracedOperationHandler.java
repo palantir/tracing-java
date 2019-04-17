@@ -62,8 +62,11 @@ public final class TracedOperationHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         String traceId = initializeTrace(exchange);
+        String sampled = Tracer.isTraceObservable() ? "1" : "0";
+
         // Populate response before calling delegate since delegate might commit the response.
         exchange.getResponseHeaders().put(TRACE_ID, traceId);
+        exchange.getResponseHeaders().put(IS_SAMPLED, sampled);
         try {
             delegate.handleRequest(exchange);
         } finally {
