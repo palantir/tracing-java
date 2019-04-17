@@ -191,6 +191,22 @@ public final class TracerTest {
     }
 
     @Test
+    public void testSetTraceSetsMdcTraceSampledKeyWhenObserved() {
+        Tracer.setTrace(new Trace(true, "observedTraceId"));
+        assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isEqualTo("1");
+        assertThat(Tracer.completeSpan()).isEmpty();
+        assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
+    }
+
+    @Test
+    public void testSetTraceMissingMdcTraceSampledKeyWhenNotObserved() {
+        Tracer.setTrace(new Trace(false, "notObservedTraceId"));
+        assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
+        assertThat(Tracer.completeSpan()).isEmpty();
+        assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
+    }
+
+    @Test
     public void testCompletedSpanHasCorrectSpanType() throws Exception {
         for (SpanType type : SpanType.values()) {
             Tracer.startSpan("1", type);
