@@ -25,6 +25,7 @@ import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import java.util.Optional;
@@ -40,10 +41,15 @@ import java.util.Optional;
  * that handler may register.
  */
 public final class TracedOperationHandler implements HttpHandler {
+    /**
+     * Attachment to check whether the current request is being traced.
+     */
+    public static final AttachmentKey<Boolean> IS_SAMPLED_ATTACHMENT = AttachmentKey.create(Boolean.class);
 
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
     private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
+
 
     // Pre-compute sampled values, there's no need to do this work for each request
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -62,8 +68,10 @@ public final class TracedOperationHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         String traceId = initializeTrace(exchange);
+
         // Populate response before calling delegate since delegate might commit the response.
         exchange.getResponseHeaders().put(TRACE_ID, traceId);
+        exchange.putAttachment(IS_SAMPLED_ATTACHMENT, Tracer.isTraceObservable());
         try {
             delegate.handleRequest(exchange);
         } finally {
