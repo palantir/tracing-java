@@ -24,6 +24,7 @@ import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
 import java.util.Optional;
+import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -34,6 +35,8 @@ import javax.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ExtendedUriInfo;
 import org.glassfish.jersey.server.model.Resource;
 
+// Default is `Priorities.USER` == 5000. This filter needs to execute earlier to ensure traces are ready to use.
+@Priority(500)
 @Provider
 public final class TraceEnrichingFilter implements ContainerRequestFilter, ContainerResponseFilter {
     public static final TraceEnrichingFilter INSTANCE = new TraceEnrichingFilter();
