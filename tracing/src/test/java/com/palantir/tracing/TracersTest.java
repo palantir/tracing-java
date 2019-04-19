@@ -20,18 +20,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.api.Span;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -502,6 +511,150 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrappingFutureCallback_futureCallbackTraceIsIsolated_success() throws Exception {
+        CompletionAwareFutureCallback<Void> futureCallback = createFutureCallbackWithFunction(
+                () -> Tracer.startSpan("inside"));
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> future = listeningExecutorService.submit(() -> null);
+
+        Tracer.startSpan("outside");
+        FutureCallback<Void> callback = Tracers.wrap("callback", futureCallback);
+        // Using direct executor to use same thread to verify callback doesn't modify thread state
+        Futures.addCallback(future, callback, MoreExecutors.directExecutor());
+
+        assertThat(futureCallback.waitForCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(futureCallback.wasSuccess()).isTrue();
+        future.get();
+
+        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+    }
+
+    @Test
+    public void testWrappingFutureCallback_futureCallbackTraceIsIsolated_failure() throws Exception {
+        CompletionAwareFutureCallback<Void> futureCallback = createFutureCallbackWithFunction(
+                () -> Tracer.startSpan("inside"));
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> future = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        Tracer.startSpan("outside");
+        FutureCallback<Void> callback = Tracers.wrap("callback", futureCallback);
+        // Using direct executor to use same thread to verify callback doesn't modify thread state
+        Futures.addCallback(future, callback, MoreExecutors.directExecutor());
+
+        assertThat(futureCallback.waitForCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(futureCallback.wasSuccess()).isFalse();
+        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class);
+
+        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+    }
+
+    @Test
+    public void testWrappingFutureCallback_traceStateShowsCorrectlyParentedNewOperation_success_sameThread()
+            throws Exception {
+        AtomicReference<Span> span = new AtomicReference<>();
+        CompletionAwareFutureCallback<Void> futureCallback = createFutureCallbackWithFunction(
+                () -> span.set(Tracer.completeSpan().get()));
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> future = listeningExecutorService.submit(() -> null);
+
+        OpenSpan beforeSpan = Tracer.startSpan("before-construction");
+        FutureCallback<Void> callback = Tracers.wrap("callback", futureCallback);
+        Tracer.startSpan("after-construction");
+        Futures.addCallback(future, callback, MoreExecutors.directExecutor());
+
+        assertThat(futureCallback.waitForCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(futureCallback.wasSuccess()).isTrue();
+        future.get();
+
+        assertThat(span.get().getOperation()).isEqualTo("callback");
+        assertThat(span.get().getParentSpanId().get()).isEqualTo(beforeSpan.getSpanId());
+    }
+
+    @Test
+    public void testWrappingFutureCallback_traceStateShowsCorrectlyParentedNewOperation_success_differentThread()
+            throws Exception {
+        AtomicReference<Span> span = new AtomicReference<>();
+        CompletionAwareFutureCallback<Void> futureCallback = createFutureCallbackWithFunction(
+                () -> span.set(Tracer.completeSpan().get()));
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> future = listeningExecutorService.submit(() -> null);
+
+        OpenSpan beforeSpan = Tracer.startSpan("before-construction");
+        FutureCallback<Void> callback = Tracers.wrap("callback", futureCallback);
+        Tracer.startSpan("after-construction");
+        Futures.addCallback(future, callback, Executors.newSingleThreadExecutor());
+
+        assertThat(futureCallback.waitForCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(futureCallback.wasSuccess()).isTrue();
+        future.get();
+
+        assertThat(span.get().getOperation()).isEqualTo("callback");
+        assertThat(span.get().getParentSpanId().get()).isEqualTo(beforeSpan.getSpanId());
+    }
+
+    @Test
+    public void testWrappingFutureCallback_traceStateShowsCorrectlyParentedNewOperation_failure_sameThread()
+            throws Exception {
+        AtomicReference<Span> span = new AtomicReference<>();
+        CompletionAwareFutureCallback<Void> futureCallback = createFutureCallbackWithFunction(
+                () -> span.set(Tracer.completeSpan().get()));
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> future = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        OpenSpan beforeSpan = Tracer.startSpan("before-construction");
+        FutureCallback<Void> callback = Tracers.wrap("callback", futureCallback);
+        Tracer.startSpan("after-construction");
+        Futures.addCallback(future, callback, MoreExecutors.directExecutor());
+
+        assertThat(futureCallback.waitForCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(futureCallback.wasSuccess()).isFalse();
+        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class);
+
+        assertThat(span.get().getOperation()).isEqualTo("callback");
+        assertThat(span.get().getParentSpanId().get()).isEqualTo(beforeSpan.getSpanId());
+    }
+
+    @Test
+    public void testWrappingFutureCallback_traceStateShowsCorrectlyParentedNewOperation_failure_differentThread()
+            throws Exception {
+        AtomicReference<Span> span = new AtomicReference<>();
+        CompletionAwareFutureCallback<Void> futureCallback = createFutureCallbackWithFunction(
+                () -> span.set(Tracer.completeSpan().get()));
+
+        ListeningExecutorService listeningExecutorService =
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
+        ListenableFuture<Void> future = listeningExecutorService.submit(() -> {
+            throw new IllegalStateException();
+        });
+
+        OpenSpan beforeSpan = Tracer.startSpan("before-construction");
+        FutureCallback<Void> callback = Tracers.wrap("callback", futureCallback);
+        Tracer.startSpan("after-construction");
+        Futures.addCallback(future, callback, Executors.newSingleThreadExecutor());
+
+        assertThat(futureCallback.waitForCompletion(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(futureCallback.wasSuccess()).isFalse();
+        assertThatThrownBy(future::get).isInstanceOf(ExecutionException.class);
+
+        assertThat(span.get().getOperation()).isEqualTo("callback");
+        assertThat(span.get().getParentSpanId().get()).isEqualTo(beforeSpan.getSpanId());
+    }
+
+    @Test
     public void testTraceIdGeneration() throws Exception {
         assertThat(Tracers.randomId()).hasSize(16); // fails with p=1/16 if generated string is not padded
         assertThat(Tracers.longToPaddedHex(0)).isEqualTo("0000000000000000");
@@ -584,5 +737,72 @@ public final class TracersTest {
             }
             return Lists.reverse(spans);
         }).orElse(Collections.emptyList());
+    }
+
+    private static <V> CompletionAwareFutureCallback<V> createFutureCallbackWithFunction(Runnable runnable) {
+        return new CompletionAwareFutureCallback<>(new FutureCallback<V>() {
+            @Override
+            public void onSuccess(@NullableDecl V result) {
+                runnable.run();
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+                runnable.run();
+            }
+        });
+    }
+
+    /**
+     * Defines an interface for providing information on completion of execution and the ability to wait on completion
+     * for use with tests involving FutureCallback.
+     */
+    private interface CompletionAware {
+        boolean waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException;
+        boolean wasSuccess();
+    }
+
+    /**
+     * There is no guarantee when a FutureCallback will actually run. In order to verify state from inside the
+     * FutureCallback, a CountDownLatch is used to track when the FutureCallback has finished executing and to provide
+     * a condition to wait on.
+     */
+    private static final class CompletionAwareFutureCallback<V> implements FutureCallback<V>, CompletionAware {
+        private final CountDownLatch latch = new CountDownLatch(1);
+        private final FutureCallback<V> delegate;
+        private AtomicReference<Boolean> success = new AtomicReference<>(Boolean.FALSE);
+
+        CompletionAwareFutureCallback(FutureCallback<V> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void onSuccess(@NullableDecl V result) {
+            try {
+                success.set(Boolean.TRUE);
+                delegate.onSuccess(result);
+            } finally {
+                latch.countDown();
+            }
+        }
+
+        @Override
+        public void onFailure(Throwable throwable) {
+            try {
+                delegate.onFailure(throwable);
+            } finally {
+                latch.countDown();
+            }
+        }
+
+        @Override
+        public boolean waitForCompletion(long timeout, TimeUnit unit) throws InterruptedException {
+            return latch.await(timeout, unit);
+        }
+
+        @Override
+        public boolean wasSuccess() {
+            return success.get();
+        }
     }
 }

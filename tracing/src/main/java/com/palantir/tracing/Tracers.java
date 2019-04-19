@@ -16,11 +16,13 @@
 
 package com.palantir.tracing;
 
+import com.google.common.util.concurrent.FutureCallback;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 
 /** Utility methods for making {@link ExecutorService} and {@link Runnable} instances tracing-aware. */
 public final class Tracers {
@@ -144,6 +146,11 @@ public final class Tracers {
      */
     public static Runnable wrap(Runnable delegate) {
         return new TracingAwareRunnable(Optional.empty(), delegate);
+    }
+
+    /** Like {@link #wrap(String, Callable)}, but for Guava's FutureCallback. */
+    public static <V> FutureCallback<V> wrap(String operation, FutureCallback<V> delegate) {
+        return new TracingAwareFutureCallback<>(operation, delegate);
     }
 
     /**
@@ -360,6 +367,37 @@ public final class Tracers {
         public void run() {
             deferredTracer.withTrace(() -> {
                 delegate.run();
+                return null;
+            });
+        }
+    }
+
+    /**
+     * Wrap a given guava future callback such that its execution operated with the {@link Trace thread-local Trace} of
+     * the thread the constructs the {@link TracingAwareFutureCallback} instance rather than the thread that executes
+     * the callback.
+     */
+    private static class TracingAwareFutureCallback<V> implements FutureCallback<V> {
+        private final FutureCallback<V> delegate;
+        private DeferredTracer deferredTracer;
+
+        TracingAwareFutureCallback(String operation, FutureCallback<V> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer(operation);
+        }
+
+        @Override
+        public void onSuccess(@NullableDecl V result) {
+            deferredTracer.withTrace(() -> {
+                delegate.onSuccess(result);
+                return null;
+            });
+        }
+
+        @Override
+        public void onFailure(Throwable throwable) {
+            deferredTracer.withTrace(() -> {
+                delegate.onFailure(throwable);
                 return null;
             });
         }
