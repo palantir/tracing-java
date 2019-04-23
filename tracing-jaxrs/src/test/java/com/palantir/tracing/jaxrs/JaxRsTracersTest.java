@@ -19,6 +19,7 @@ package com.palantir.tracing.jaxrs;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.tracing.Tracer;
+import com.palantir.tracing.api.Span;
 import java.io.ByteArrayOutputStream;
 import javax.ws.rs.core.StreamingOutput;
 import org.junit.Test;
@@ -37,9 +38,11 @@ public final class JaxRsTracersTest {
 
     @Test
     public void testWrappingStreamingOutput_traceStateIsCapturedAtConstructionTime() throws Exception {
-        Tracer.startSpan("before-construction");
+        String beforeSpanId = Tracer.startSpan("before-construction").getSpanId();
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("streaming-output");
+            Span span = Tracer.completeSpan().get();
+            assertThat(span.getOperation()).isEqualTo("streaming-output");
+            assertThat(span.getParentSpanId()).contains(beforeSpanId);
         });
         Tracer.startSpan("after-construction");
         streamingOutput.write(new ByteArrayOutputStream());

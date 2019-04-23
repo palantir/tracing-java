@@ -130,10 +130,10 @@ public final class Tracer {
                 .type(type);
 
         Trace trace = getOrCreateCurrentTrace();
-        Optional<OpenSpan> prevState = trace.top();
+        Optional<String> parentSpanId = trace.topSpanId();
         // Avoid lambda allocation in hot paths
-        if (prevState.isPresent()) {
-            spanBuilder.parentSpanId(prevState.get().getSpanId());
+        if (parentSpanId.isPresent()) {
+            spanBuilder.parentSpanId(parentSpanId.get());
         }
 
         OpenSpan span = spanBuilder.build();

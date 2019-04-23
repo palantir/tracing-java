@@ -23,6 +23,7 @@ import com.palantir.tracing.api.SpanObserver;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -33,21 +34,34 @@ public final class Trace {
     private final Deque<OpenSpan> stack;
     private final boolean isObservable;
     private final String traceId;
+    @Nullable
+    private final String parentSpanId;
 
-    private Trace(ArrayDeque<OpenSpan> stack, boolean isObservable, String traceId) {
+    private Trace(ArrayDeque<OpenSpan> stack, boolean isObservable, String traceId, String parentSpanId) {
         checkArgument(!traceId.isEmpty(), "traceId must be non-empty");
 
         this.stack = stack;
         this.isObservable = isObservable;
         this.traceId = traceId;
+        this.parentSpanId = parentSpanId;
+    }
+
+    Trace(boolean isObservable, String traceId, String parentSpanId) {
+        this(new ArrayDeque<>(), isObservable, traceId, parentSpanId);
     }
 
     Trace(boolean isObservable, String traceId) {
-        this(new ArrayDeque<>(), isObservable, traceId);
+        this(isObservable, traceId, null);
     }
 
     void push(OpenSpan span) {
         stack.push(span);
+    }
+
+    Optional<String> topSpanId() {
+        return stack.isEmpty()
+                ? Optional.ofNullable(parentSpanId)
+                : Optional.of(stack.peekFirst().getSpanId());
     }
 
     Optional<OpenSpan> top() {
@@ -79,7 +93,7 @@ public final class Trace {
 
     /** Returns a copy of this Trace which can be independently mutated. */
     Trace deepCopy() {
-        return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
+        return new Trace(new ArrayDeque<>(stack), isObservable, traceId, parentSpanId);
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
 import java.io.Serializable;
 import java.util.Optional;
@@ -48,43 +47,30 @@ public final class DeferredTracer implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
-
     @Nullable
     private final String traceId;
     private final boolean isObservable;
-    private final String operation;
     @Nullable
     private final String parentSpanId;
+    @Nullable
+    private final String operation;
 
-    /**
-     * Deprecated.
-     *
-     * @deprecated Use {@link #DeferredTracer(String)}
-     */
-    @Deprecated
     public DeferredTracer() {
         this(Optional.empty());
     }
 
-    /**
-     * Deprecated.
-     *
-     * @deprecated Use {@link #DeferredTracer(String)}
-     */
-    @Deprecated
-    public DeferredTracer(Optional<String> operation) {
-        this(operation.orElse(DEFAULT_OPERATION));
+    public DeferredTracer(String operation) {
+        this(Optional.of(operation));
     }
 
-    public DeferredTracer(String operation) {
+    public DeferredTracer(Optional<String> operation) {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
             this.traceId = trace.getTraceId();
             this.isObservable = trace.isObservable();
-            this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
-            this.operation = operation;
+            this.parentSpanId = trace.topSpanId().orElse(null);
+            this.operation = operation.orElse(null);
         } else {
             this.traceId = null;
             this.isObservable = false;
@@ -104,17 +90,21 @@ public final class DeferredTracer implements Serializable {
 
         Optional<Trace> originalTrace = Tracer.copyTrace();
 
-        Tracer.setTrace(new Trace(isObservable, traceId));
-        if (parentSpanId != null) {
-            Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
-        } else {
-            Tracer.startSpan(operation);
+        Tracer.setTrace(new Trace(isObservable, traceId, parentSpanId));
+        if (operation != null) {
+            if (parentSpanId != null) {
+                Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
+            } else {
+                Tracer.startSpan(operation);
+            }
         }
 
         try {
             return inner.call();
         } finally {
-            Tracer.fastCompleteSpan();
+            if (operation != null) {
+                Tracer.fastCompleteSpan();
+            }
             if (originalTrace.isPresent()) {
                 Tracer.setTrace(originalTrace.get());
             } else {
