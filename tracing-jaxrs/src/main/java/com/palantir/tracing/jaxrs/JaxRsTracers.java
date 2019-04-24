@@ -40,7 +40,7 @@ public final class JaxRsTracers {
 
         TracingAwareStreamingOutput(StreamingOutput delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer();
+            this.deferredTracer = new DeferredTracer("streaming-output");
         }
 
         @Override

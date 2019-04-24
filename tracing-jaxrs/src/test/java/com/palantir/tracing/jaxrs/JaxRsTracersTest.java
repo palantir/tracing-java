@@ -39,7 +39,7 @@ public final class JaxRsTracersTest {
     public void testWrappingStreamingOutput_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.startSpan("before-construction");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("before-construction");
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("streaming-output");
         });
         Tracer.startSpan("after-construction");
         streamingOutput.write(new ByteArrayOutputStream());

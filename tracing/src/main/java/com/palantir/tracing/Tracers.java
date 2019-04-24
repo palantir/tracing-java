@@ -328,6 +328,7 @@ public final class Tracers {
      * intuitively expected) tracing state, we remember the original state and set it for the duration of the
      * {@link #call() execution}.
      */
+    @SuppressWarnings("deprecation")
     private static class TracingAwareCallable<V> implements Callable<V> {
         private final Callable<V> delegate;
         private final DeferredTracer deferredTracer;
@@ -347,6 +348,7 @@ public final class Tracers {
      * Wraps a given runnable such that its execution operates with the {@link Trace thread-local Trace} of the thread
      * that constructs the {@link TracingAwareRunnable} instance rather than the thread that executes the runnable.
      */
+    @SuppressWarnings("deprecation")
     private static class TracingAwareRunnable implements Runnable {
         private final Runnable delegate;
         private DeferredTracer deferredTracer;
