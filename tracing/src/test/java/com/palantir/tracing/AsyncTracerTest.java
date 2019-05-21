@@ -42,7 +42,8 @@ public class AsyncTracerTest {
 
     @Test
     public void completesBothDeferredSpans() {
-        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        Tracer.initTrace(Optional.of(true), "defaultTraceId");
+        Tracer.startSpan("defaultSpan");
         AsyncTracer asyncTracer = new AsyncTracer();
         List<String> observedSpans = Lists.newArrayList();
         Tracer.subscribe(
