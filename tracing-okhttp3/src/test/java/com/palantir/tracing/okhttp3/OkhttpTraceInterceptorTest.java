@@ -105,6 +105,7 @@ public final class OkhttpTraceInterceptorTest {
 
     @Test
     public void testAddsIsSampledHeader_whenTraceIsObservable() throws IOException {
+        Tracer.initTrace(Optional.of(true), Tracers.randomId());
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
         assertThat(requestCaptor.getValue().header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("1");

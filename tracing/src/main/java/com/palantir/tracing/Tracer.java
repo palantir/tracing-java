@@ -59,7 +59,7 @@ public final class Tracer {
     private static volatile Consumer<Span> compositeObserver = span -> { };
 
     // Thread-safe since stateless
-    private static volatile TraceSampler sampler = AlwaysSampler.INSTANCE;
+    private static volatile TraceSampler sampler = new RandomSampler(0.01f);
 
     /**
      * Creates a new trace, but does not set it as the current trace. The new trace is {@link Trace#isObservable
