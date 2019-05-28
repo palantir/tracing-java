@@ -87,7 +87,6 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
         private static Iterable<? extends ZipkinCompatAnnotation> spanTypeToZipkinAnnotations(
                 Span span, ZipkinCompatEndpoint endpoint) {
-
             List<ZipkinCompatAnnotation> annotations = Lists.newArrayListWithCapacity(2);
             switch (span.type()) {
                 case CLIENT_OUTGOING:
