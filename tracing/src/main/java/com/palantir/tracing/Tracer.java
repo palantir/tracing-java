@@ -338,7 +338,7 @@ public final class Tracer {
     }
 
     /** Returns an independent copy of this thread's {@link Trace}. */
-    static Optional<Trace> copyTrace() {
+    public static Optional<Trace> copyTrace() {
         Trace trace = currentTrace.get();
         if (trace != null) {
             return Optional.of(trace.deepCopy());
