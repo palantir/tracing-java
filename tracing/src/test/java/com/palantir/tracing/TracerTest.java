@@ -61,7 +61,7 @@ public final class TracerTest {
 
     @After
     public void after() {
-        Tracer.initTrace(Optional.of(true), Tracers.randomId());
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.unsubscribe("0");
         Tracer.unsubscribe("1");
@@ -71,11 +71,11 @@ public final class TracerTest {
 
     @Test
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
-        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Optional.empty(), null))
+        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.SAMPLER_DECIDES, null))
                 .hasLogMessage("traceId must be non-empty")
                 .hasArgs();
 
-        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Optional.empty(), ""))
+        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.SAMPLER_DECIDES, ""))
                 .hasLogMessage("traceId must be non-empty")
                 .hasArgs();
 
@@ -130,21 +130,21 @@ public final class TracerTest {
     public void testObserversAreInvokedOnObservableTracesOnly() throws Exception {
         Tracer.subscribe("1", observer1);
 
-        Tracer.initTrace(Optional.of(true), Tracers.randomId());
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         Span span = startAndCompleteSpan();
         verify(observer1).consume(span);
         span = startAndCompleteSpan();
         verify(observer1).consume(span);
         verifyNoMoreInteractions(observer1);
 
-        Tracer.initTrace(Optional.of(false), Tracers.randomId());
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
         startAndCompleteSpan(); // not sampled, see above
         verifyNoMoreInteractions(observer1);
     }
 
     @Test
     public void testDerivesNewSpansWhenTraceIsNotObservable() throws Exception {
-        Tracer.initTrace(Optional.of(false), Tracers.randomId());
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("bar");

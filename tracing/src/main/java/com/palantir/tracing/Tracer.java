@@ -24,6 +24,7 @@ import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
+import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -62,32 +63,32 @@ public final class Tracer {
     private static volatile TraceSampler sampler = new RandomSampler(0.01f);
 
     /**
-     * Creates a new trace, but does not set it as the current trace. The new trace is {@link Trace#isObservable
-     * observable} iff the given flag is true, or, iff {@code isObservable} is absent, if the {@link #setSampler
-     * configured sampler} returns true.
+     * Creates a new trace, but does not set it as the current trace.
      */
-    private static Trace createTrace(Optional<Boolean> isObservable, String traceId) {
+    private static Trace createTrace(Observability observability, String traceId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
-        boolean observable = shouldObserve(isObservable);
+        boolean observable = shouldObserve(observability);
         return new Trace(observable, traceId);
     }
 
-    // Avoid lambda allocation on hot paths
-    @SuppressWarnings("OptionalIsPresent")
-    private static boolean shouldObserve(Optional<Boolean> isObservable) {
-        if (isObservable.isPresent()) {
-            return Boolean.TRUE.equals(isObservable.get());
+    private static boolean shouldObserve(Observability observability) {
+        switch (observability) {
+            case SAMPLE:
+                return true;
+            case DO_NOT_SAMPLE:
+                return false;
+            case SAMPLER_DECIDES:
+                return sampler.sample();
         }
-        return sampler.sample();
+
+        throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
     }
 
     /**
-     * Initializes the current thread's trace, erasing any previously accrued open spans. The new trace is {@link
-     * Trace#isObservable observable} iff the given flag is true, or, iff {@code isObservable} is absent, if the {@link
-     * #setSampler configured sampler} returns true.
+     * Initializes the current thread's trace, erasing any previously accrued open spans.
      */
-    public static void initTrace(Optional<Boolean> isObservable, String traceId) {
-        setTrace(createTrace(isObservable, traceId));
+    public static void initTrace(Observability observability, String traceId) {
+        setTrace(createTrace(observability, traceId));
     }
 
     /**
@@ -356,7 +357,7 @@ public final class Tracer {
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            trace = createTrace(Optional.empty(), Tracers.randomId());
+            trace = createTrace(Observability.SAMPLER_DECIDES, Tracers.randomId());
             setTrace(trace);
         }
         return trace;

@@ -24,7 +24,6 @@ import com.palantir.tracing.api.OpenSpan;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -47,7 +46,7 @@ public final class TracersTest {
         MDC.clear();
 
         // Initialize a new trace for each test
-        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        Tracer.initTrace(Observability.SAMPLER_DECIDES, "defaultTraceId");
     }
 
     @After

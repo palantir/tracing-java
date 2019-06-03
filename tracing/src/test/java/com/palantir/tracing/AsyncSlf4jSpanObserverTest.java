@@ -39,7 +39,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import org.jmock.lib.concurrent.DeterministicScheduler;
@@ -99,7 +98,7 @@ public final class AsyncSlf4jSpanObserverTest {
         DeterministicScheduler executor = new DeterministicScheduler();
         Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
                 "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
-        Tracer.initTrace(Optional.of(true), Tracers.randomId());
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         Tracer.startSpan("operation");
         Span span = Tracer.completeSpan().get();
         verify(appender, never()).doAppend(any(ILoggingEvent.class)); // async logger only fires when executor runs
@@ -120,7 +119,7 @@ public final class AsyncSlf4jSpanObserverTest {
     public void testDefaultConstructorDeterminesIpAddress() throws Exception {
         DeterministicScheduler executor = new DeterministicScheduler();
         Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of("serviceName", executor));
-        Tracer.initTrace(Optional.of(true), Tracers.randomId());
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         Tracer.startSpan("operation");
         Span span = Tracer.completeSpan().get();
 

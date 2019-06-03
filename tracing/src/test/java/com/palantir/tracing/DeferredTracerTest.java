@@ -23,14 +23,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.Optional;
 import org.junit.Test;
 
 public class DeferredTracerTest {
 
     @Test
     public void testIsSerializable() throws IOException, ClassNotFoundException {
-        Tracer.initTrace(Optional.empty(), "defaultTraceId");
+        Tracer.initTrace(Observability.SAMPLER_DECIDES, "defaultTraceId");
 
         DeferredTracer deferredTracer = new DeferredTracer("operation");
 
@@ -39,7 +38,7 @@ public class DeferredTracerTest {
             objectOutputStream.writeObject(deferredTracer);
         }
 
-        Tracer.initTrace(Optional.empty(), "someOtherTraceId");
+        Tracer.initTrace(Observability.SAMPLER_DECIDES, "someOtherTraceId");
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try (ObjectInputStream objectInputStream = new ObjectInputStream(bais)) {
