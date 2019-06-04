@@ -105,10 +105,10 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     // Returns true iff the context contains a "1" X-B3-Sampled header, or absent if there is no such header.
     private static Observability getObservabilityFromHeader(ContainerRequestContext context) {
         String header = context.getHeaderString(TraceHttpHeaders.IS_SAMPLED);
-        if (header == null) {
+        if (Strings.isNullOrEmpty(header)) {
             return Observability.UNDECIDED;
         } else {
-            return header.equals("1") ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
+            return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
     }
 }

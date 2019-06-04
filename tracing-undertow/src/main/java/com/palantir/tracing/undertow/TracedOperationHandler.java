@@ -72,14 +72,14 @@ public final class TracedOperationHandler implements HttpHandler {
         }
     }
 
-    // Returns true iff the context contains a "1" X-B3-Sampled header, false if the header contains another value,
-    // or absent if there is no such header.
+    // Force sample iff the context contains a "1" X-B3-Sampled header, force not sample if the header contains another
+    // non-empty value, or undecided if there is no such header or the header is empty.
     private static Observability getObservabilityFromHeader(HeaderMap headers) {
         String header = headers.getFirst(IS_SAMPLED);
-        if (header == null) {
+        if (Strings.isNullOrEmpty(header)) {
             return Observability.UNDECIDED;
         } else {
-            return header.equals("1") ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
+            return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
     }
 
