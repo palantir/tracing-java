@@ -79,8 +79,6 @@ public final class TracedOperationHandler implements HttpHandler {
         if (header == null) {
             return Observability.SAMPLER_DECIDES;
         } else {
-            // No need to box the resulting boolean and allocate
-            // a new Optional wrapper for each invocation.
             return header.equals("1") ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
     }
