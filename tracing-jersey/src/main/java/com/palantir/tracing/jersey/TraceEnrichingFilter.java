@@ -17,6 +17,7 @@
 package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
+import com.palantir.tracing.Observability;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.Span;
@@ -66,10 +67,10 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
             // HTTP request did not indicate a trace; initialize trace state and create a span.
-            Tracer.initTrace(hasSampledHeader(requestContext), Tracers.randomId());
+            Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
             Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
         } else {
-            Tracer.initTrace(hasSampledHeader(requestContext), traceId);
+            Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
             if (spanId == null) {
                 Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
             } else {
@@ -101,13 +102,14 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         }
     }
 
-    // Returns true iff the context contains a "1" X-B3-Sampled header, or absent if there is no such header.
-    private static Optional<Boolean> hasSampledHeader(ContainerRequestContext context) {
+    // Force sample iff the context contains a "1" X-B3-Sampled header, force not sample if the header contains another
+    // non-empty value, or undecided if there is no such header or the header is empty.
+    private static Observability getObservabilityFromHeader(ContainerRequestContext context) {
         String header = context.getHeaderString(TraceHttpHeaders.IS_SAMPLED);
-        if (header == null) {
-            return Optional.empty();
+        if (Strings.isNullOrEmpty(header)) {
+            return Observability.UNDECIDED;
         } else {
-            return Optional.of(header.equals("1"));
+            return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
     }
 }

@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.Observability;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.OpenSpan;
@@ -30,7 +31,6 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
-import java.util.Optional;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import org.junit.After;
@@ -65,7 +65,7 @@ public final class OkhttpTraceInterceptorTest {
 
     @After
     public void after() {
-        Tracer.initTrace(Optional.of(true), Tracers.randomId());
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         Tracer.unsubscribe("");
     }
 
@@ -105,7 +105,7 @@ public final class OkhttpTraceInterceptorTest {
 
     @Test
     public void testAddsIsSampledHeader_whenTraceIsObservable() throws IOException {
-        Tracer.initTrace(Optional.of(true), Tracers.randomId());
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
         assertThat(requestCaptor.getValue().header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("1");
@@ -113,7 +113,7 @@ public final class OkhttpTraceInterceptorTest {
 
     @Test
     public void testHeaders_whenTraceIsNotObservable() throws IOException {
-        Tracer.initTrace(Optional.of(false), Tracers.randomId());
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
         String traceId = Tracer.getTraceId();
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());

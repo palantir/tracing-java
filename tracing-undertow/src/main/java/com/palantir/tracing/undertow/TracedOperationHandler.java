@@ -19,6 +19,7 @@ package com.palantir.tracing.undertow;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
+import com.palantir.tracing.Observability;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.SpanType;
@@ -28,7 +29,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
-import java.util.Optional;
 
 /**
  * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding
@@ -49,13 +49,6 @@ public final class TracedOperationHandler implements HttpHandler {
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
     private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
-
-
-    // Pre-compute sampled values, there's no need to do this work for each request
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static final Optional<Boolean> SAMPLED = Optional.of(Boolean.TRUE);
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static final Optional<Boolean> NOT_SAMPLED = Optional.of(Boolean.FALSE);
 
     private final String operation;
     private final HttpHandler delegate;
@@ -79,16 +72,14 @@ public final class TracedOperationHandler implements HttpHandler {
         }
     }
 
-    // Returns true iff the context contains a "1" X-B3-Sampled header, false if the header contains another value,
-    // or absent if there is no such header.
-    private static Optional<Boolean> hasSampledHeader(HeaderMap headers) {
+    // Force sample iff the context contains a "1" X-B3-Sampled header, force not sample if the header contains another
+    // non-empty value, or undecided if there is no such header or the header is empty.
+    private static Observability getObservabilityFromHeader(HeaderMap headers) {
         String header = headers.getFirst(IS_SAMPLED);
-        if (header == null) {
-            return Optional.empty();
+        if (Strings.isNullOrEmpty(header)) {
+            return Observability.UNDECIDED;
         } else {
-            // No need to box the resulting boolean and allocate
-            // a new Optional wrapper for each invocation.
-            return header.equals("1") ? SAMPLED : NOT_SAMPLED;
+            return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
     }
 
@@ -109,7 +100,7 @@ public final class TracedOperationHandler implements HttpHandler {
 
     /** Initializes trace state given a trace-id header from the client. */
     private void initializeTraceFromExisting(HeaderMap headers, String traceId) {
-        Tracer.initTrace(hasSampledHeader(headers), traceId);
+        Tracer.initTrace(getObservabilityFromHeader(headers), traceId);
         String spanId = headers.getFirst(SPAN_ID); // nullable
         if (spanId == null) {
             Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
@@ -123,7 +114,7 @@ public final class TracedOperationHandler implements HttpHandler {
     private String initializeNewTrace(HeaderMap headers) {
         // HTTP request did not indicate a trace; initialize trace state and create a span.
         String newTraceId = Tracers.randomId();
-        Tracer.initTrace(hasSampledHeader(headers), newTraceId);
+        Tracer.initTrace(getObservabilityFromHeader(headers), newTraceId);
         Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
         return newTraceId;
     }
