@@ -85,6 +85,20 @@ public final class Tracer {
     }
 
     /**
+     * Deprecated.
+     *
+     * @deprecated Use {@link #initTrace(Observability, String)}
+     */
+    @Deprecated
+    public static void initTrace(Optional<Boolean> isObservable, String traceId) {
+        Observability observability = isObservable
+                .map(value -> Boolean.TRUE.equals(value) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
+                .orElse(Observability.SAMPLER_DECIDES);
+
+        setTrace(createTrace(observability, traceId));
+    }
+
+    /**
      * Initializes the current thread's trace, erasing any previously accrued open spans.
      */
     public static void initTrace(Observability observability, String traceId) {
