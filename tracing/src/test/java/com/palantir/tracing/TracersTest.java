@@ -333,6 +333,20 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapCallableWithNewTrace_canSpecifyObservability() throws Exception {
+        Callable<Boolean> rawCallable = () -> {
+            return Tracer.copyTrace().get().isObservable();
+        };
+
+        Callable<Boolean> sampledCallable = Tracers.wrapWithNewTrace("someTraceId", Observability.SAMPLE, rawCallable);
+        Callable<Boolean> unSampledCallable = Tracers.wrapWithNewTrace("someTraceId", Observability.DO_NOT_SAMPLE,
+                rawCallable);
+
+        assertThat(sampledCallable.call()).isTrue();
+        assertThat(unSampledCallable.call()).isFalse();
+    }
+
+    @Test
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableIsIsolated() throws Exception {
         String traceIdBeforeConstruction = Tracer.getTraceId();
 
@@ -424,6 +438,26 @@ public final class TracersTest {
     }
 
     @Test
+    public void testWrapRunnableWithNewTrace_canSpecifyObservability() {
+        Runnable rawSampledRunnable = () -> {
+            assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
+        };
+
+        Runnable sampledRunnable = Tracers.wrapWithNewTrace("someTraceId", Observability.SAMPLE, rawSampledRunnable);
+
+        sampledRunnable.run();
+
+        Runnable rawUnSampledRunnable = () -> {
+            assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
+        };
+
+        Runnable unSampledRunnable = Tracers.wrapWithNewTrace("someTraceId", Observability.DO_NOT_SAMPLE,
+                rawUnSampledRunnable);
+
+        unSampledRunnable.run();
+    }
+
+    @Test
     public void testWrapRunnableWithAlternateTraceId_traceStateInsideRunnableUsesGivenTraceId() {
         String traceIdBeforeConstruction = Tracer.getTraceId();
         AtomicReference<String> traceId = new AtomicReference<>();
@@ -502,6 +536,25 @@ public final class TracersTest {
             // no-op
         }).run();
         assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
+    public void testWrapRunnableWithAlternateTraceId_canSpecifyObservability() {
+        Runnable sampledRunnable = Tracers.wrapWithAlternateTraceId(
+                "someTraceId",
+                "operation",
+                Observability.SAMPLE,
+                () -> assertThat(Tracer.copyTrace().get().isObservable()).isTrue());
+
+        sampledRunnable.run();
+
+        Runnable unSampledRunnable = Tracers.wrapWithAlternateTraceId(
+                "someTraceId",
+                "operation",
+                Observability.DO_NOT_SAMPLE,
+                () -> assertThat(Tracer.copyTrace().get().isObservable()).isFalse());
+
+        unSampledRunnable.run();
     }
 
     @Test
