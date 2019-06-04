@@ -77,7 +77,7 @@ public final class Tracer {
                 return true;
             case DO_NOT_SAMPLE:
                 return false;
-            case SAMPLER_DECIDES:
+            case UNDECIDED:
                 return sampler.sample();
         }
 
@@ -93,7 +93,7 @@ public final class Tracer {
     public static void initTrace(Optional<Boolean> isObservable, String traceId) {
         Observability observability = isObservable
                 .map(value -> Boolean.TRUE.equals(value) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
-                .orElse(Observability.SAMPLER_DECIDES);
+                .orElse(Observability.UNDECIDED);
 
         setTrace(createTrace(observability, traceId));
     }
@@ -371,7 +371,7 @@ public final class Tracer {
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            trace = createTrace(Observability.SAMPLER_DECIDES, Tracers.randomId());
+            trace = createTrace(Observability.UNDECIDED, Tracers.randomId());
             setTrace(trace);
         }
         return trace;

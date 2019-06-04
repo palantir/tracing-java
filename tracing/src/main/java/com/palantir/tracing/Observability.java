@@ -19,5 +19,5 @@ package com.palantir.tracing;
 public enum Observability {
     SAMPLE,
     DO_NOT_SAMPLE,
-    SAMPLER_DECIDES
+    UNDECIDED
 }

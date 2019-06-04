@@ -29,7 +29,7 @@ public class DeferredTracerTest {
 
     @Test
     public void testIsSerializable() throws IOException, ClassNotFoundException {
-        Tracer.initTrace(Observability.SAMPLER_DECIDES, "defaultTraceId");
+        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
 
         DeferredTracer deferredTracer = new DeferredTracer("operation");
 
@@ -38,7 +38,7 @@ public class DeferredTracerTest {
             objectOutputStream.writeObject(deferredTracer);
         }
 
-        Tracer.initTrace(Observability.SAMPLER_DECIDES, "someOtherTraceId");
+        Tracer.initTrace(Observability.UNDECIDED, "someOtherTraceId");
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try (ObjectInputStream objectInputStream = new ObjectInputStream(bais)) {

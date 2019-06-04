@@ -77,7 +77,7 @@ public final class TracedOperationHandler implements HttpHandler {
     private static Observability getObservabilityFromHeader(HeaderMap headers) {
         String header = headers.getFirst(IS_SAMPLED);
         if (header == null) {
-            return Observability.SAMPLER_DECIDES;
+            return Observability.UNDECIDED;
         } else {
             return header.equals("1") ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }

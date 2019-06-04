@@ -106,7 +106,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     private static Observability getObservabilityFromHeader(ContainerRequestContext context) {
         String header = context.getHeaderString(TraceHttpHeaders.IS_SAMPLED);
         if (header == null) {
-            return Observability.SAMPLER_DECIDES;
+            return Observability.UNDECIDED;
         } else {
             return header.equals("1") ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }

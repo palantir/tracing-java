@@ -71,11 +71,11 @@ public final class TracerTest {
 
     @Test
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
-        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.SAMPLER_DECIDES, null))
+        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.UNDECIDED, null))
                 .hasLogMessage("traceId must be non-empty")
                 .hasArgs();
 
-        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.SAMPLER_DECIDES, ""))
+        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.UNDECIDED, ""))
                 .hasLogMessage("traceId must be non-empty")
                 .hasArgs();
 

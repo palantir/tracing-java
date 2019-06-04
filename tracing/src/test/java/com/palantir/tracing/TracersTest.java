@@ -46,7 +46,7 @@ public final class TracersTest {
         MDC.clear();
 
         // Initialize a new trace for each test
-        Tracer.initTrace(Observability.SAMPLER_DECIDES, "defaultTraceId");
+        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
     }
 
     @After

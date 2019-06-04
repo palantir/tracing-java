@@ -25,7 +25,7 @@ import org.junit.Test;
 public class AsyncTracerTest {
     @Test
     public void doesNotLeakEnqueueSpan() {
-        Tracer.initTrace(Observability.SAMPLER_DECIDES, "defaultTraceId");
+        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
         Trace originalTrace = getTrace();
         AsyncTracer deferredTracer = new AsyncTracer();
         assertThat(originalTrace.top()).isEmpty();
@@ -56,7 +56,7 @@ public class AsyncTracerTest {
 
     @Test
     public void preservesState() {
-        Tracer.initTrace(Observability.SAMPLER_DECIDES, "defaultTraceId");
+        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
         Tracer.startSpan("baz");

@@ -229,7 +229,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Observability.SAMPLER_DECIDES, Tracers.randomId());
+                Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
                 Tracer.startSpan(operation);
                 return delegate.call();
             } finally {
@@ -261,7 +261,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Observability.SAMPLER_DECIDES, Tracers.randomId());
+                Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
                 Tracer.startSpan(operation);
                 delegate.run();
             } finally {
@@ -295,7 +295,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Observability.SAMPLER_DECIDES, traceId);
+                Tracer.initTrace(Observability.UNDECIDED, traceId);
                 Tracer.startSpan(operation);
                 delegate.run();
             } finally {
