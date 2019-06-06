@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +40,11 @@ public final class Tracers {
     /** Returns a random ID suitable for span and trace IDs. */
     public static String randomId() {
         return longToPaddedHex(ThreadLocalRandom.current().nextLong());
+    }
+
+    /** Returns a random ID suitable for span and trace IDs. */
+    public static CharSequence lazyRandomId() {
+        return new LazyRandomId();
     }
 
     /**
@@ -234,7 +240,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(observability, Tracers.randomId());
+                Tracer.initTrace(observability, Tracers.lazyRandomId());
                 Tracer.startSpan(operation);
                 return delegate.call();
             } finally {
@@ -270,7 +276,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(observability, Tracers.randomId());
+                Tracer.initTrace(observability, Tracers.lazyRandomId());
                 Tracer.startSpan(operation);
                 delegate.run();
             } finally {
@@ -382,5 +388,60 @@ public final class Tracers {
 
     public interface ThrowingCallable<T, E extends Throwable> {
         T call() throws E;
+    }
+
+    private static final class LazyRandomId implements CharSequence {
+        private String randomId;
+
+        private String id() {
+            String id = this.randomId;
+            if (id == null) {
+                synchronized (this) {
+                    if (this.randomId == null) {
+                        id = randomId();
+                        this.randomId = id;
+                    }
+                }
+            }
+            return id;
+        }
+
+        @Override
+        public int length() {
+            return id().length();
+        }
+
+        @Override
+        public char charAt(int index) {
+            return id().charAt(index);
+        }
+
+        @Override
+        public CharSequence subSequence(int start, int end) {
+            return id().subSequence(start, end);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null || getClass() != obj.getClass()) {
+                return false;
+            }
+
+            LazyRandomId that = (LazyRandomId) obj;
+            return Objects.equals(this.id(), that.id());
+        }
+
+        @Override
+        public int hashCode() {
+            return id().hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return id();
+        }
     }
 }

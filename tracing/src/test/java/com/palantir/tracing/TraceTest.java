@@ -44,4 +44,28 @@ public final class TraceTest {
         assertThat(trace.toString()).isEqualTo("Trace{stack=[OpenSpan{operation=operation, startTimeMicroSeconds=0, "
                 + "startClockNanoSeconds=0, spanId=spanId, type=LOCAL}], isObservable=true, traceId='traceId'}");
     }
+
+    @Test
+    public void noop() {
+        Trace traceId = Trace.create(false, "traceId");
+        assertThat(traceId.getTraceId()).isEqualTo("noop");
+        assertThat(traceId.isObservable()).isFalse();
+        assertThat(traceId.isEmpty()).isTrue();
+        assertThat(traceId.pop()).isNotPresent();
+        assertThat(traceId.top()).isNotPresent();
+        assertThat(traceId.deepCopy()).isSameAs(traceId);
+
+        traceId.push(OpenSpan.builder().spanId("spanId").operation("operation").type(SpanType.LOCAL).build());
+        assertThat(traceId.getTraceId()).isEqualTo("noop");
+        assertThat(traceId.isObservable()).isFalse();
+        assertThat(traceId.isEmpty()).isTrue();
+        assertThat(traceId.pop()).isNotPresent();
+        assertThat(traceId.top()).isNotPresent();
+        assertThat(traceId.deepCopy()).isSameAs(traceId);
+
+        assertThat(traceId.toString()).isEqualTo("Trace{stack=[], isObservable=false, traceId='noop'}");
+
+        assertThat(traceId).isSameAs(Trace.create(false, "traceId2"));
+    }
+
 }

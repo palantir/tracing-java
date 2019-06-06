@@ -65,10 +65,10 @@ public final class Tracer {
     /**
      * Creates a new trace, but does not set it as the current trace.
      */
-    private static Trace createTrace(Observability observability, String traceId) {
-        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
+    private static Trace createTrace(Observability observability, CharSequence traceId) {
+        checkArgument(traceId != null && traceId.length() != 0, "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return new Trace(observable, traceId);
+        return Trace.create(observable, traceId);
     }
 
     private static boolean shouldObserve(Observability observability) {
@@ -94,14 +94,21 @@ public final class Tracer {
         Observability observability = isObservable
                 .map(value -> Boolean.TRUE.equals(value) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
                 .orElse(Observability.UNDECIDED);
-
-        setTrace(createTrace(observability, traceId));
+        createAndInitTrace(observability, traceId);
     }
 
     /**
      * Initializes the current thread's trace, erasing any previously accrued open spans.
      */
     public static void initTrace(Observability observability, String traceId) {
+        createAndInitTrace(observability, traceId);
+    }
+
+    public static void initTrace(Observability observability, CharSequence traceId) {
+        createAndInitTrace(observability, traceId);
+    }
+
+    private static void createAndInitTrace(Observability observability, CharSequence traceId) {
         setTrace(createTrace(observability, traceId));
     }
 
@@ -371,7 +378,7 @@ public final class Tracer {
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            trace = createTrace(Observability.UNDECIDED, Tracers.randomId());
+            trace = createTrace(Observability.UNDECIDED, Tracers.lazyRandomId());
             setTrace(trace);
         }
         return trace;

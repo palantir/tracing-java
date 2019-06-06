@@ -566,6 +566,22 @@ public final class TracersTest {
         assertThat(Tracers.longToPaddedHex(123456789L)).isEqualTo("00000000075bcd15");
     }
 
+    @Test
+    public void testLazyIdGeneration() {
+        CharSequence lazyRandomId = Tracers.lazyRandomId();
+        assertThat(lazyRandomId)
+                .isNotInstanceOf(String.class)
+                .isEqualTo(lazyRandomId)
+                .hasSize(16);
+        assertThat(lazyRandomId.length()).isEqualTo(16);
+        assertThat(lazyRandomId.toString()).isSameAs(lazyRandomId.toString());
+        assertThat(Tracers.lazyRandomId()).isNotEqualTo(Tracers.lazyRandomId());
+
+        for (int i = 0; i < 160; i++) {
+            assertThat(Tracers.lazyRandomId()).hasSize(16); // fails with p=1/16 if generated string is not padded
+        }
+    }
+
     private static Callable<Void> newTraceExpectingCallable(String expectedOperation) {
         final Set<String> seenTraceIds = new HashSet<>();
         seenTraceIds.add(Tracer.getTraceId());

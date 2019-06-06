@@ -30,11 +30,13 @@ import java.util.Optional;
  */
 public final class Trace {
 
+    private static final Trace NOOP = new Trace(false, "noop");
+
     private final Deque<OpenSpan> stack;
     private final boolean isObservable;
     private final String traceId;
 
-    private Trace(ArrayDeque<OpenSpan> stack, boolean isObservable, String traceId) {
+    private Trace(Deque<OpenSpan> stack, boolean isObservable, String traceId) {
         checkArgument(!traceId.isEmpty(), "traceId must be non-empty");
 
         this.stack = stack;
@@ -42,12 +44,21 @@ public final class Trace {
         this.traceId = traceId;
     }
 
+    static Trace create(boolean isObservable, CharSequence traceId) {
+        if (isObservable) {
+            return new Trace(isObservable, traceId.toString());
+        }
+        return NOOP;
+    }
+
     Trace(boolean isObservable, String traceId) {
         this(new ArrayDeque<>(), isObservable, traceId);
     }
 
     void push(OpenSpan span) {
-        stack.push(span);
+        if (isObservable) {
+            stack.push(span);
+        }
     }
 
     Optional<OpenSpan> top() {
@@ -79,7 +90,11 @@ public final class Trace {
 
     /** Returns a copy of this Trace which can be independently mutated. */
     Trace deepCopy() {
-        return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
+        if (isObservable) {
+            return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
+        } else {
+            return NOOP;
+        }
     }
 
     @Override

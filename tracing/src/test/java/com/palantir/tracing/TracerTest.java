@@ -32,6 +32,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.assertj.core.util.Sets;
 import org.junit.After;
 import org.junit.Before;
@@ -138,17 +139,20 @@ public final class TracerTest {
         verifyNoMoreInteractions(observer1);
 
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
-        startAndCompleteSpan(); // not sampled, see above
+        assertThat(Tracer.isTraceObservable()).isFalse();
+        assertThat(startAndCompleteSpan()).isNull(); // not sampled, see above
         verifyNoMoreInteractions(observer1);
     }
 
     @Test
     public void testDerivesNewSpansWhenTraceIsNotObservable() throws Exception {
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+        assertThat(Tracer.isTraceObservable()).isFalse();
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("bar");
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("foo");
+        assertThat(Tracer.completeSpan()).isNotPresent();
+        assertThat(Tracer.completeSpan()).isNotPresent();
+        assertThat(Tracer.isTraceObservable()).isFalse();
     }
 
     @Test
@@ -163,7 +167,8 @@ public final class TracerTest {
         verifyNoMoreInteractions(observer1, sampler);
 
         Mockito.reset(observer1, sampler);
-        startAndCompleteSpan(); // not sampled, see above
+        assertThat(Tracer.isTraceObservable()).isFalse();
+        assertThat(startAndCompleteSpan()).isNull(); // not sampled, see above
         verify(sampler).sample();
         verifyNoMoreInteractions(observer1, sampler);
     }
@@ -329,8 +334,9 @@ public final class TracerTest {
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
     }
 
+    @Nullable
     private static Span startAndCompleteSpan() {
         Tracer.startSpan("operation");
-        return Tracer.completeSpan().get();
+        return Tracer.completeSpan().orElse(null);
     }
 }
