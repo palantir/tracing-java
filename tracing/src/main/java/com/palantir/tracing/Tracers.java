@@ -217,19 +217,24 @@ public final class Tracers {
         return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
+    public static <V> Callable<V> wrapWithNewTrace(String operation, Callable<V> delegate) {
+        return wrapWithNewTrace(operation, Observability.UNDECIDED, delegate);
+    }
+
     /**
      * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state} for its execution.
      * That is, the trace during its {@link Callable#call() execution} is entirely separate from the trace at
      * construction or any trace already set on the thread used to execute the callable. Each execution of the callable
      * will have a fresh trace. The given {@link String operation} is used to create the initial span.
      */
-    public static <V> Callable<V> wrapWithNewTrace(String operation, Callable<V> delegate) {
+    public static <V> Callable<V> wrapWithNewTrace(String operation, Observability observability,
+            Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
+                Tracer.initTrace(observability, Tracers.randomId());
                 Tracer.startSpan(operation);
                 return delegate.call();
             } finally {
@@ -249,19 +254,23 @@ public final class Tracers {
         return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
+    public static Runnable wrapWithNewTrace(String operation, Runnable delegate) {
+        return wrapWithNewTrace(operation, Observability.UNDECIDED, delegate);
+    }
+
     /**
      * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state} for its execution.
      * That is, the trace during its {@link Runnable#run() execution} is entirely separate from the trace at
      * construction or any trace already set on the thread used to execute the runnable. Each execution of the runnable
      * will have a fresh trace. The given {@link String operation} is used to create the initial span.
      */
-    public static Runnable wrapWithNewTrace(String operation, Runnable delegate) {
+    public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
+                Tracer.initTrace(observability, Tracers.randomId());
                 Tracer.startSpan(operation);
                 delegate.run();
             } finally {
@@ -281,6 +290,10 @@ public final class Tracers {
         return wrapWithAlternateTraceId(traceId, DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
+    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable delegate) {
+        return wrapWithAlternateTraceId(traceId, operation, Observability.UNDECIDED, delegate);
+    }
+
     /**
      * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state with the given traceId}
      * for its execution. That is, the trace during its {@link Runnable#run() execution} will use the traceId provided
@@ -288,14 +301,14 @@ public final class Tracers {
      * will use a new {@link Trace tracing state} with the same given traceId.  The given {@link String operation} is
      * used to create the initial span.
      */
-    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable
-            delegate) {
+    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Observability observability,
+            Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(Observability.UNDECIDED, traceId);
+                Tracer.initTrace(observability, traceId);
                 Tracer.startSpan(operation);
                 delegate.run();
             } finally {
