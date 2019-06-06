@@ -48,6 +48,13 @@ public final class Tracer {
 
     private static final Logger log = LoggerFactory.getLogger(Tracer.class);
 
+    private static final OpenSpan NOOP_SPAN = OpenSpan.builder()
+            .type(SpanType.LOCAL)
+            .operation("noop")
+            .parentSpanId(Optional.empty())
+            .spanId("noop")
+            .build();
+
     private Tracer() {}
 
     // Thread-safe since thread-local
@@ -118,6 +125,10 @@ public final class Tracer {
      */
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
         Trace current = getOrCreateCurrentTrace();
+        if (!current.isObservable()) {
+            return NOOP_SPAN;
+        }
+
         checkState(current.isEmpty(),
                 "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
@@ -146,12 +157,16 @@ public final class Tracer {
     }
 
     private static OpenSpan startSpanInternal(String operation, SpanType type) {
+        Trace trace = getOrCreateCurrentTrace();
+        if (!trace.isObservable()) {
+            return NOOP_SPAN;
+        }
+
         OpenSpan.Builder spanBuilder = OpenSpan.builder()
                 .operation(operation)
                 .spanId(Tracers.randomId())
                 .type(type);
 
-        Trace trace = getOrCreateCurrentTrace();
         Optional<OpenSpan> prevState = trace.top();
         // Avoid lambda allocation in hot paths
         if (prevState.isPresent()) {
