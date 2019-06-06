@@ -33,6 +33,7 @@ public abstract class OpenSpan {
     /**
      * Returns a description of the operation for this event.
      */
+    @Value.Parameter
     public abstract String getOperation();
 
     /**
@@ -41,6 +42,7 @@ public abstract class OpenSpan {
      * Users of this class should not set this value manually in the builder, it is configured automatically when using
      * the {@link #builder()} static.
      */
+    @Value.Parameter
     public abstract long getStartTimeMicroSeconds();
 
     /**
@@ -49,19 +51,23 @@ public abstract class OpenSpan {
      * Users of this class should not set this value manually in the builder, it is configured automatically when using
      * the {@link #builder()} static.
      */
+    @Value.Parameter
     public abstract long getStartClockNanoSeconds();
 
     /**
      * Returns the identifier of the parent span for the current span, if one exists.
      */
+    @Value.Parameter
     public abstract Optional<String> getParentSpanId();
 
     /**
      * Returns a globally unique identifier representing a single span within the call trace.
      */
+    @Value.Parameter
     public abstract String getSpanId();
 
     /** Indicates the {@link SpanType} of this span, e.g., a server-side vs. client-side vs local span. */
+    @Value.Parameter
     public abstract SpanType type();
 
     /**
@@ -75,6 +81,13 @@ public abstract class OpenSpan {
         return new Builder()
                 .startTimeMicroSeconds(getNowInMicroSeconds())
                 .startClockNanoSeconds(System.nanoTime());
+    }
+
+    /**
+     * Use this factory method to avoid allocate {@link Builder} in hot path.
+     */
+    public static OpenSpan of(String operation, String spanId, SpanType type, Optional<String> parentSpanId) {
+        return ImmutableOpenSpan.of(operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, spanId, type);
     }
 
     private static long getNowInMicroSeconds() {

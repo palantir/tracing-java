@@ -114,12 +114,7 @@ public final class Tracer {
         checkState(current.isEmpty(),
                 "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
-        OpenSpan span = OpenSpan.builder()
-                .spanId(Tracers.randomId())
-                .operation(operation)
-                .parentSpanId(parentSpanId)
-                .type(type)
-                .build();
+        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
         current.push(span);
         return span;
     }
@@ -139,19 +134,16 @@ public final class Tracer {
     }
 
     private static OpenSpan startSpanInternal(String operation, SpanType type) {
-        OpenSpan.Builder spanBuilder = OpenSpan.builder()
-                .operation(operation)
-                .spanId(Tracers.randomId())
-                .type(type);
-
         Trace trace = getOrCreateCurrentTrace();
         Optional<OpenSpan> prevState = trace.top();
+        final OpenSpan span;
         // Avoid lambda allocation in hot paths
         if (prevState.isPresent()) {
-            spanBuilder.parentSpanId(prevState.get().getSpanId());
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
+        } else {
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
         }
 
-        OpenSpan span = spanBuilder.build();
         trace.push(span);
         return span;
     }
