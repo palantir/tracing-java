@@ -20,6 +20,7 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.SafeArg;
@@ -324,6 +325,11 @@ public final class Tracer {
     /** Sets the sampler (for all threads). */
     public static void setSampler(TraceSampler sampler) {
         Tracer.sampler = sampler;
+    }
+
+    @VisibleForTesting
+    static TraceSampler getSampler() {
+        return Tracer.sampler;
     }
 
     /** Returns true if there is an active trace on this thread. */

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,9 +28,19 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public final class CloseableTracerTest {
+
+    private TraceSampler originalSampler;
+
     @Before
     public void before() {
+        originalSampler = Tracer.getSampler();
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.getAndClearTrace();
+    }
+
+    @After
+    public void after() {
+        Tracer.setSampler(originalSampler);
     }
 
     @Test
