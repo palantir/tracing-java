@@ -27,13 +27,13 @@ public final class TraceTest {
 
     @Test
     public void constructTrace_emptyTraceId() {
-        assertThatThrownBy(() -> new Trace(false, ""))
+        assertThatThrownBy(() -> Trace.create(false, ""))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     public void testToString() {
-        Trace trace = new Trace(true, "traceId");
+        Trace trace = Trace.create(true, "traceId");
         trace.push(OpenSpan.builder()
                 .type(SpanType.LOCAL)
                 .spanId("spanId")
@@ -46,26 +46,34 @@ public final class TraceTest {
     }
 
     @Test
-    public void noop() {
-        Trace traceId = Trace.create(false, "traceId");
-        assertThat(traceId.getTraceId()).isEqualTo("noop");
+    public void unobservedTraces() {
+        Trace traceId = Trace.create(false, "testTraceId");
+        assertThat(traceId.getTraceId()).isEqualTo("testTraceId");
         assertThat(traceId.isObservable()).isFalse();
         assertThat(traceId.isEmpty()).isTrue();
         assertThat(traceId.pop()).isNotPresent();
         assertThat(traceId.top()).isNotPresent();
-        assertThat(traceId.deepCopy()).isSameAs(traceId);
+        assertEquals(traceId, traceId.deepCopy());
 
         traceId.push(OpenSpan.builder().spanId("spanId").operation("operation").type(SpanType.LOCAL).build());
-        assertThat(traceId.getTraceId()).isEqualTo("noop");
+        assertThat(traceId.getTraceId()).isEqualTo("testTraceId");
         assertThat(traceId.isObservable()).isFalse();
         assertThat(traceId.isEmpty()).isTrue();
         assertThat(traceId.pop()).isNotPresent();
         assertThat(traceId.top()).isNotPresent();
-        assertThat(traceId.deepCopy()).isSameAs(traceId);
+        assertEquals(traceId, traceId.deepCopy());
 
-        assertThat(traceId.toString()).isEqualTo("Trace{stack=[], isObservable=false, traceId='noop'}");
+        assertThat(traceId.toString()).isEqualTo("Trace{stack=[], isObservable=false, traceId='testTraceId'}");
 
-        assertThat(traceId).isSameAs(Trace.create(false, "traceId2"));
+        assertThat(traceId).isNotEqualTo(Trace.create(false, "traceId2"));
+    }
+
+    private static void assertEquals(Trace one, Trace two) {
+        assertThat(one.getTraceId()).isEqualTo(two.getTraceId());
+        assertThat(one.isObservable()).isEqualTo(two.isObservable());
+        assertThat(one.isEmpty()).isEqualTo(two.isEmpty());
+        assertThat(one.top()).isEqualTo(two.top());
+        assertThat(one.toString()).isEqualTo(two.toString());
     }
 
 }

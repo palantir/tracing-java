@@ -145,7 +145,7 @@ public final class TracerTest {
     }
 
     @Test
-    public void testDerivesNewSpansWhenTraceIsNotObservable() throws Exception {
+    public void testIgnoresNewSpansWhenTraceIsNotObservable() throws Exception {
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
         assertThat(Tracer.isTraceObservable()).isFalse();
         Tracer.startSpan("foo");
@@ -188,7 +188,7 @@ public final class TracerTest {
     @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
         Tracer.startSpan("operation");
-        Tracer.setTrace(new Trace(true, "newTraceId"));
+        Tracer.setTrace(Trace.create(true, "newTraceId"));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
         assertThat(Tracer.completeSpan()).isEmpty();
@@ -197,7 +197,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsMdcTraceSampledKeyWhenObserved() {
-        Tracer.setTrace(new Trace(true, "observedTraceId"));
+        Tracer.setTrace(Trace.create(true, "observedTraceId"));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isEqualTo("1");
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -205,7 +205,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceMissingMdcTraceSampledKeyWhenNotObserved() {
-        Tracer.setTrace(new Trace(false, "notObservedTraceId"));
+        Tracer.setTrace(Trace.create(false, "notObservedTraceId"));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -280,7 +280,7 @@ public final class TracerTest {
 
     @Test
     public void testGetAndClearTraceIfPresent() {
-        Trace trace = new Trace(true, "newTraceId");
+        Trace trace = Trace.create(true, "newTraceId");
         Tracer.setTrace(trace);
 
         Optional<Trace> nonEmptyTrace = Tracer.getAndClearTraceIfPresent();

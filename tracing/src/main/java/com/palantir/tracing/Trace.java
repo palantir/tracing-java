@@ -30,8 +30,6 @@ import java.util.Optional;
  */
 public final class Trace {
 
-    private static final Trace NOOP = new Trace(false, "noop");
-
     private final Deque<OpenSpan> stack;
     private final boolean isObservable;
     private final String traceId;
@@ -44,15 +42,9 @@ public final class Trace {
         this.traceId = traceId;
     }
 
-    static Trace create(boolean isObservable, CharSequence traceId) {
-        if (isObservable) {
-            return new Trace(isObservable, traceId.toString());
-        }
-        return NOOP;
-    }
-
-    Trace(boolean isObservable, String traceId) {
-        this(new ArrayDeque<>(), isObservable, traceId);
+    static Trace create(boolean isObservable, String traceId) {
+        Deque<OpenSpan> deque = isObservable ? new ArrayDeque<>() : ImmutableEmptyDeque.instance();
+        return new Trace(deque, isObservable, traceId);
     }
 
     void push(OpenSpan span) {
@@ -90,11 +82,8 @@ public final class Trace {
 
     /** Returns a copy of this Trace which can be independently mutated. */
     Trace deepCopy() {
-        if (isObservable) {
-            return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
-        } else {
-            return NOOP;
-        }
+        Deque<OpenSpan> deque = isObservable ? new ArrayDeque<>(stack) : ImmutableEmptyDeque.instance();
+        return new Trace(deque, isObservable, traceId);
     }
 
     @Override

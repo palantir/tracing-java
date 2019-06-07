@@ -67,7 +67,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
             // HTTP request did not indicate a trace; initialize trace state and create a span.
-            Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.lazyRandomId());
+            Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
             Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
         } else {
             Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
