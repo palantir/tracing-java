@@ -46,8 +46,12 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         OpenSpan span = Tracer.startSpan(spanName, SpanType.CLIENT_OUTGOING);
         Request.Builder tracedRequest = request.newBuilder()
                 .addHeader(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                .addHeader(TraceHttpHeaders.SPAN_ID, span.getSpanId())
-                .addHeader(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
+                .addHeader(TraceHttpHeaders.SPAN_ID, span.getSpanId());
+
+        if (Tracer.isTraceObservable()) {
+            tracedRequest.addHeader(TraceHttpHeaders.IS_SAMPLED, "1");
+        }
+
         if (span.getParentSpanId().isPresent()) {
             tracedRequest.header(TraceHttpHeaders.PARENT_SPAN_ID, span.getParentSpanId().get());
         }

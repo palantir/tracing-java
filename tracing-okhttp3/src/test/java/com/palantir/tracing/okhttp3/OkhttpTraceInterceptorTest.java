@@ -120,7 +120,10 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
-        assertThat(intercepted.header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("0");
+
+        // intentionally don't send "0" for spans that weren't sampled in this service, so that downstream services
+        // can make the sampling decision for themselves
+        assertThat(intercepted.header(TraceHttpHeaders.IS_SAMPLED)).isNull();
     }
 
     @Test
