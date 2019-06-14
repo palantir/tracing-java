@@ -30,7 +30,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @State(Scope.Thread)
 public class TracingBenchMark {
     @Benchmark
-    public void benchmarkRandomId(Blackhole blackhole) {
+    public final void benchmarkRandomId(Blackhole blackhole) {
         blackhole.consume(Tracers.randomId());
     }
 
