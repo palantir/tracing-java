@@ -67,5 +67,13 @@ subprojects {
 
     tasks.withType(JavaCompile) {
         options.compilerArgs += ['-Xlint:deprecation', '-Werror']
+        options.errorprone.disableWarningsInGeneratedCode = true
+        options.errorprone.errorproneArgs += [
+            '-Werror',
+            '-Xlint:deprecation',
+            '-Xlint:unchecked',
+            '-XepDisableWarningsInGeneratedCode',
+            '-XepExcludedPaths:.*(generated).*',
+        ]
     }
 }
