@@ -2,7 +2,6 @@
  * (c) Copyright 2018 Palantir Technologies Inc. All rights reserved.
  */
 
-//apply from: "${rootDir}/gradle/jmh.gradle"
 buildscript {
     repositories {
         maven {
