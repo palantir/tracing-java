@@ -58,6 +58,15 @@ public class TracingBenchmark {
     private static final Callable<Object> unsampledCallable = Tracers.wrapWithNewTrace("test",
             Observability.DO_NOT_SAMPLE, NOOP_CALLABLE);
 
+    private static final Callable<Object> startSpanWrapper = () -> {
+        Tracer.startSpan("span");
+        try {
+            return NOOP_CALLABLE.call();
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
+    };
+
     @Setup
     public final void before() {
         Tracer.setSampler(new RandomSampler(0.1f));
@@ -91,48 +100,27 @@ public class TracingBenchmark {
     @Benchmark
     public static void unsampledTracerSpan(Blackhole blackhole) throws Exception {
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+        Tracer.subscribe("unsampledTracerSpan", blackhole::consume);
         for (int i = 0; i < 100; i++) {
-            Callable<Object> callable = () -> {
-                Tracer.startSpan("span");
-                try {
-                    return NOOP_CALLABLE.call();
-                } finally {
-                    Tracer.fastCompleteSpan();
-                }
-            };
-            blackhole.consume(callable.call());
+            startSpanWrapper.call();
         }
     }
 
     @Benchmark
     public static void undecidedTracerSpan(Blackhole blackhole) throws Exception {
         Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
+        Tracer.subscribe("undecidedTracerSpan", blackhole::consume);
         for (int i = 0; i < 100; i++) {
-            Callable<Object> callable = () -> {
-                Tracer.startSpan("span");
-                try {
-                    return NOOP_CALLABLE.call();
-                } finally {
-                    Tracer.fastCompleteSpan();
-                }
-            };
-            blackhole.consume(callable.call());
+            startSpanWrapper.call();
         }
     }
 
     @Benchmark
     public static void sampledTracerSpan(Blackhole blackhole) throws Exception {
         Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        Tracer.subscribe("sampledTracerSpan", blackhole::consume);
         for (int i = 0; i < 100; i++) {
-            Callable<Object> callable = () -> {
-                Tracer.startSpan("span");
-                try {
-                    return NOOP_CALLABLE.call();
-                } finally {
-                    Tracer.fastCompleteSpan();
-                }
-            };
-            blackhole.consume(callable.call());
+            startSpanWrapper.call();
         }
     }
 
