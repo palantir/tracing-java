@@ -30,6 +30,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
@@ -85,6 +86,54 @@ public class TracingBenchmark {
     @Benchmark
     public static Object unsampledCallable() throws Exception {
         return unsampledCallable.call();
+    }
+
+    @Benchmark
+    public static void unsampledTracerSpan(Blackhole blackhole) throws Exception {
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+        for (int i = 0; i < 100; i++) {
+            Callable<Object> callable = () -> {
+                Tracer.startSpan("span");
+                try {
+                    return NOOP_CALLABLE.call();
+                } finally {
+                    Tracer.fastCompleteSpan();
+                }
+            };
+            blackhole.consume(callable.call());
+        }
+    }
+
+    @Benchmark
+    public static void undecidedTracerSpan(Blackhole blackhole) throws Exception {
+        Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
+        for (int i = 0; i < 100; i++) {
+            Callable<Object> callable = () -> {
+                Tracer.startSpan("span");
+                try {
+                    return NOOP_CALLABLE.call();
+                } finally {
+                    Tracer.fastCompleteSpan();
+                }
+            };
+            blackhole.consume(callable.call());
+        }
+    }
+
+    @Benchmark
+    public static void sampledTracerSpan(Blackhole blackhole) throws Exception {
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        for (int i = 0; i < 100; i++) {
+            Callable<Object> callable = () -> {
+                Tracer.startSpan("span");
+                try {
+                    return NOOP_CALLABLE.call();
+                } finally {
+                    Tracer.fastCompleteSpan();
+                }
+            };
+            blackhole.consume(callable.call());
+        }
     }
 
     public static void main(String[] args) throws Exception {
