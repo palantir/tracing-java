@@ -16,20 +16,16 @@
 
 package com.palantir.tracing;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -37,90 +33,35 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
-@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
-@Fork(1)
-@Threads(16)
 @SuppressWarnings("checkstyle:hideutilityclassconstructor")
 public class TracingBenchmark {
 
-    private static final Callable<Object> NOOP_CALLABLE = () -> null;
+    @Param({"SAMPLE", "DO_NOT_SAMPLE", "UNDECIDED"})
+    private Observability observability;
 
-    private static final Callable<Object> undecidedCallable = Tracers.wrapWithNewTrace("test",
-            Observability.UNDECIDED, NOOP_CALLABLE);
-
-    private static final Callable<Object> sampledCallable = Tracers.wrapWithNewTrace("test",
-            Observability.SAMPLE, NOOP_CALLABLE);
-
-    private static final Callable<Object> unsampledCallable = Tracers.wrapWithNewTrace("test",
-            Observability.DO_NOT_SAMPLE, NOOP_CALLABLE);
-
-    private static final Callable<Object> startSpanWrapper = () -> {
-        Tracer.startSpan("span");
-        try {
-            return NOOP_CALLABLE.call();
-        } finally {
-            Tracer.fastCompleteSpan();
-        }
-    };
 
     @Setup
-    public final void before() {
-        Tracer.setSampler(new RandomSampler(0.1f));
-    }
-
-    @TearDown
-    public final void after() {
+    public final void setup(Blackhole blackhole) {
+        Tracer.initTrace(observability, Tracers.randomId());
+        Tracer.subscribe("jmh", blackhole::consume);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
     }
 
-    @Benchmark
-    public static Object raw() throws Exception {
-        return NOOP_CALLABLE.call();
+    @TearDown
+    public final void tearDown() {
+        Tracer.unsubscribe("jmh");
     }
 
     @Benchmark
-    public static Object undecidedCallable() throws Exception {
-        return undecidedCallable.call();
-    }
-
-    @Benchmark
-    public static Object sampledCallable() throws Exception {
-        return sampledCallable.call();
-    }
-
-    @Benchmark
-    public static Object unsampledCallable() throws Exception {
-        return unsampledCallable.call();
-    }
-
-    @Benchmark
-    public static void unsampledTracerSpan(Blackhole blackhole) throws Exception {
-        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
-        Tracer.subscribe("unsampledTracerSpan", blackhole::consume);
+    public static void nestedSpans() throws Exception {
         for (int i = 0; i < 100; i++) {
-            startSpanWrapper.call();
+            Tracer.startSpan("span");
         }
-    }
-
-    @Benchmark
-    public static void undecidedTracerSpan(Blackhole blackhole) throws Exception {
-        Tracer.initTrace(Observability.UNDECIDED, Tracers.randomId());
-        Tracer.subscribe("undecidedTracerSpan", blackhole::consume);
         for (int i = 0; i < 100; i++) {
-            startSpanWrapper.call();
-        }
-    }
-
-    @Benchmark
-    public static void sampledTracerSpan(Blackhole blackhole) throws Exception {
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
-        Tracer.subscribe("sampledTracerSpan", blackhole::consume);
-        for (int i = 0; i < 100; i++) {
-            startSpanWrapper.call();
+            Tracer.fastCompleteSpan();
         }
     }
 
@@ -131,9 +72,9 @@ public class TracingBenchmark {
                 .forks(1)
                 .threads(16)
                 .warmupIterations(3)
-                .warmupTime(TimeValue.seconds(3))
+                .warmupTime(TimeValue.seconds(1))
                 .measurementIterations(3)
-                .measurementTime(TimeValue.seconds(3))
+                .measurementTime(TimeValue.seconds(1))
                 .build();
         new Runner(opt).run();
     }
