@@ -1,0 +1,26 @@
+/*
+ * (c) Copyright 2018 Palantir Technologies Inc. All rights reserved.
+ */
+
+apply plugin: 'me.champeau.gradle.jmh'
+
+jmh {
+    // Use profilers to collect additional data. Supported profilers:
+    // [cl, comp, gc, stack, perf, perfnorm, perfasm, xperf, xperfasm, hs_cl, hs_comp, hs_gc, hs_rt, hs_thr]
+    profilers = ['gc']
+}
+
+tasks.jmhCompileGeneratedClasses {
+    options.annotationProcessorPath = configurations.errorprone
+    options.errorprone.enabled = false
+}
+
+dependencies {
+    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
+    compileOnly 'org.openjdk.jmh:jmh-generator-annprocess'
+    compile 'org.immutables:value::annotations'
+    compile 'org.openjdk.jmh:jmh-core'
+    jmh project(':tracing')
+    jmh 'com.google.guava:guava'
+    jmh 'org.apache.logging.log4j:log4j-slf4j-impl'
+}
