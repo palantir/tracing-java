@@ -44,7 +44,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Measurement(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
 @Fork(1)
 @Threads(4)
-@SuppressWarnings("checkstyle:hideutilityclassconstructor")
+@SuppressWarnings({"checkstyle:hideutilityclassconstructor", "checkstyle:VisibilityModifier"})
 public class TracingBenchmark {
 
     private static final Runnable nestedSpans = createnestedSpan(100);
@@ -57,7 +57,9 @@ public class TracingBenchmark {
 
         private final TraceSampler traceSampler;
 
-        BenchmarkObservability(TraceSampler traceSampler) {this.traceSampler = traceSampler;}
+        BenchmarkObservability(TraceSampler traceSampler) {
+            this.traceSampler = traceSampler;
+        }
 
         public TraceSampler getTraceSampler() {
             return traceSampler;
