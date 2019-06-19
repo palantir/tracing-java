@@ -19,6 +19,8 @@ package com.palantir.tracing;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Param;
@@ -26,6 +28,8 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -36,18 +40,39 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
+@Warmup(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
+@Measurement(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
+@Fork(1)
+@Threads(4)
 @SuppressWarnings("checkstyle:hideutilityclassconstructor")
 public class TracingBenchmark {
 
-    @Param({"SAMPLE", "DO_NOT_SAMPLE", "UNDECIDED"})
-    private Observability observability;
+    private static final Runnable nestedSpans = createnestedSpan(100);
 
+    @SuppressWarnings("ImmutableEnumChecker")
+    public enum BenchmarkObservability {
+        SAMPLE(AlwaysSampler.INSTANCE),
+        DO_NOT_SAMPLE(() -> false),
+        UNDECIDED(new RandomSampler(0.1f));
+
+        private final TraceSampler traceSampler;
+
+        BenchmarkObservability(TraceSampler traceSampler) {this.traceSampler = traceSampler;}
+
+        public TraceSampler getTraceSampler() {
+            return traceSampler;
+        }
+    }
+
+    @Param({"SAMPLE", "DO_NOT_SAMPLE", "UNDECIDED"})
+    public BenchmarkObservability observability;
 
     @Setup
     public final void before(Blackhole blackhole) {
-        Tracer.initTrace(observability, Tracers.randomId());
+        Tracer.setSampler(observability.getTraceSampler());
         Tracer.subscribe("jmh", blackhole::consume);
-        Tracer.setSampler(AlwaysSampler.INSTANCE);
+        // clear any existing trace to make sure this sampler is used
+        Tracer.getAndClearTrace();
     }
 
     @TearDown
@@ -56,13 +81,28 @@ public class TracingBenchmark {
     }
 
     @Benchmark
-    public static void nestedSpans() throws Exception {
-        for (int i = 0; i < 100; i++) {
-            Tracer.startSpan("span");
+    public static void nestedSpans() {
+        nestedSpans.run();
+    }
+
+    private static Runnable createnestedSpan(int depth) {
+        if (depth == 0) {
+            return () -> {
+            };
+        } else {
+            return wrapWithSpan(createnestedSpan(depth - 1));
         }
-        for (int i = 0; i < 100; i++) {
-            Tracer.fastCompleteSpan();
-        }
+    }
+
+    private static Runnable wrapWithSpan(Runnable toBenNested) {
+        return () -> {
+            try {
+                Tracer.startSpan("span");
+                toBenNested.run();
+            } finally {
+                Tracer.fastCompleteSpan();
+            }
+        };
     }
 
     public static void main(String[] args) throws Exception {
@@ -70,11 +110,11 @@ public class TracingBenchmark {
                 .include(TracingBenchmark.class.getSimpleName())
                 .addProfiler(GCProfiler.class)
                 .forks(1)
-                .threads(16)
+                .threads(4)
                 .warmupIterations(3)
-                .warmupTime(TimeValue.seconds(1))
+                .warmupTime(TimeValue.seconds(3))
                 .measurementIterations(3)
-                .measurementTime(TimeValue.seconds(1))
+                .measurementTime(TimeValue.seconds(3))
                 .build();
         new Runner(opt).run();
     }

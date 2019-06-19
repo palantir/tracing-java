@@ -26,7 +26,7 @@ jmh {
 
 tasks.jmhCompileGeneratedClasses {
     options.annotationProcessorPath = configurations.errorprone
-    options.errorprone.enabled = true
+    options.errorprone.enabled = false
 }
 
 dependencies {
