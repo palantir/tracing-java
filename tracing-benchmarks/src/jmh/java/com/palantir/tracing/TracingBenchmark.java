@@ -44,14 +44,14 @@ public class TracingBenchmark {
 
 
     @Setup
-    public final void setup(Blackhole blackhole) {
+    public final void before(Blackhole blackhole) {
         Tracer.initTrace(observability, Tracers.randomId());
         Tracer.subscribe("jmh", blackhole::consume);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
     }
 
     @TearDown
-    public final void tearDown() {
+    public final void after() {
         Tracer.unsubscribe("jmh");
     }
 
