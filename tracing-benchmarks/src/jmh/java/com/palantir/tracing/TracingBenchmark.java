@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import com.google.common.util.concurrent.Runnables;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -47,7 +48,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @SuppressWarnings({"checkstyle:hideutilityclassconstructor", "checkstyle:VisibilityModifier"})
 public class TracingBenchmark {
 
-    private static final Runnable nestedSpans = createnestedSpan(100);
+    private static final Runnable nestedSpans = createNestedSpan(100);
 
     @SuppressWarnings("ImmutableEnumChecker")
     public enum BenchmarkObservability {
@@ -87,20 +88,19 @@ public class TracingBenchmark {
         nestedSpans.run();
     }
 
-    private static Runnable createnestedSpan(int depth) {
-        if (depth == 0) {
-            return () -> {
-            };
+    private static Runnable createNestedSpan(int depth) {
+        if (depth <= 0) {
+            return Runnables.doNothing();
         } else {
-            return wrapWithSpan(createnestedSpan(depth - 1));
+            return wrapWithSpan("benchmark-span-" + depth, createNestedSpan(depth - 1));
         }
     }
 
-    private static Runnable wrapWithSpan(Runnable toBenNested) {
+    private static Runnable wrapWithSpan(String operation, Runnable next) {
         return () -> {
+            Tracer.fastStartSpan(operation);
             try {
-                Tracer.fastStartSpan("span");
-                toBenNested.run();
+                next.run();
             } finally {
                 Tracer.fastCompleteSpan();
             }
