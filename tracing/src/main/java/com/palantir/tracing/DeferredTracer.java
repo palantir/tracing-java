@@ -108,7 +108,7 @@ public final class DeferredTracer implements Serializable {
         if (parentSpanId != null) {
             Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {
-            Tracer.startSpan(operation);
+            Tracer.fastStartSpan(operation);
         }
 
         try {

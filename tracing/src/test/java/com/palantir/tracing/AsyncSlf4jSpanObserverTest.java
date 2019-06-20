@@ -101,7 +101,7 @@ public final class AsyncSlf4jSpanObserverTest {
         Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
                 "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
         Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Span span = Tracer.completeSpan().get();
         verify(appender, never()).doAppend(any(ILoggingEvent.class)); // async logger only fires when executor runs
 
@@ -122,7 +122,7 @@ public final class AsyncSlf4jSpanObserverTest {
         DeterministicScheduler executor = new DeterministicScheduler();
         Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of("serviceName", executor));
         Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Span span = Tracer.completeSpan().get();
 
         executor.runNextPendingCommand();
@@ -254,7 +254,7 @@ public final class AsyncSlf4jSpanObserverTest {
                 .extracting("spanId", "operation")
                 .contains(span1.getSpanId(), span1.getOperation());
 
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         executor.shutdown();
         Tracer.fastCompleteSpan();
     }

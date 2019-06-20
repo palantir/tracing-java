@@ -103,7 +103,7 @@ public class LeakedTraceFilterTest {
                         throws IOException, ServletException {
                     // Open a span to simulate a thread from another request
                     // leaving bad data without the leaked trace filter applied.
-                    Tracer.startSpan("previous request leaked");
+                    Tracer.fastStartSpan("previous request leaked");
                     chain.doFilter(request, response);
                 }
 
@@ -140,7 +140,7 @@ public class LeakedTraceFilterTest {
             env.servlets().addServlet("alwaysLeaks", new HttpServlet() {
                 @Override
                 protected void service(HttpServletRequest req, HttpServletResponse resp) {
-                    Tracer.startSpan("leaky");
+                    Tracer.fastStartSpan("leaky");
                     resp.addHeader("Leaky-Invoked", "true");
                 }
             }).addMapping("/leaky");

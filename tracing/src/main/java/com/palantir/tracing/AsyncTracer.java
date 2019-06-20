@@ -62,7 +62,7 @@ public final class AsyncTracer {
      */
     public AsyncTracer(Optional<String> operation) {
         this.operation = operation.orElse(DEFAULT_OPERATION);
-        Tracer.startSpan(this.operation + "-enqueue");
+        Tracer.fastStartSpan(this.operation + "-enqueue");
         deferredTrace = Tracer.copyTrace().get();
         Tracer.fastDiscardSpan(); // span will completed in the deferred execution
     }
@@ -76,7 +76,7 @@ public final class AsyncTracer {
         Tracer.setTrace(deferredTrace);
         // Finish the enqueue span
         Tracer.fastCompleteSpan();
-        Tracer.startSpan(operation + "-run");
+        Tracer.fastStartSpan(operation + "-run");
         try {
             return inner.call();
         } finally {

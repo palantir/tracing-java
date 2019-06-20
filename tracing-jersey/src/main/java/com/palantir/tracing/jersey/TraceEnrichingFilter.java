@@ -68,11 +68,11 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         if (Strings.isNullOrEmpty(traceId)) {
             // HTTP request did not indicate a trace; initialize trace state and create a span.
             Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
-            Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
+            Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         } else {
             Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
             if (spanId == null) {
-                Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
+                Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
             } else {
                 // caller's span is this span's parent.
                 Tracer.startSpan(operation, spanId, SpanType.SERVER_INCOMING);

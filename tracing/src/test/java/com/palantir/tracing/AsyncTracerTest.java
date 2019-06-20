@@ -49,7 +49,7 @@ public class AsyncTracerTest {
     @Test
     public void completesBothDeferredSpans() {
         Tracer.initTrace(Observability.SAMPLE, "defaultTraceId");
-        Tracer.startSpan("defaultSpan");
+        Tracer.fastStartSpan("defaultSpan");
         AsyncTracer asyncTracer = new AsyncTracer();
         List<String> observedSpans = Lists.newArrayList();
         Tracer.subscribe(
@@ -64,9 +64,9 @@ public class AsyncTracerTest {
     @Test
     public void preservesState() {
         Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
-        Tracer.startSpan("foo");
-        Tracer.startSpan("bar");
-        Tracer.startSpan("baz");
+        Tracer.fastStartSpan("foo");
+        Tracer.fastStartSpan("bar");
+        Tracer.fastStartSpan("baz");
         Trace originalTrace = getTrace();
         AsyncTracer asyncTracer = new AsyncTracer();
 

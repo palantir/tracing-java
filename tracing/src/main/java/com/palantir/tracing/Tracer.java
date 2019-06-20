@@ -121,14 +121,18 @@ public final class Tracer {
 
     /**
      * Like {@link #startSpan(String)}, but opens a span of the explicitly given {@link SpanType span type}.
+     * If the return value is not used, prefer {@link Tracer#fastStartSpan(String, SpanType)}}.
      */
+    @CheckReturnValue
     public static OpenSpan startSpan(String operation, SpanType type) {
         return startSpanInternal(operation, type);
     }
 
     /**
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     * If the return value is not used, prefer {@link Tracer#fastStartSpan(String)}}.
      */
+    @CheckReturnValue
     public static OpenSpan startSpan(String operation) {
         return startSpanInternal(operation, SpanType.LOCAL);
     }

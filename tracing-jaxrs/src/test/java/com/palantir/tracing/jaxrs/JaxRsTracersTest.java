@@ -31,9 +31,9 @@ public final class JaxRsTracersTest {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.getAndClearTrace();
 
-        Tracer.startSpan("outside");
+        Tracer.fastStartSpan("outside");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
-            Tracer.startSpan("inside"); // never completed
+            Tracer.fastStartSpan("inside"); // never completed
         });
         streamingOutput.write(new ByteArrayOutputStream());
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
@@ -44,9 +44,9 @@ public final class JaxRsTracersTest {
         Tracer.setSampler(() -> false);
         Tracer.getAndClearTrace();
 
-        Tracer.startSpan("outside");
+        Tracer.fastStartSpan("outside");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
-            Tracer.startSpan("inside"); // never completed
+            Tracer.fastStartSpan("inside"); // never completed
         });
         streamingOutput.write(new ByteArrayOutputStream());
         assertThat(Tracer.hasTraceId()).isTrue();
@@ -59,11 +59,11 @@ public final class JaxRsTracersTest {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.getAndClearTrace();
 
-        Tracer.startSpan("before-construction");
+        Tracer.fastStartSpan("before-construction");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("streaming-output");
         });
-        Tracer.startSpan("after-construction");
+        Tracer.fastStartSpan("after-construction");
         streamingOutput.write(new ByteArrayOutputStream());
     }
 
@@ -72,13 +72,13 @@ public final class JaxRsTracersTest {
         Tracer.setSampler(() -> false);
         Tracer.getAndClearTrace();
 
-        Tracer.startSpan("before-construction");
+        Tracer.fastStartSpan("before-construction");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
             assertThat(Tracer.hasTraceId()).isTrue();
             Tracer.fastCompleteSpan();
             assertThat(Tracer.hasTraceId()).isFalse();
         });
-        Tracer.startSpan("after-construction");
+        Tracer.fastStartSpan("after-construction");
         streamingOutput.write(new ByteArrayOutputStream());
     }
 }

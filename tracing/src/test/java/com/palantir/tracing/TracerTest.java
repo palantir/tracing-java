@@ -152,8 +152,8 @@ public final class TracerTest {
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
         assertThat(Tracer.hasTraceId()).isTrue();
         assertThat(Tracer.getTraceId()).isEqualTo(traceId);
-        Tracer.startSpan("foo");
-        Tracer.startSpan("bar");
+        Tracer.fastStartSpan("foo");
+        Tracer.fastStartSpan("bar");
 
         Tracer.fastCompleteSpan();
         // Unsampled trace should still apply thread state
@@ -186,7 +186,7 @@ public final class TracerTest {
 
     @Test
     public void testTraceCopyIsIndependent() throws Exception {
-        Tracer.startSpan("span");
+        Tracer.fastStartSpan("span");
         try {
             Trace trace = Tracer.copyTrace().get();
             trace.push(mock(OpenSpan.class));
@@ -198,7 +198,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Tracer.setTrace(Trace.of(true, "newTraceId"));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
@@ -225,12 +225,12 @@ public final class TracerTest {
     @Test
     public void testCompletedSpanHasCorrectSpanType() throws Exception {
         for (SpanType type : SpanType.values()) {
-            Tracer.startSpan("1", type);
+            Tracer.fastStartSpan("1", type);
             assertThat(Tracer.completeSpan().get().type()).isEqualTo(type);
         }
 
         // Default is LOCAL
-        Tracer.startSpan("1");
+        Tracer.fastStartSpan("1");
         assertThat(Tracer.completeSpan().get().type()).isEqualTo(SpanType.LOCAL);
     }
 
@@ -239,7 +239,7 @@ public final class TracerTest {
         Map<String, String> metadata = ImmutableMap.of(
                 "key1", "value1",
                 "key2", "value2");
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Optional<Span> maybeSpan = Tracer.completeSpan(metadata);
         assertTrue(maybeSpan.isPresent());
         assertThat(maybeSpan.get().getMetadata()).isEqualTo(metadata);
@@ -254,7 +254,7 @@ public final class TracerTest {
     public void testFastCompleteSpan() {
         Tracer.subscribe("1", observer1);
         String operation = "operation";
-        Tracer.startSpan(operation);
+        Tracer.fastStartSpan(operation);
         Tracer.fastCompleteSpan();
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -265,7 +265,7 @@ public final class TracerTest {
         Tracer.subscribe("1", observer1);
         Map<String, String> metadata = ImmutableMap.of("key", "value");
         String operation = "operation";
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Tracer.fastCompleteSpan(metadata);
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -282,7 +282,7 @@ public final class TracerTest {
             throw new IllegalStateException("2");
         });
         String operation = "operation";
-        Tracer.startSpan(operation);
+        Tracer.fastStartSpan(operation);
         Tracer.fastCompleteSpan();
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -304,7 +304,7 @@ public final class TracerTest {
 
     @Test
     public void testClearAndGetTraceClearsMdc() {
-        Tracer.startSpan("test");
+        Tracer.fastStartSpan("test");
         try {
             String startTrace = Tracer.getTraceId();
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
@@ -336,7 +336,7 @@ public final class TracerTest {
     @Test
     public void testHasTraceId() {
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
-        Tracer.startSpan("testSpan");
+        Tracer.fastStartSpan("testSpan");
         try {
             assertThat(Tracer.hasTraceId()).isEqualTo(true);
         } finally {
@@ -346,12 +346,12 @@ public final class TracerTest {
     }
 
     private static void startAndFastCompleteSpan() {
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Tracer.fastCompleteSpan();
     }
 
     private static Span startAndCompleteSpan() {
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         return Tracer.completeSpan().get();
     }
 }
