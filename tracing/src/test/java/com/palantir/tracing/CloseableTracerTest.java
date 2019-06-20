@@ -29,6 +29,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public final class CloseableTracerTest {
     @Before
     public void before() {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.getAndClearTrace();
     }
 

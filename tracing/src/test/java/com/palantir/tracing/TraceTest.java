@@ -27,13 +27,13 @@ public final class TraceTest {
 
     @Test
     public void constructTrace_emptyTraceId() {
-        assertThatThrownBy(() -> new Trace(false, ""))
+        assertThatThrownBy(() -> Trace.of(false, ""))
             .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     public void testToString() {
-        Trace trace = new Trace(true, "traceId");
+        Trace trace = Trace.of(true, "traceId");
         trace.push(OpenSpan.builder()
                 .type(SpanType.LOCAL)
                 .spanId("spanId")

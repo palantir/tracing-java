@@ -99,7 +99,7 @@ public class TracingBenchmark {
     private static Runnable wrapWithSpan(Runnable toBenNested) {
         return () -> {
             try {
-                Tracer.startSpan("span");
+                Tracer.fastStartSpan("span");
                 toBenNested.run();
             } finally {
                 Tracer.fastCompleteSpan();

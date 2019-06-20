@@ -68,7 +68,7 @@ public final class Tracer {
     private static Trace createTrace(Observability observability, String traceId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return new Trace(observable, traceId);
+        return Trace.of(observable, traceId);
     }
 
     private static boolean shouldObserve(Observability observability) {
@@ -133,6 +133,20 @@ public final class Tracer {
         return startSpanInternal(operation, SpanType.LOCAL);
     }
 
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(String operation, SpanType type) {
+        getOrCreateCurrentTrace().startSpan(operation, type);
+    }
+
+    /**
+     * Like {@link #startSpan(String)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(String operation) {
+        fastStartSpan(operation, SpanType.LOCAL);
+    }
+
     private static OpenSpan startSpanInternal(String operation, SpanType type) {
         Trace trace = getOrCreateCurrentTrace();
         Optional<OpenSpan> prevState = trace.top();
@@ -152,7 +166,8 @@ public final class Tracer {
     static void fastDiscardSpan() {
         Trace trace = currentTrace.get();
         checkNotNull(trace, "Expected current trace to exist");
-        checkState(popCurrentSpan().isPresent(), "Expected span to exist before discarding");
+        checkState(!trace.isEmpty(), "Expected span to exist before discarding");
+        popCurrentSpan();
     }
 
     /**

@@ -45,6 +45,7 @@ public final class TracersTest {
         MockitoAnnotations.initMocks(this);
         MDC.clear();
 
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
         // Initialize a new trace for each test
         Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
     }

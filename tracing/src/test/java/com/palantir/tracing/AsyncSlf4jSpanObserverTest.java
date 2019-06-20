@@ -78,6 +78,8 @@ public final class AsyncSlf4jSpanObserverTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
 
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+
         when(appender.getName()).thenReturn("MOCK");
         logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class);
         logger.addAppender(appender);

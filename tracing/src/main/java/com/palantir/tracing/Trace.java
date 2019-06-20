@@ -18,8 +18,12 @@ package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkArgument;
 
+import com.google.common.base.Strings;
+import com.palantir.logsafe.SafeArg;
+import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanObserver;
+import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -28,62 +32,169 @@ import java.util.Optional;
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
  * not thread-safe and is intended to be used in a thread-local context.
  */
-public final class Trace {
+public abstract class Trace {
 
-    private final Deque<OpenSpan> stack;
-    private final boolean isObservable;
     private final String traceId;
 
-    private Trace(ArrayDeque<OpenSpan> stack, boolean isObservable, String traceId) {
-        checkArgument(!traceId.isEmpty(), "traceId must be non-empty");
-
-        this.stack = stack;
-        this.isObservable = isObservable;
+    private Trace(String traceId) {
+        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
     }
 
-    Trace(boolean isObservable, String traceId) {
-        this(new ArrayDeque<>(), isObservable, traceId);
-    }
+    abstract void startSpan(String operation, SpanType type);
 
-    void push(OpenSpan span) {
-        stack.push(span);
-    }
+    abstract void push(OpenSpan span);
 
-    Optional<OpenSpan> top() {
-        return stack.isEmpty() ? Optional.empty() : Optional.of(stack.peekFirst());
-    }
+    abstract Optional<OpenSpan> top();
 
-    Optional<OpenSpan> pop() {
-        return stack.isEmpty() ? Optional.empty() : Optional.of(stack.pop());
-    }
+    abstract Optional<OpenSpan> pop();
 
-    boolean isEmpty() {
-        return stack.isEmpty();
-    }
+    abstract boolean isEmpty();
 
     /**
      * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon {@link
      * Tracer#completeSpan span completion}.
      */
-    boolean isObservable() {
-        return isObservable;
-    }
+    abstract boolean isObservable();
 
     /**
      * The globally unique non-empty identifier for this call trace.
      */
-    String getTraceId() {
+    final String getTraceId() {
         return traceId;
     }
 
     /** Returns a copy of this Trace which can be independently mutated. */
-    Trace deepCopy() {
-        return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
+    abstract Trace deepCopy();
+
+    static Trace of(boolean isObservable, String traceId) {
+        return isObservable ? new Sampled(traceId) : new Unsampled(traceId);
     }
 
-    @Override
-    public String toString() {
-        return "Trace{stack=" + stack + ", isObservable=" + isObservable + ", traceId='" + traceId + "'}";
+    private static final class Sampled extends Trace {
+
+        private final Deque<OpenSpan> stack;
+
+        private Sampled(ArrayDeque<OpenSpan> stack, String traceId) {
+            super(traceId);
+            this.stack = stack;
+        }
+
+        private Sampled(String traceId) {
+            this(new ArrayDeque<>(), traceId);
+        }
+
+        @Override
+        void startSpan(String operation, SpanType type) {
+            Optional<OpenSpan> prevState = top();
+            final OpenSpan span;
+            // Avoid lambda allocation in hot paths
+            if (prevState.isPresent()) {
+                span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
+            } else {
+                span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
+            }
+            push(span);
+        }
+
+        @Override
+        void push(OpenSpan span) {
+            stack.push(span);
+        }
+
+        @Override
+        Optional<OpenSpan> top() {
+            return stack.isEmpty() ? Optional.empty() : Optional.of(stack.peekFirst());
+        }
+
+        @Override
+        Optional<OpenSpan> pop() {
+            return stack.isEmpty() ? Optional.empty() : Optional.of(stack.pop());
+        }
+
+        @Override
+        boolean isEmpty() {
+            return stack.isEmpty();
+        }
+
+        @Override
+        boolean isObservable() {
+            return true;
+        }
+
+        @Override
+        Trace deepCopy() {
+            return new Sampled(new ArrayDeque<>(stack), getTraceId());
+        }
+
+        @Override
+        public String toString() {
+            return "Trace{stack=" + stack + ", isObservable=true, traceId='" + getTraceId() + "'}";
+        }
+    }
+
+    private static final class Unsampled extends Trace {
+        private int depth;
+
+        private Unsampled(int depth, String traceId) {
+            super(traceId);
+            this.depth = depth;
+            validateDepth();
+        }
+
+        private Unsampled(String traceId) {
+            this(0, traceId);
+        }
+
+        @Override
+        void startSpan(String operation, SpanType type) {
+            depth++;
+        }
+
+        @Override
+        void push(OpenSpan span) {
+            depth++;
+        }
+
+        @Override
+        Optional<OpenSpan> top() {
+            return Optional.empty();
+        }
+
+        @Override
+        Optional<OpenSpan> pop() {
+            validateDepth();
+            if (depth > 0) {
+                depth--;
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        boolean isEmpty() {
+            validateDepth();
+            return depth <= 0;
+        }
+
+        @Override
+        boolean isObservable() {
+            return false;
+        }
+
+        @Override
+        Trace deepCopy() {
+            return new Unsampled(depth, getTraceId());
+        }
+
+        private void validateDepth() {
+            if (depth < 0) {
+                throw new SafeIllegalStateException("Unexpected negative depth", SafeArg.of("depth", depth));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Trace{depth=" + depth + ", isObservable=false, traceId='" + getTraceId() + "'}";
+        }
     }
 }

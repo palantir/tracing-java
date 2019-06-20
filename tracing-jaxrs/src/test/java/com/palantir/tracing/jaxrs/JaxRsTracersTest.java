@@ -18,6 +18,7 @@ package com.palantir.tracing.jaxrs;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.tracing.AlwaysSampler;
 import com.palantir.tracing.Tracer;
 import java.io.ByteArrayOutputStream;
 import javax.ws.rs.core.StreamingOutput;
@@ -26,7 +27,10 @@ import org.junit.Test;
 public final class JaxRsTracersTest {
 
     @Test
-    public void testWrappingStreamingOutput_streamingOutputTraceIsIsolated() throws Exception {
+    public void testWrappingStreamingOutput_streamingOutputTraceIsIsolated_sampled() throws Exception {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+        Tracer.getAndClearTrace();
+
         Tracer.startSpan("outside");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
             Tracer.startSpan("inside"); // never completed
@@ -36,10 +40,43 @@ public final class JaxRsTracersTest {
     }
 
     @Test
-    public void testWrappingStreamingOutput_traceStateIsCapturedAtConstructionTime() throws Exception {
+    public void testWrappingStreamingOutput_streamingOutputTraceIsIsolated_unsampled() throws Exception {
+        Tracer.setSampler(() -> false);
+        Tracer.getAndClearTrace();
+
+        Tracer.startSpan("outside");
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
+            Tracer.startSpan("inside"); // never completed
+        });
+        streamingOutput.write(new ByteArrayOutputStream());
+        assertThat(Tracer.hasTraceId()).isTrue();
+        Tracer.fastCompleteSpan();
+        assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
+    public void testWrappingStreamingOutput_traceStateIsCapturedAtConstructionTime_sampled() throws Exception {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+        Tracer.getAndClearTrace();
+
         Tracer.startSpan("before-construction");
         StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("streaming-output");
+        });
+        Tracer.startSpan("after-construction");
+        streamingOutput.write(new ByteArrayOutputStream());
+    }
+
+    @Test
+    public void testWrappingStreamingOutput_traceStateIsCapturedAtConstructionTime_unsampled() throws Exception {
+        Tracer.setSampler(() -> false);
+        Tracer.getAndClearTrace();
+
+        Tracer.startSpan("before-construction");
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
+            assertThat(Tracer.hasTraceId()).isTrue();
+            Tracer.fastCompleteSpan();
+            assertThat(Tracer.hasTraceId()).isFalse();
         });
         Tracer.startSpan("after-construction");
         streamingOutput.write(new ByteArrayOutputStream());

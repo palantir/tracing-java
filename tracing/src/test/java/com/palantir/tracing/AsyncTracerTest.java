@@ -20,9 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import org.junit.Before;
 import org.junit.Test;
 
 public class AsyncTracerTest {
+
+    @Before
+    public void before() {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+    }
+
     @Test
     public void doesNotLeakEnqueueSpan() {
         Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");

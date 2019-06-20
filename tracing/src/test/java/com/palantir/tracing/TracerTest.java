@@ -138,17 +138,33 @@ public final class TracerTest {
         verifyNoMoreInteractions(observer1);
 
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
-        startAndCompleteSpan(); // not sampled, see above
+        startAndFastCompleteSpan(); // not sampled, see above
         verifyNoMoreInteractions(observer1);
     }
 
     @Test
-    public void testDerivesNewSpansWhenTraceIsNotObservable() throws Exception {
-        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+    public void testCountsSpansWhenTraceIsNotObservable() throws Exception {
+        String traceId = Tracers.randomId();
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, traceId);
+        // Unsampled trace should still apply thread state
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
+        assertThat(Tracer.hasTraceId()).isTrue();
+        assertThat(Tracer.getTraceId()).isEqualTo(traceId);
         Tracer.startSpan("foo");
         Tracer.startSpan("bar");
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("bar");
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("foo");
+
+        Tracer.fastCompleteSpan();
+        // Unsampled trace should still apply thread state
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
+        assertThat(Tracer.hasTraceId()).isTrue();
+        assertThat(Tracer.getTraceId()).isEqualTo(traceId);
+
+        // Complete the root span, which should clear thread state
+        Tracer.fastCompleteSpan();
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
+        assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
@@ -163,7 +179,7 @@ public final class TracerTest {
         verifyNoMoreInteractions(observer1, sampler);
 
         Mockito.reset(observer1, sampler);
-        startAndCompleteSpan(); // not sampled, see above
+        startAndFastCompleteSpan(); // not sampled, see above
         verify(sampler).sample();
         verifyNoMoreInteractions(observer1, sampler);
     }
@@ -183,7 +199,7 @@ public final class TracerTest {
     @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
         Tracer.startSpan("operation");
-        Tracer.setTrace(new Trace(true, "newTraceId"));
+        Tracer.setTrace(Trace.of(true, "newTraceId"));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
         assertThat(Tracer.completeSpan()).isEmpty();
@@ -192,7 +208,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsMdcTraceSampledKeyWhenObserved() {
-        Tracer.setTrace(new Trace(true, "observedTraceId"));
+        Tracer.setTrace(Trace.of(true, "observedTraceId"));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isEqualTo("1");
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -200,7 +216,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceMissingMdcTraceSampledKeyWhenNotObserved() {
-        Tracer.setTrace(new Trace(false, "notObservedTraceId"));
+        Tracer.setTrace(Trace.of(false, "notObservedTraceId"));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -275,7 +291,7 @@ public final class TracerTest {
 
     @Test
     public void testGetAndClearTraceIfPresent() {
-        Trace trace = new Trace(true, "newTraceId");
+        Trace trace = Trace.of(true, "newTraceId");
         Tracer.setTrace(trace);
 
         Optional<Trace> nonEmptyTrace = Tracer.getAndClearTraceIfPresent();
@@ -327,6 +343,11 @@ public final class TracerTest {
             Tracer.fastCompleteSpan();
         }
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
+    }
+
+    private static void startAndFastCompleteSpan() {
+        Tracer.startSpan("operation");
+        Tracer.fastCompleteSpan();
     }
 
     private static Span startAndCompleteSpan() {
