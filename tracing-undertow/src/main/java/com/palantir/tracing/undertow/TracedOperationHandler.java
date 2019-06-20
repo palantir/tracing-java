@@ -106,7 +106,7 @@ public final class TracedOperationHandler implements HttpHandler {
             Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         } else {
             // caller's span is this span's parent.
-            Tracer.startSpan(operation, spanId, SpanType.SERVER_INCOMING);
+            Tracer.fastStartSpan(operation, spanId, SpanType.SERVER_INCOMING);
         }
     }
 

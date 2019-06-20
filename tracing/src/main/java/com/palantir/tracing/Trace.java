@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
 import com.palantir.logsafe.SafeArg;
@@ -41,7 +42,45 @@ public abstract class Trace {
         this.traceId = traceId;
     }
 
-    abstract void startSpan(String operation, SpanType type);
+    /**
+     * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
+     * when the current trace is empty.
+     */
+    final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
+        checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
+        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
+        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
+        push(span);
+        return span;
+    }
+
+    /**
+     * Opens a new span for this thread's call trace, labeled with the provided operation.
+     * If the return value is not used, prefer {@link #fastStartSpan(String, SpanType)}}.
+     */
+    final OpenSpan startSpan(String operation, SpanType type) {
+        Optional<OpenSpan> prevState = top();
+        final OpenSpan span;
+        // Avoid lambda allocation in hot paths
+        if (prevState.isPresent()) {
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
+        } else {
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
+        }
+
+        push(span);
+        return span;
+    }
+
+    /**
+     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    abstract void fastStartSpan(String operation, String parentSpanId, SpanType type);
+
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    abstract void fastStartSpan(String operation, SpanType type);
 
     abstract void push(OpenSpan span);
 
@@ -85,16 +124,13 @@ public abstract class Trace {
         }
 
         @Override
-        void startSpan(String operation, SpanType type) {
-            Optional<OpenSpan> prevState = top();
-            final OpenSpan span;
-            // Avoid lambda allocation in hot paths
-            if (prevState.isPresent()) {
-                span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
-            } else {
-                span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
-            }
-            push(span);
+        void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+            startSpan(operation, parentSpanId, type);
+        }
+
+        @Override
+        void fastStartSpan(String operation, SpanType type) {
+            startSpan(operation, type);
         }
 
         @Override
@@ -147,7 +183,12 @@ public abstract class Trace {
         }
 
         @Override
-        void startSpan(String operation, SpanType type) {
+        void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+            fastStartSpan(operation, type);
+        }
+
+        @Override
+        void fastStartSpan(String operation, SpanType type) {
             depth++;
         }
 

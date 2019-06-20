@@ -70,6 +70,7 @@ public final class TracerTest {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored") // testing that exceptions are thrown
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
         assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.UNDECIDED, null))
                 .hasLogMessage("traceId must be non-empty")
@@ -84,6 +85,14 @@ public final class TracerTest {
                 .hasArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", "", null))
+                .hasLogMessage("parentSpanId must be non-empty")
+                .hasArgs();
+
+        assertThatLoggableExceptionThrownBy(() -> Tracer.fastStartSpan("op", null, null))
+                .hasLogMessage("parentSpanId must be non-empty")
+                .hasArgs();
+
+        assertThatLoggableExceptionThrownBy(() -> Tracer.fastStartSpan("op", "", null))
                 .hasLogMessage("parentSpanId must be non-empty")
                 .hasArgs();
     }

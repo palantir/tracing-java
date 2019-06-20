@@ -108,15 +108,11 @@ public final class Tracer {
     /**
      * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
      * when the current trace is empty.
+     * If the return value is not used, prefer {@link Tracer#fastStartSpan(String, String, SpanType)}}.
      */
+    @CheckReturnValue
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
-        Trace current = getOrCreateCurrentTrace();
-        checkState(current.isEmpty(),
-                "Cannot start a span with explicit parent if the current thread's trace is non-empty");
-        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
-        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
-        current.push(span);
-        return span;
+        return getOrCreateCurrentTrace().startSpan(operation, parentSpanId, type);
     }
 
     /**
@@ -125,7 +121,7 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static OpenSpan startSpan(String operation, SpanType type) {
-        return startSpanInternal(operation, type);
+        return getOrCreateCurrentTrace().startSpan(operation, type);
     }
 
     /**
@@ -134,14 +130,21 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static OpenSpan startSpan(String operation) {
-        return startSpanInternal(operation, SpanType.LOCAL);
+        return startSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
+     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+        getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
     }
 
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(String operation, SpanType type) {
-        getOrCreateCurrentTrace().startSpan(operation, type);
+        getOrCreateCurrentTrace().fastStartSpan(operation, type);
     }
 
     /**
@@ -149,21 +152,6 @@ public final class Tracer {
      */
     public static void fastStartSpan(String operation) {
         fastStartSpan(operation, SpanType.LOCAL);
-    }
-
-    private static OpenSpan startSpanInternal(String operation, SpanType type) {
-        Trace trace = getOrCreateCurrentTrace();
-        Optional<OpenSpan> prevState = trace.top();
-        final OpenSpan span;
-        // Avoid lambda allocation in hot paths
-        if (prevState.isPresent()) {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
-        } else {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
-        }
-
-        trace.push(span);
-        return span;
     }
 
     /** Discards the current span without emitting it. */
