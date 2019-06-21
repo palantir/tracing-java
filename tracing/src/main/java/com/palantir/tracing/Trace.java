@@ -20,6 +20,7 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.OpenSpan;
@@ -45,7 +46,9 @@ public abstract class Trace {
     /**
      * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
      * when the current trace is empty.
+     * If the return value is not used, prefer {@link #fastStartSpan(String, String, SpanType)}}.
      */
+    @CheckReturnValue
     final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
         checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
@@ -58,6 +61,7 @@ public abstract class Trace {
      * Opens a new span for this thread's call trace, labeled with the provided operation.
      * If the return value is not used, prefer {@link #fastStartSpan(String, SpanType)}}.
      */
+    @CheckReturnValue
     final OpenSpan startSpan(String operation, SpanType type) {
         Optional<OpenSpan> prevState = top();
         final OpenSpan span;
@@ -124,11 +128,13 @@ public abstract class Trace {
         }
 
         @Override
+        @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
         void fastStartSpan(String operation, String parentSpanId, SpanType type) {
             startSpan(operation, parentSpanId, type);
         }
 
         @Override
+        @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
         void fastStartSpan(String operation, SpanType type) {
             startSpan(operation, type);
         }
