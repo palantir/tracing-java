@@ -639,6 +639,6 @@ public final class TracersTest {
                 spans.add(trace.pop().get());
             }
             return Lists.reverse(spans);
-        }).orElse(Collections.emptyList());
+        }).orElseGet(Collections::emptyList);
     }
 }
