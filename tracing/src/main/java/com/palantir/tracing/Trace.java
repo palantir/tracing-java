@@ -240,7 +240,8 @@ public abstract class Trace {
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
         private void validateDepth() {
             if (numberOfSpans < 0) {
-                throw new SafeIllegalStateException("Unexpected negative numberOfSpans", SafeArg.of("numberOfSpans", numberOfSpans));
+                throw new SafeIllegalStateException("Unexpected negative numberOfSpans",
+                        SafeArg.of("numberOfSpans", numberOfSpans));
             }
         }
 
