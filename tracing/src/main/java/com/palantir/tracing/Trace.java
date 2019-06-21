@@ -33,6 +33,13 @@ import java.util.Optional;
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
  * not thread-safe and is intended to be used in a thread-local context.
+ *
+ * There are two implementations of {@link Trace}: {@link Sampled} and {@link Unsampled}.
+ * A {@link Sampled sampled trace} records each span in order to record tracing data, however in most scenarios
+ * most traces will be {@link Unsampled}, which avoids creation of span objects, random span ID generation,
+ * clock reads, etc. Instead, the {@link Unsampled unsampled} implementation tracks the number of 'active' spans
+ * on the current thread so it can provide correct {@link Trace#isEmpty()} values allowing the {@link Tracer}
+ * utility to reset thread state after the emulated root span has been completed.
  */
 public abstract class Trace {
 
