@@ -176,11 +176,15 @@ public abstract class Trace {
     }
 
     private static final class Unsampled extends Trace {
-        private int depth;
+        /**
+         * Tracks the size that a {@link Sampled} trace {@link Sampled#stack} would have <i>if</i> this was sampled.
+         * This allows thread trace state to be cleared when all "started" spans have been "removed".
+         */
+        private int numberOfSpans;
 
-        private Unsampled(int depth, String traceId) {
+        private Unsampled(int numberOfSpans, String traceId) {
             super(traceId);
-            this.depth = depth;
+            this.numberOfSpans = numberOfSpans;
             validateDepth();
         }
 
@@ -195,12 +199,12 @@ public abstract class Trace {
 
         @Override
         void fastStartSpan(String operation, SpanType type) {
-            depth++;
+            numberOfSpans++;
         }
 
         @Override
         void push(OpenSpan span) {
-            depth++;
+            numberOfSpans++;
         }
 
         @Override
@@ -211,8 +215,8 @@ public abstract class Trace {
         @Override
         Optional<OpenSpan> pop() {
             validateDepth();
-            if (depth > 0) {
-                depth--;
+            if (numberOfSpans > 0) {
+                numberOfSpans--;
             }
             return Optional.empty();
         }
@@ -220,7 +224,7 @@ public abstract class Trace {
         @Override
         boolean isEmpty() {
             validateDepth();
-            return depth <= 0;
+            return numberOfSpans <= 0;
         }
 
         @Override
@@ -230,18 +234,19 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(depth, getTraceId());
+            return new Unsampled(numberOfSpans, getTraceId());
         }
 
+        /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
         private void validateDepth() {
-            if (depth < 0) {
-                throw new SafeIllegalStateException("Unexpected negative depth", SafeArg.of("depth", depth));
+            if (numberOfSpans < 0) {
+                throw new SafeIllegalStateException("Unexpected negative numberOfSpans", SafeArg.of("numberOfSpans", numberOfSpans));
             }
         }
 
         @Override
         public String toString() {
-            return "Trace{depth=" + depth + ", isObservable=false, traceId='" + getTraceId() + "'}";
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId() + "'}";
         }
     }
 }
