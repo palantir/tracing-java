@@ -34,14 +34,10 @@ public final class TraceTest {
     @Test
     public void testToString() {
         Trace trace = Trace.of(true, "traceId");
-        trace.push(OpenSpan.builder()
-                .type(SpanType.LOCAL)
-                .spanId("spanId")
-                .operation("operation")
-                .startClockNanoSeconds(0L)
-                .startTimeMicroSeconds(0L)
-                .build());
-        assertThat(trace.toString()).isEqualTo("Trace{stack=[OpenSpan{operation=operation, startTimeMicroSeconds=0, "
-                + "startClockNanoSeconds=0, spanId=spanId, type=LOCAL}], isObservable=true, traceId='traceId'}");
+        OpenSpan span = trace.startSpan("operation", SpanType.LOCAL);
+        assertThat(trace.toString())
+                .isEqualTo("Trace{stack=[" + span + "], isObservable=true, traceId='traceId'}")
+                .contains(span.getOperation())
+                .contains(span.getSpanId());
     }
 }

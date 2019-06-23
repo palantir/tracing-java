@@ -19,13 +19,11 @@ package com.palantir.tracing;
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
@@ -198,7 +196,7 @@ public final class TracerTest {
         Tracer.fastStartSpan("span");
         try {
             Trace trace = Tracer.copyTrace().get();
-            trace.push(mock(OpenSpan.class));
+            trace.fastStartSpan("fop", SpanType.LOCAL);
         } finally {
             Tracer.fastCompleteSpan();
         }

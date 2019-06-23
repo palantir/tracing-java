@@ -93,7 +93,7 @@ public abstract class Trace {
      */
     abstract void fastStartSpan(String operation, SpanType type);
 
-    abstract void push(OpenSpan span);
+    protected abstract void push(OpenSpan span);
 
     abstract Optional<OpenSpan> top();
 
@@ -147,7 +147,7 @@ public abstract class Trace {
         }
 
         @Override
-        void push(OpenSpan span) {
+        protected void push(OpenSpan span) {
             stack.push(span);
         }
 
@@ -210,7 +210,7 @@ public abstract class Trace {
         }
 
         @Override
-        void push(OpenSpan span) {
+        protected void push(OpenSpan span) {
             numberOfSpans++;
         }
 
