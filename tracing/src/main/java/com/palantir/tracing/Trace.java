@@ -192,7 +192,7 @@ public abstract class Trace {
         private Unsampled(int numberOfSpans, String traceId) {
             super(traceId);
             this.numberOfSpans = numberOfSpans;
-            validateDepth();
+            validateNumberOfSpans();
         }
 
         private Unsampled(String traceId) {
@@ -221,7 +221,7 @@ public abstract class Trace {
 
         @Override
         Optional<OpenSpan> pop() {
-            validateDepth();
+            validateNumberOfSpans();
             if (numberOfSpans > 0) {
                 numberOfSpans--;
             }
@@ -230,7 +230,7 @@ public abstract class Trace {
 
         @Override
         boolean isEmpty() {
-            validateDepth();
+            validateNumberOfSpans();
             return numberOfSpans <= 0;
         }
 
@@ -245,7 +245,7 @@ public abstract class Trace {
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
-        private void validateDepth() {
+        private void validateNumberOfSpans() {
             if (numberOfSpans < 0) {
                 throw new SafeIllegalStateException("Unexpected negative numberOfSpans",
                         SafeArg.of("numberOfSpans", numberOfSpans));
