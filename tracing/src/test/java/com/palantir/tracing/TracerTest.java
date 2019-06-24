@@ -363,7 +363,7 @@ public final class TracerTest {
                     .describedAs("Detached spans should not set thread state")
                     .isFalse();
         } finally {
-            detached.complete();
+            detached.close();
         }
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -386,7 +386,7 @@ public final class TracerTest {
             assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation2);
             assertThat(Tracer.hasTraceId()).isFalse();
         } finally {
-            detached.complete();
+            detached.close();
         }
         assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.unsubscribe("1");
@@ -407,7 +407,7 @@ public final class TracerTest {
                 .describedAs("The detached span restores the original trace")
                 .isEqualTo(standardTraceId);
         Tracer.fastCompleteSpan();
-        detached.complete();
+        detached.close();
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
     }
 
@@ -423,7 +423,7 @@ public final class TracerTest {
         }
         assertThat(Tracer.getTraceId()).isEqualTo(standardTraceId);
         Tracer.fastCompleteSpan();
-        detached.complete();
+        detached.close();
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
     }
 

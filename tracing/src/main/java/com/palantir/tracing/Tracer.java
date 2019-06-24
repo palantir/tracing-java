@@ -227,7 +227,7 @@ public final class Tracer {
         }
 
         @Override
-        public void complete() {
+        public void close() {
             if (completed.compareAndSet(false, true) && sampled) {
                 Tracer.notifyObservers(toSpan(openSpan, Collections.emptyMap(), traceId));
             }

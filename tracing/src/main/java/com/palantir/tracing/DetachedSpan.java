@@ -18,12 +18,13 @@ package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
+import java.io.Closeable;
 
 /**
  * Span operation which is not bound to thread state, and can measure operations which
  * themselves aren't bound to individual threads.
  */
-public interface DetachedSpan {
+public interface DetachedSpan extends Closeable {
 
     /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan}
@@ -56,5 +57,6 @@ public interface DetachedSpan {
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but
      * they must not throw either in order to avoid confusing failures.
      */
-    void complete();
+    @Override
+    void close();
 }
