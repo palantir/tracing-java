@@ -104,11 +104,11 @@ public final class DeferredTracer implements Serializable {
 
         Optional<Trace> originalTrace = Tracer.copyTrace();
 
-        Tracer.setTrace(new Trace(isObservable, traceId));
+        Tracer.setTrace(Trace.of(isObservable, traceId));
         if (parentSpanId != null) {
-            Tracer.startSpan(operation, parentSpanId, SpanType.LOCAL);
+            Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {
-            Tracer.startSpan(operation);
+            Tracer.fastStartSpan(operation);
         }
 
         try {

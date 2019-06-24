@@ -103,10 +103,10 @@ public final class TracedOperationHandler implements HttpHandler {
         Tracer.initTrace(getObservabilityFromHeader(headers), traceId);
         String spanId = headers.getFirst(SPAN_ID); // nullable
         if (spanId == null) {
-            Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
+            Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         } else {
             // caller's span is this span's parent.
-            Tracer.startSpan(operation, spanId, SpanType.SERVER_INCOMING);
+            Tracer.fastStartSpan(operation, spanId, SpanType.SERVER_INCOMING);
         }
     }
 
@@ -115,7 +115,7 @@ public final class TracedOperationHandler implements HttpHandler {
         // HTTP request did not indicate a trace; initialize trace state and create a span.
         String newTraceId = Tracers.randomId();
         Tracer.initTrace(getObservabilityFromHeader(headers), newTraceId);
-        Tracer.startSpan(operation, SpanType.SERVER_INCOMING);
+        Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         return newTraceId;
     }
 

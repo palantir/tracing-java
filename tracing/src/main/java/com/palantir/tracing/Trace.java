@@ -17,9 +17,15 @@
 package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkState;
 
+import com.google.common.base.Strings;
+import com.google.errorprone.annotations.CheckReturnValue;
+import com.palantir.logsafe.SafeArg;
+import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanObserver;
+import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
@@ -27,63 +33,228 @@ import java.util.Optional;
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
  * not thread-safe and is intended to be used in a thread-local context.
+ *
+ * There are two implementations of {@link Trace}: {@link Sampled} and {@link Unsampled}.
+ * A {@link Sampled sampled trace} records each span in order to record tracing data, however in most scenarios
+ * most traces will be {@link Unsampled}, which avoids creation of span objects, random span ID generation,
+ * clock reads, etc. Instead, the {@link Unsampled unsampled} implementation tracks the number of 'active' spans
+ * on the current thread so it can provide correct {@link Trace#isEmpty()} values allowing the {@link Tracer}
+ * utility to reset thread state after the emulated root span has been completed.
  */
-public final class Trace {
+public abstract class Trace {
 
-    private final Deque<OpenSpan> stack;
-    private final boolean isObservable;
     private final String traceId;
 
-    private Trace(ArrayDeque<OpenSpan> stack, boolean isObservable, String traceId) {
-        checkArgument(!traceId.isEmpty(), "traceId must be non-empty");
-
-        this.stack = stack;
-        this.isObservable = isObservable;
+    private Trace(String traceId) {
+        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
     }
 
-    Trace(boolean isObservable, String traceId) {
-        this(new ArrayDeque<>(), isObservable, traceId);
+    /**
+     * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
+     * when the current trace is empty.
+     * If the return value is not used, prefer {@link #fastStartSpan(String, String, SpanType)}}.
+     */
+    @CheckReturnValue
+    final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
+        checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
+        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
+        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
+        push(span);
+        return span;
     }
 
-    void push(OpenSpan span) {
-        stack.push(span);
+    /**
+     * Opens a new span for this thread's call trace, labeled with the provided operation.
+     * If the return value is not used, prefer {@link #fastStartSpan(String, SpanType)}}.
+     */
+    @CheckReturnValue
+    final OpenSpan startSpan(String operation, SpanType type) {
+        Optional<OpenSpan> prevState = top();
+        final OpenSpan span;
+        // Avoid lambda allocation in hot paths
+        if (prevState.isPresent()) {
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
+        } else {
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
+        }
+
+        push(span);
+        return span;
     }
 
-    Optional<OpenSpan> top() {
-        return stack.isEmpty() ? Optional.empty() : Optional.of(stack.peekFirst());
-    }
+    /**
+     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    abstract void fastStartSpan(String operation, String parentSpanId, SpanType type);
 
-    Optional<OpenSpan> pop() {
-        return stack.isEmpty() ? Optional.empty() : Optional.of(stack.pop());
-    }
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    abstract void fastStartSpan(String operation, SpanType type);
 
-    boolean isEmpty() {
-        return stack.isEmpty();
-    }
+    protected abstract void push(OpenSpan span);
+
+    abstract Optional<OpenSpan> top();
+
+    abstract Optional<OpenSpan> pop();
+
+    abstract boolean isEmpty();
 
     /**
      * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon {@link
      * Tracer#completeSpan span completion}.
      */
-    boolean isObservable() {
-        return isObservable;
-    }
+    abstract boolean isObservable();
 
     /**
      * The globally unique non-empty identifier for this call trace.
      */
-    String getTraceId() {
+    final String getTraceId() {
         return traceId;
     }
 
     /** Returns a copy of this Trace which can be independently mutated. */
-    Trace deepCopy() {
-        return new Trace(new ArrayDeque<>(stack), isObservable, traceId);
+    abstract Trace deepCopy();
+
+    static Trace of(boolean isObservable, String traceId) {
+        return isObservable ? new Sampled(traceId) : new Unsampled(traceId);
     }
 
-    @Override
-    public String toString() {
-        return "Trace{stack=" + stack + ", isObservable=" + isObservable + ", traceId='" + traceId + "'}";
+    private static final class Sampled extends Trace {
+
+        private final Deque<OpenSpan> stack;
+
+        private Sampled(ArrayDeque<OpenSpan> stack, String traceId) {
+            super(traceId);
+            this.stack = stack;
+        }
+
+        private Sampled(String traceId) {
+            this(new ArrayDeque<>(), traceId);
+        }
+
+        @Override
+        @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
+        void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+            startSpan(operation, parentSpanId, type);
+        }
+
+        @Override
+        @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
+        void fastStartSpan(String operation, SpanType type) {
+            startSpan(operation, type);
+        }
+
+        @Override
+        protected void push(OpenSpan span) {
+            stack.push(span);
+        }
+
+        @Override
+        Optional<OpenSpan> top() {
+            return stack.isEmpty() ? Optional.empty() : Optional.of(stack.peekFirst());
+        }
+
+        @Override
+        Optional<OpenSpan> pop() {
+            return stack.isEmpty() ? Optional.empty() : Optional.of(stack.pop());
+        }
+
+        @Override
+        boolean isEmpty() {
+            return stack.isEmpty();
+        }
+
+        @Override
+        boolean isObservable() {
+            return true;
+        }
+
+        @Override
+        Trace deepCopy() {
+            return new Sampled(new ArrayDeque<>(stack), getTraceId());
+        }
+
+        @Override
+        public String toString() {
+            return "Trace{stack=" + stack + ", isObservable=true, traceId='" + getTraceId() + "'}";
+        }
+    }
+
+    private static final class Unsampled extends Trace {
+        /**
+         * Tracks the size that a {@link Sampled} trace {@link Sampled#stack} would have <i>if</i> this was sampled.
+         * This allows thread trace state to be cleared when all "started" spans have been "removed".
+         */
+        private int numberOfSpans;
+
+        private Unsampled(int numberOfSpans, String traceId) {
+            super(traceId);
+            this.numberOfSpans = numberOfSpans;
+            validateNumberOfSpans();
+        }
+
+        private Unsampled(String traceId) {
+            this(0, traceId);
+        }
+
+        @Override
+        void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+            fastStartSpan(operation, type);
+        }
+
+        @Override
+        void fastStartSpan(String operation, SpanType type) {
+            numberOfSpans++;
+        }
+
+        @Override
+        protected void push(OpenSpan span) {
+            numberOfSpans++;
+        }
+
+        @Override
+        Optional<OpenSpan> top() {
+            return Optional.empty();
+        }
+
+        @Override
+        Optional<OpenSpan> pop() {
+            validateNumberOfSpans();
+            if (numberOfSpans > 0) {
+                numberOfSpans--;
+            }
+            return Optional.empty();
+        }
+
+        @Override
+        boolean isEmpty() {
+            validateNumberOfSpans();
+            return numberOfSpans <= 0;
+        }
+
+        @Override
+        boolean isObservable() {
+            return false;
+        }
+
+        @Override
+        Trace deepCopy() {
+            return new Unsampled(numberOfSpans, getTraceId());
+        }
+
+        /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
+        private void validateNumberOfSpans() {
+            if (numberOfSpans < 0) {
+                throw new SafeIllegalStateException("Unexpected negative numberOfSpans",
+                        SafeArg.of("numberOfSpans", numberOfSpans));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId() + "'}";
+        }
     }
 }

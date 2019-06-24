@@ -20,9 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Lists;
 import java.util.List;
+import org.junit.Before;
 import org.junit.Test;
 
 public class AsyncTracerTest {
+
+    @Before
+    public void before() {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+    }
+
     @Test
     public void doesNotLeakEnqueueSpan() {
         Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
@@ -42,7 +49,7 @@ public class AsyncTracerTest {
     @Test
     public void completesBothDeferredSpans() {
         Tracer.initTrace(Observability.SAMPLE, "defaultTraceId");
-        Tracer.startSpan("defaultSpan");
+        Tracer.fastStartSpan("defaultSpan");
         AsyncTracer asyncTracer = new AsyncTracer();
         List<String> observedSpans = Lists.newArrayList();
         Tracer.subscribe(
@@ -57,9 +64,9 @@ public class AsyncTracerTest {
     @Test
     public void preservesState() {
         Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
-        Tracer.startSpan("foo");
-        Tracer.startSpan("bar");
-        Tracer.startSpan("baz");
+        Tracer.fastStartSpan("foo");
+        Tracer.fastStartSpan("bar");
+        Tracer.fastStartSpan("baz");
         Trace originalTrace = getTrace();
         AsyncTracer asyncTracer = new AsyncTracer();
 

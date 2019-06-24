@@ -19,13 +19,11 @@ package com.palantir.tracing;
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
@@ -70,6 +68,7 @@ public final class TracerTest {
     }
 
     @Test
+    @SuppressWarnings("ResultOfMethodCallIgnored") // testing that exceptions are thrown
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
         assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.UNDECIDED, null))
                 .hasLogMessage("traceId must be non-empty")
@@ -84,6 +83,14 @@ public final class TracerTest {
                 .hasArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", "", null))
+                .hasLogMessage("parentSpanId must be non-empty")
+                .hasArgs();
+
+        assertThatLoggableExceptionThrownBy(() -> Tracer.fastStartSpan("op", null, null))
+                .hasLogMessage("parentSpanId must be non-empty")
+                .hasArgs();
+
+        assertThatLoggableExceptionThrownBy(() -> Tracer.fastStartSpan("op", "", null))
                 .hasLogMessage("parentSpanId must be non-empty")
                 .hasArgs();
     }
@@ -138,17 +145,33 @@ public final class TracerTest {
         verifyNoMoreInteractions(observer1);
 
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
-        startAndCompleteSpan(); // not sampled, see above
+        startAndFastCompleteSpan(); // not sampled, see above
         verifyNoMoreInteractions(observer1);
     }
 
     @Test
-    public void testDerivesNewSpansWhenTraceIsNotObservable() throws Exception {
-        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
-        Tracer.startSpan("foo");
-        Tracer.startSpan("bar");
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("bar");
-        assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("foo");
+    public void testCountsSpansWhenTraceIsNotObservable() throws Exception {
+        String traceId = Tracers.randomId();
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, traceId);
+        // Unsampled trace should still apply thread state
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
+        assertThat(Tracer.hasTraceId()).isTrue();
+        assertThat(Tracer.getTraceId()).isEqualTo(traceId);
+        Tracer.fastStartSpan("foo");
+        Tracer.fastStartSpan("bar");
+
+        Tracer.fastCompleteSpan();
+        // Unsampled trace should still apply thread state
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
+        assertThat(Tracer.hasTraceId()).isTrue();
+        assertThat(Tracer.getTraceId()).isEqualTo(traceId);
+
+        // Complete the root span, which should clear thread state
+        Tracer.fastCompleteSpan();
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
+        assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
@@ -163,17 +186,17 @@ public final class TracerTest {
         verifyNoMoreInteractions(observer1, sampler);
 
         Mockito.reset(observer1, sampler);
-        startAndCompleteSpan(); // not sampled, see above
+        startAndFastCompleteSpan(); // not sampled, see above
         verify(sampler).sample();
         verifyNoMoreInteractions(observer1, sampler);
     }
 
     @Test
     public void testTraceCopyIsIndependent() throws Exception {
-        Tracer.startSpan("span");
+        Tracer.fastStartSpan("span");
         try {
             Trace trace = Tracer.copyTrace().get();
-            trace.push(mock(OpenSpan.class));
+            trace.fastStartSpan("fop", SpanType.LOCAL);
         } finally {
             Tracer.fastCompleteSpan();
         }
@@ -182,8 +205,8 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
-        Tracer.startSpan("operation");
-        Tracer.setTrace(new Trace(true, "newTraceId"));
+        Tracer.fastStartSpan("operation");
+        Tracer.setTrace(Trace.of(true, "newTraceId"));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
         assertThat(Tracer.completeSpan()).isEmpty();
@@ -192,7 +215,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsMdcTraceSampledKeyWhenObserved() {
-        Tracer.setTrace(new Trace(true, "observedTraceId"));
+        Tracer.setTrace(Trace.of(true, "observedTraceId"));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isEqualTo("1");
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -200,7 +223,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceMissingMdcTraceSampledKeyWhenNotObserved() {
-        Tracer.setTrace(new Trace(false, "notObservedTraceId"));
+        Tracer.setTrace(Trace.of(false, "notObservedTraceId"));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -209,12 +232,12 @@ public final class TracerTest {
     @Test
     public void testCompletedSpanHasCorrectSpanType() throws Exception {
         for (SpanType type : SpanType.values()) {
-            Tracer.startSpan("1", type);
+            Tracer.fastStartSpan("1", type);
             assertThat(Tracer.completeSpan().get().type()).isEqualTo(type);
         }
 
         // Default is LOCAL
-        Tracer.startSpan("1");
+        Tracer.fastStartSpan("1");
         assertThat(Tracer.completeSpan().get().type()).isEqualTo(SpanType.LOCAL);
     }
 
@@ -223,7 +246,7 @@ public final class TracerTest {
         Map<String, String> metadata = ImmutableMap.of(
                 "key1", "value1",
                 "key2", "value2");
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Optional<Span> maybeSpan = Tracer.completeSpan(metadata);
         assertTrue(maybeSpan.isPresent());
         assertThat(maybeSpan.get().getMetadata()).isEqualTo(metadata);
@@ -238,7 +261,7 @@ public final class TracerTest {
     public void testFastCompleteSpan() {
         Tracer.subscribe("1", observer1);
         String operation = "operation";
-        Tracer.startSpan(operation);
+        Tracer.fastStartSpan(operation);
         Tracer.fastCompleteSpan();
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -249,7 +272,7 @@ public final class TracerTest {
         Tracer.subscribe("1", observer1);
         Map<String, String> metadata = ImmutableMap.of("key", "value");
         String operation = "operation";
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         Tracer.fastCompleteSpan(metadata);
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -266,7 +289,7 @@ public final class TracerTest {
             throw new IllegalStateException("2");
         });
         String operation = "operation";
-        Tracer.startSpan(operation);
+        Tracer.fastStartSpan(operation);
         Tracer.fastCompleteSpan();
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
@@ -275,7 +298,7 @@ public final class TracerTest {
 
     @Test
     public void testGetAndClearTraceIfPresent() {
-        Trace trace = new Trace(true, "newTraceId");
+        Trace trace = Trace.of(true, "newTraceId");
         Tracer.setTrace(trace);
 
         Optional<Trace> nonEmptyTrace = Tracer.getAndClearTraceIfPresent();
@@ -288,7 +311,7 @@ public final class TracerTest {
 
     @Test
     public void testClearAndGetTraceClearsMdc() {
-        Tracer.startSpan("test");
+        Tracer.fastStartSpan("test");
         try {
             String startTrace = Tracer.getTraceId();
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
@@ -320,7 +343,7 @@ public final class TracerTest {
     @Test
     public void testHasTraceId() {
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
-        Tracer.startSpan("testSpan");
+        Tracer.fastStartSpan("testSpan");
         try {
             assertThat(Tracer.hasTraceId()).isEqualTo(true);
         } finally {
@@ -329,8 +352,13 @@ public final class TracerTest {
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
     }
 
+    private static void startAndFastCompleteSpan() {
+        Tracer.fastStartSpan("operation");
+        Tracer.fastCompleteSpan();
+    }
+
     private static Span startAndCompleteSpan() {
-        Tracer.startSpan("operation");
+        Tracer.fastStartSpan("operation");
         return Tracer.completeSpan().get();
     }
 }

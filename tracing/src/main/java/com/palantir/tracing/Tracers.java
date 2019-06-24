@@ -235,7 +235,7 @@ public final class Tracers {
 
             try {
                 Tracer.initTrace(observability, Tracers.randomId());
-                Tracer.startSpan(operation);
+                Tracer.fastStartSpan(operation);
                 return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -271,7 +271,7 @@ public final class Tracers {
 
             try {
                 Tracer.initTrace(observability, Tracers.randomId());
-                Tracer.startSpan(operation);
+                Tracer.fastStartSpan(operation);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -309,7 +309,7 @@ public final class Tracers {
 
             try {
                 Tracer.initTrace(observability, traceId);
-                Tracer.startSpan(operation);
+                Tracer.fastStartSpan(operation);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();

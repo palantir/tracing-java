@@ -68,7 +68,7 @@ public final class Tracer {
     private static Trace createTrace(Observability observability, String traceId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return new Trace(observable, traceId);
+        return Trace.of(observable, traceId);
     }
 
     private static boolean shouldObserve(Observability observability) {
@@ -108,51 +108,58 @@ public final class Tracer {
     /**
      * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
      * when the current trace is empty.
+     * If the return value is not used, prefer {@link Tracer#fastStartSpan(String, String, SpanType)}}.
      */
+    @CheckReturnValue
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
-        Trace current = getOrCreateCurrentTrace();
-        checkState(current.isEmpty(),
-                "Cannot start a span with explicit parent if the current thread's trace is non-empty");
-        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
-        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
-        current.push(span);
-        return span;
+        return getOrCreateCurrentTrace().startSpan(operation, parentSpanId, type);
     }
 
     /**
      * Like {@link #startSpan(String)}, but opens a span of the explicitly given {@link SpanType span type}.
+     * If the return value is not used, prefer {@link Tracer#fastStartSpan(String, SpanType)}}.
      */
+    @CheckReturnValue
     public static OpenSpan startSpan(String operation, SpanType type) {
-        return startSpanInternal(operation, type);
+        return getOrCreateCurrentTrace().startSpan(operation, type);
     }
 
     /**
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     * If the return value is not used, prefer {@link Tracer#fastStartSpan(String)}}.
      */
+    @CheckReturnValue
     public static OpenSpan startSpan(String operation) {
-        return startSpanInternal(operation, SpanType.LOCAL);
+        return startSpan(operation, SpanType.LOCAL);
     }
 
-    private static OpenSpan startSpanInternal(String operation, SpanType type) {
-        Trace trace = getOrCreateCurrentTrace();
-        Optional<OpenSpan> prevState = trace.top();
-        final OpenSpan span;
-        // Avoid lambda allocation in hot paths
-        if (prevState.isPresent()) {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
-        } else {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
-        }
+    /**
+     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+        getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
+    }
 
-        trace.push(span);
-        return span;
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(String operation, SpanType type) {
+        getOrCreateCurrentTrace().fastStartSpan(operation, type);
+    }
+
+    /**
+     * Like {@link #startSpan(String)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(String operation) {
+        fastStartSpan(operation, SpanType.LOCAL);
     }
 
     /** Discards the current span without emitting it. */
     static void fastDiscardSpan() {
         Trace trace = currentTrace.get();
         checkNotNull(trace, "Expected current trace to exist");
-        checkState(popCurrentSpan().isPresent(), "Expected span to exist before discarding");
+        checkState(!trace.isEmpty(), "Expected span to exist before discarding");
+        popCurrentSpan(trace);
     }
 
     /**
@@ -171,11 +178,17 @@ public final class Tracer {
     public static void fastCompleteSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace != null) {
-            Optional<OpenSpan> span = popCurrentSpan();
+            Optional<OpenSpan> span = popCurrentSpan(trace);
             if (trace.isObservable()) {
-                span.map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()))
-                        .ifPresent(Tracer::notifyObservers);
+                completeSpanAndNotifyObservers(span, metadata, trace.getTraceId());
             }
+        }
+    }
+
+    private static void completeSpanAndNotifyObservers(
+            Optional<OpenSpan> openSpan, Map<String, String> metadata, String traceId) {
+        if (openSpan.isPresent()) {
+            Tracer.notifyObservers(toSpan(openSpan.get(), metadata, traceId));
         }
     }
 
@@ -199,7 +212,7 @@ public final class Tracer {
         if (trace == null) {
             return Optional.empty();
         }
-        Optional<Span> maybeSpan = popCurrentSpan()
+        Optional<Span> maybeSpan = popCurrentSpan(trace)
                 .map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()));
 
         // Notify subscribers iff trace is observable
@@ -215,16 +228,12 @@ public final class Tracer {
         compositeObserver.accept(span);
     }
 
-    private static Optional<OpenSpan> popCurrentSpan() {
-        Trace trace = currentTrace.get();
-        if (trace != null) {
-            Optional<OpenSpan> span = trace.pop();
-            if (trace.isEmpty()) {
-                clearCurrentTrace();
-            }
-            return span;
+    private static Optional<OpenSpan> popCurrentSpan(Trace trace) {
+        Optional<OpenSpan> span = trace.pop();
+        if (trace.isEmpty()) {
+            clearCurrentTrace();
         }
-        return Optional.empty();
+        return span;
     }
 
     private static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {

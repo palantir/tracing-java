@@ -44,7 +44,7 @@ public final class CloseableTracer implements AutoCloseable {
      * labeled with the provided operation.
      */
     public static CloseableTracer startSpan(String operation, SpanType spanType) {
-        Tracer.startSpan(operation, spanType);
+        Tracer.fastStartSpan(operation, spanType);
         return INSTANCE;
     }
 
