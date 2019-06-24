@@ -159,7 +159,7 @@ public final class Tracer {
         Trace trace = currentTrace.get();
         checkNotNull(trace, "Expected current trace to exist");
         checkState(!trace.isEmpty(), "Expected span to exist before discarding");
-        popCurrentSpan();
+        popCurrentSpan(trace);
     }
 
     /**
@@ -178,11 +178,17 @@ public final class Tracer {
     public static void fastCompleteSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace != null) {
-            Optional<OpenSpan> span = popCurrentSpan();
+            Optional<OpenSpan> span = popCurrentSpan(trace);
             if (trace.isObservable()) {
-                span.map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()))
-                        .ifPresent(Tracer::notifyObservers);
+                completeSpanAndNotifyObservers(span, metadata, trace.getTraceId());
             }
+        }
+    }
+
+    private static void completeSpanAndNotifyObservers(
+            Optional<OpenSpan> openSpan, Map<String, String> metadata, String traceId) {
+        if (openSpan.isPresent()) {
+            Tracer.notifyObservers(toSpan(openSpan.get(), metadata, traceId));
         }
     }
 
@@ -206,7 +212,7 @@ public final class Tracer {
         if (trace == null) {
             return Optional.empty();
         }
-        Optional<Span> maybeSpan = popCurrentSpan()
+        Optional<Span> maybeSpan = popCurrentSpan(trace)
                 .map(openSpan -> toSpan(openSpan, metadata, trace.getTraceId()));
 
         // Notify subscribers iff trace is observable
@@ -222,16 +228,12 @@ public final class Tracer {
         compositeObserver.accept(span);
     }
 
-    private static Optional<OpenSpan> popCurrentSpan() {
-        Trace trace = currentTrace.get();
-        if (trace != null) {
-            Optional<OpenSpan> span = trace.pop();
-            if (trace.isEmpty()) {
-                clearCurrentTrace();
-            }
-            return span;
+    private static Optional<OpenSpan> popCurrentSpan(Trace trace) {
+        Optional<OpenSpan> span = trace.pop();
+        if (trace.isEmpty()) {
+            clearCurrentTrace();
         }
-        return Optional.empty();
+        return span;
     }
 
     private static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {
