@@ -1,3 +1,7 @@
+<p align="right">
+<a href="https://autorelease.general.dmz.palantir.tech/palantir/tracing-java"><img src="https://img.shields.io/badge/Perform%20an-Autorelease-success.svg" alt="Autorelease"></a>
+</p>
+
 # tracing-java [![Download](https://api.bintray.com/packages/palantir/releases/tracing-java/images/download.svg) ](https://bintray.com/palantir/releases/tracing-java/_latestVersion)
 
 [Zipkin](https://github.com/openzipkin/zipkin)-style call tracing libraries.
