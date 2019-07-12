@@ -92,7 +92,7 @@ public final class Tracer {
     @Deprecated
     public static void initTrace(Optional<Boolean> isObservable, String traceId) {
         Observability observability = isObservable
-                .map(value -> Boolean.TRUE.equals(value) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
+                .map(observable -> observable ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
                 .orElse(Observability.UNDECIDED);
 
         setTrace(createTrace(observability, traceId));
