@@ -100,6 +100,9 @@ public final class Tracer {
 
     /**
      * Initializes the current thread's trace, erasing any previously accrued open spans.
+     *
+     * The new trace will be persistent for the duration of the next span opened on it via
+     * {@link #startSpan}, and will be discarded when that span is completed or discarded.
      */
     public static void initTrace(Observability observability, String traceId) {
         setTrace(createTrace(observability, traceId));
