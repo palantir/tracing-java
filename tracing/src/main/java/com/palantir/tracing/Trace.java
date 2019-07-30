@@ -59,7 +59,12 @@ public abstract class Trace {
     final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
         checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
-        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
+        OpenSpan span = OpenSpan.of(
+                operation,
+                Tracers.randomId(),
+                type,
+                Optional.of(parentSpanId),
+                orElse(getOriginatingSpanId(), Optional.of(parentSpanId)));
         push(span);
         return span;
     }
@@ -74,13 +79,30 @@ public abstract class Trace {
         final OpenSpan span;
         // Avoid lambda allocation in hot paths
         if (prevState.isPresent()) {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(prevState.get().getSpanId()));
+            span = OpenSpan.of(
+                    operation,
+                    Tracers.randomId(),
+                    type,
+                    Optional.of(prevState.get().getSpanId()),
+                    orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()));
         } else {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
+            span = OpenSpan.of(
+                    operation,
+                    Tracers.randomId(),
+                    type,
+                    Optional.empty(),
+                    getOriginatingSpanId());
         }
 
         push(span);
         return span;
+    }
+
+    private static <T> Optional<T> orElse(Optional<T> left, Optional<T> right) {
+        if (left.isPresent()) {
+            return left;
+        }
+        return right;
     }
 
     /**
@@ -113,6 +135,8 @@ public abstract class Trace {
     final String getTraceId() {
         return traceId;
     }
+
+    abstract Optional<String> getOriginatingSpanId();
 
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
@@ -172,6 +196,14 @@ public abstract class Trace {
         }
 
         @Override
+        Optional<String> getOriginatingSpanId() {
+            if (stack.isEmpty()) {
+                return Optional.empty();
+            }
+            return stack.peekLast().getParentSpanId();
+        }
+
+        @Override
         Trace deepCopy() {
             return new Sampled(new ArrayDeque<>(stack), getTraceId());
         }
@@ -188,6 +220,7 @@ public abstract class Trace {
          * This allows thread trace state to be cleared when all "started" spans have been "removed".
          */
         private int numberOfSpans;
+        private Optional<String> originatingSpanId = Optional.empty();
 
         private Unsampled(int numberOfSpans, String traceId) {
             super(traceId);
@@ -201,7 +234,7 @@ public abstract class Trace {
 
         @Override
         void fastStartSpan(String operation, String parentSpanId, SpanType type) {
-            fastStartSpan(operation, type);
+            startSpan(Optional.of(parentSpanId));
         }
 
         @Override
@@ -211,6 +244,13 @@ public abstract class Trace {
 
         @Override
         protected void push(OpenSpan span) {
+            startSpan(span.getParentSpanId());
+        }
+
+        private void startSpan(Optional<String> parentSpanId) {
+            if (numberOfSpans == 0) {
+                originatingSpanId = parentSpanId;
+            }
             numberOfSpans++;
         }
 
@@ -225,6 +265,9 @@ public abstract class Trace {
             if (numberOfSpans > 0) {
                 numberOfSpans--;
             }
+            if (numberOfSpans == 0) {
+                originatingSpanId = Optional.empty();
+            }
             return Optional.empty();
         }
 
@@ -237,6 +280,11 @@ public abstract class Trace {
         @Override
         boolean isObservable() {
             return false;
+        }
+
+        @Override
+        Optional<String> getOriginatingSpanId() {
+            return originatingSpanId;
         }
 
         @Override

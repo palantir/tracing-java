@@ -22,4 +22,16 @@ public interface TraceHttpHeaders {
     String PARENT_SPAN_ID = "X-B3-ParentSpanId";
     String SPAN_ID = "X-B3-SpanId";
     String IS_SAMPLED = "X-B3-Sampled"; // Boolean (either “1” or “0”, can be absent)
+
+    /**
+     * Conceptually, a trace is a stack of spans. In implementation, this is actually many stacks, in many services,
+     * where a service's stack will typically contain a single parent span from a different service at the bottom,
+     * and many spans of its own above it.
+     *
+     * By communicating this deepest span id with future network calls as an 'originating' span id, this enables
+     * network-level tracing to be enabled always in a low-fidelity form, with request logs containing enough
+     * information to reconstruct a request-level trace. For service-internal tracing, the typical trace logs
+     * (with sampling) are still required.
+     */
+    String ORIGINATING_SPAN_ID = "X-OrigSpanId";
 }

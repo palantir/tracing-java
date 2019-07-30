@@ -61,6 +61,13 @@ public abstract class OpenSpan {
     public abstract Optional<String> getParentSpanId();
 
     /**
+     * Returns the identifier of the 'originating' span if one exists.
+     * @see TraceHttpHeaders
+     */
+    @Value.Parameter
+    public abstract Optional<String> getOriginatingSpanId();
+
+    /**
      * Returns a globally unique identifier representing a single span within the call trace.
      */
     @Value.Parameter
@@ -86,8 +93,20 @@ public abstract class OpenSpan {
     /**
      * Use this factory method to avoid allocate {@link Builder} in hot path.
      */
-    public static OpenSpan of(String operation, String spanId, SpanType type, Optional<String> parentSpanId) {
-        return ImmutableOpenSpan.of(operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, spanId, type);
+    public static OpenSpan of(
+            String operation,
+            String spanId,
+            SpanType type,
+            Optional<String> parentSpanId,
+            Optional<String> originatingSpanId) {
+        return ImmutableOpenSpan.of(
+                operation,
+                getNowInMicroSeconds(),
+                System.nanoTime(),
+                parentSpanId,
+                originatingSpanId,
+                spanId,
+                type);
     }
 
     private static long getNowInMicroSeconds() {
