@@ -79,7 +79,8 @@ public final class OkhttpTraceInterceptorTest {
 
     @Test
     public void testPopulatesNewTrace_whenParentTraceIsPresent() throws IOException {
-        OpenSpan parentState = Tracer.startSpan("operation");
+        String originatingSpanId = "originating Span";
+        OpenSpan parentState = Tracer.startSpan("operation", originatingSpanId, SpanType.SERVER_INCOMING);
         String traceId = Tracer.getTraceId();
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
@@ -96,7 +97,7 @@ public final class OkhttpTraceInterceptorTest {
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotEqualTo(parentState.getSpanId());
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
         assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isEqualTo(parentState.getSpanId());
-        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEqualTo(parentState.getSpanId());
+        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEqualTo(originatingSpanId);
     }
 
     @Test
