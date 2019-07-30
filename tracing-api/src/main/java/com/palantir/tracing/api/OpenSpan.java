@@ -109,6 +109,26 @@ public abstract class OpenSpan {
                 type);
     }
 
+    /**
+     * Deprecated.
+     * @deprecated Use the variant that accepts an originating span id
+     */
+    @Deprecated
+    public static OpenSpan of(
+            String operation,
+            String spanId,
+            SpanType type,
+            Optional<String> parentSpanId) {
+        return of(
+                operation,
+                getNowInMicroSeconds(),
+                System.nanoTime(),
+                parentSpanId,
+                Optional.empty(),
+                spanId,
+                type);
+    }
+
     private static long getNowInMicroSeconds() {
         Instant now = CLOCK.instant();
         return (1000000 * now.getEpochSecond()) + (now.getNano() / 1000);
