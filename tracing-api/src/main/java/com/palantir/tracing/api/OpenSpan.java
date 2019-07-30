@@ -119,14 +119,7 @@ public abstract class OpenSpan {
             String spanId,
             SpanType type,
             Optional<String> parentSpanId) {
-        return of(
-                operation,
-                getNowInMicroSeconds(),
-                System.nanoTime(),
-                parentSpanId,
-                Optional.empty(),
-                spanId,
-                type);
+        return of(operation, spanId, type, parentSpanId, Optional.empty());
     }
 
     private static long getNowInMicroSeconds() {
