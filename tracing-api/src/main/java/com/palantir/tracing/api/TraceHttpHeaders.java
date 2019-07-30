@@ -31,7 +31,7 @@ public interface TraceHttpHeaders {
      * By communicating this deepest span id with future network calls as an 'originating' span id, this enables
      * network-level tracing to be enabled always in a low-fidelity form, with request logs containing enough
      * information to reconstruct a request-level trace, even when the trace is not sampled.
-     * For server-internal tracing, the typical trace loggs (with sampling) are still required.
+     * For server-internal tracing, the typical trace logs (with sampling) are still required.
      */
     String ORIGINATING_SPAN_ID = "X-OrigSpanId";
 }
