@@ -119,10 +119,10 @@ public final class OkhttpTraceInterceptorTest {
     }
 
     @Test
-    public void testHeaders_notSampledwhenOriginatingSpanPresent() throws IOException {
+    public void testHeaders_notSampledWhenOriginatingSpanPresent() throws IOException {
         Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
         String originatingSpan = "originating";
-        Tracer.startSpan("operation", originatingSpan, SpanType.SERVER_INCOMING);
+        Tracer.fastStartSpan("operation", originatingSpan, SpanType.SERVER_INCOMING);
         String traceId = Tracer.getTraceId();
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
