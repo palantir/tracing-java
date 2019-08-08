@@ -24,6 +24,7 @@ import com.palantir.tracing.api.SpanType;
 import org.junit.Test;
 
 public final class TraceTest {
+    private static final String ORIGINATING_SPAN_ID = "originating span id";
 
     @Test
     public void constructTrace_emptyTraceId() {
@@ -39,5 +40,39 @@ public final class TraceTest {
                 .isEqualTo("Trace{stack=[" + span + "], isObservable=true, traceId='traceId'}")
                 .contains(span.getOperation())
                 .contains(span.getSpanId());
+    }
+
+    @Test
+    public void testOriginatingTraceId_slow_sampled() {
+        Trace trace = Trace.of(true, "traceId");
+        OpenSpan originating = trace.startSpan("1", ORIGINATING_SPAN_ID, SpanType.LOCAL);
+        assertThat(originating.getOriginatingSpanId()).contains(ORIGINATING_SPAN_ID);
+        OpenSpan span = trace.startSpan("2", SpanType.LOCAL);
+        assertThat(span.getOriginatingSpanId()).contains(ORIGINATING_SPAN_ID);
+    }
+
+    @Test
+    public void testOriginatingTraceId_fast_sampled() {
+        Trace trace = Trace.of(true, "traceId");
+        trace.fastStartSpan("1", ORIGINATING_SPAN_ID, SpanType.LOCAL);
+        OpenSpan span = trace.startSpan("2", SpanType.LOCAL);
+        assertThat(span.getOriginatingSpanId()).contains(ORIGINATING_SPAN_ID);
+    }
+
+    @Test
+    public void testOriginatingTraceId_slow_unsampled() {
+        Trace trace = Trace.of(false, "traceId");
+        OpenSpan originating = trace.startSpan("1", ORIGINATING_SPAN_ID, SpanType.LOCAL);
+        assertThat(originating.getOriginatingSpanId()).contains(ORIGINATING_SPAN_ID);
+        OpenSpan span = trace.startSpan("2", SpanType.LOCAL);
+        assertThat(span.getOriginatingSpanId()).contains(ORIGINATING_SPAN_ID);
+    }
+
+    @Test
+    public void testOriginatingTraceId_fast_unsampled() {
+        Trace trace = Trace.of(false, "traceId");
+        trace.fastStartSpan("1", ORIGINATING_SPAN_ID, SpanType.LOCAL);
+        OpenSpan span = trace.startSpan("2", SpanType.LOCAL);
+        assertThat(span.getOriginatingSpanId()).contains(ORIGINATING_SPAN_ID);
     }
 }
