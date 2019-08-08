@@ -16,8 +16,6 @@
 
 package com.palantir.tracing.api;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -25,8 +23,6 @@ import org.immutables.value.Value;
 /**
  * A value class representing a completed Span, see {@link OpenSpan} for a description of the fields.
  */
-@JsonDeserialize(as = ImmutableSpan.class)
-@JsonSerialize(as = ImmutableSpan.class)
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
 public abstract class Span {
