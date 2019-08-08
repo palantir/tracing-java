@@ -61,8 +61,14 @@ public abstract class OpenSpan {
     public abstract Optional<String> getParentSpanId();
 
     /**
-     * Returns the identifier of the 'originating' span if one exists.
-     * @see TraceHttpHeaders
+     * Conceptually, a trace is a stack of spans. In implementation, this is actually many stacks, in many servers,
+     * where a server's stack will typically contain a single parent span from a different server at the bottom,
+     * and many spans of its own above it.
+     *
+     * If the trace is unsampled, by communicating this deepest span id with future network calls as an 'originating'
+     * span id, this enables network-level tracing to be enabled always in a low-fidelity form, with request logs
+     * containing enough information to reconstruct a request-level trace, even when the trace is not sampled.
+     * For server-internal tracing, the typical trace logs (with sampling) are still required.
      */
     @Value.Parameter
     public abstract Optional<String> getOriginatingSpanId();

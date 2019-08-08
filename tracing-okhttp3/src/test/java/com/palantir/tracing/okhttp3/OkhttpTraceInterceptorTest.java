@@ -73,7 +73,6 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isNull();
         assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
     }
 
@@ -97,7 +96,6 @@ public final class OkhttpTraceInterceptorTest {
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotEqualTo(parentState.getSpanId());
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
         assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isEqualTo(parentState.getSpanId());
-        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEqualTo(originatingSpanId);
     }
 
     @Test
@@ -118,6 +116,22 @@ public final class OkhttpTraceInterceptorTest {
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
         assertThat(intercepted.header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("0");
+    }
+
+    @Test
+    public void testHeaders_notSampledwhenOriginatingSpanPresent() throws IOException {
+        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+        String originatingSpan = "originating";
+        Tracer.startSpan("operation", originatingSpan, SpanType.SERVER_INCOMING);
+        String traceId = Tracer.getTraceId();
+        OkhttpTraceInterceptor.INSTANCE.intercept(chain);
+        verify(chain).proceed(requestCaptor.capture());
+        Request intercepted = requestCaptor.getValue();
+        assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
+        assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isEqualTo(originatingSpan);
+        assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
+        assertThat(intercepted.header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("0");
+
     }
 
     @Test

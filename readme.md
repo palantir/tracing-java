@@ -15,9 +15,7 @@
 
 Clients and servers propagate call trace ids across JVM boundaries according to the
 [Zipkin](https://github.com/openzipkin/zipkin) specification. In particular, clients insert `X-B3-TraceId: <Trace ID>`
-HTTP headers into all requests which get propagated by Jetty servers into subsequent client invocations. We enhance
-the Zipkin spec in one regard; with outgoing traces we additionally send an `X-OrigSpanId: <Originating Span ID>`
-header which enables request logs to be considered a useful subset of the trace events, even on unsampled requests.
+HTTP headers into all requests which get propagated by Jetty servers into subsequent client invocations.
 
 ## Usage
 
