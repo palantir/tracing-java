@@ -159,22 +159,15 @@ public final class Tracer {
 
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state.
+     * This is an internal utility that should not be called directly outside of {@link DetachedSpan}.
      */
-    public static DetachedSpan detach(String operation, SpanType type) {
+    static DetachedSpan detachInternal(String operation, SpanType type) {
         Trace maybeCurrentTrace = currentTrace.get();
         String traceId = maybeCurrentTrace != null
                 ? maybeCurrentTrace.getTraceId() : Tracers.randomId();
         boolean sampled = maybeCurrentTrace != null
                 ? maybeCurrentTrace.isObservable() : sampler.sample();
         return new DefaultDetachedSpan(operation, type, traceId, getParentSpanId(maybeCurrentTrace), sampled);
-    }
-
-    /**
-     * Opens a new {@link SpanType#LOCAL LOCAL} detached span for this thread's call trace,
-     * labeled with the provided operation.
-     */
-    public static DetachedSpan detach(String operation) {
-        return detach(operation, SpanType.LOCAL);
     }
 
     private static Optional<String> getParentSpanId(@Nullable Trace trace) {

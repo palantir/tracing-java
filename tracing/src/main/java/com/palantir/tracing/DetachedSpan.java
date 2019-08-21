@@ -19,12 +19,32 @@ package com.palantir.tracing;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
 import java.io.Closeable;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Span operation which is not bound to thread state, and can measure operations which
  * themselves aren't bound to individual threads.
  */
 public interface DetachedSpan extends Closeable {
+
+    /**
+     * Like {@link Tracer#startSpan(String, SpanType)}, but does not set or modify tracing thread state.
+     * Creates a detached child span using the callers current span as a parent, if it is present, otherwise
+     * creates a detached root span with a new traceId.
+     */
+    @CheckReturnValue
+    static DetachedSpan start(String operation, SpanType type) {
+        return Tracer.detachInternal(operation, type);
+    }
+
+    /**
+     * Opens a new {@link SpanType#LOCAL LOCAL} detached span for this thread's call trace,
+     * labeled with the provided operation.
+     */
+    @CheckReturnValue
+    static DetachedSpan start(String operation) {
+        return start(operation, SpanType.LOCAL);
+    }
 
     /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan}
@@ -43,12 +63,14 @@ public interface DetachedSpan extends Closeable {
     }
 
     /** Starts a child {@link DetachedSpan} using this instance as the parent. */
+    @CheckReturnValue
     DetachedSpan detach(String operation, SpanType type);
 
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.
      * Equivalent to {@link #attach(String, SpanType)} using {@link SpanType#LOCAL}.
      */
+    @CheckReturnValue
     default DetachedSpan detach(String operation) {
         return detach(operation, SpanType.LOCAL);
     }
