@@ -36,28 +36,22 @@ import okhttp3.Request;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 
+@RunWith(MockitoJUnitRunner.class)
 public final class OkhttpTraceInterceptorTest {
 
-    @Mock
-    private Interceptor.Chain chain;
-
-    @Mock
-    private SpanObserver observer;
-
-    @Captor
-    private ArgumentCaptor<Request> requestCaptor;
-
-    @Captor
-    private ArgumentCaptor<Span> spanCaptor;
+    @Mock private Interceptor.Chain chain;
+    @Mock private SpanObserver observer;
+    @Captor private ArgumentCaptor<Request> requestCaptor;
+    @Captor private ArgumentCaptor<Span> spanCaptor;
 
     @Before
     public void before() {
-        MockitoAnnotations.initMocks(this);
         Request request = new Request.Builder().url("http://localhost").build();
         when(chain.request()).thenReturn(request);
         Tracer.subscribe("", observer);
@@ -79,12 +73,14 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isNotNull();
+        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isNull();
         assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
     }
 
     @Test
     public void testPopulatesNewTrace_whenParentTraceIsPresent() throws IOException {
-        OpenSpan parentState = Tracer.startSpan("operation");
+        String originatingSpanId = "originating Span";
+        OpenSpan parentState = Tracer.startSpan("operation", originatingSpanId, SpanType.SERVER_INCOMING);
         String traceId = Tracer.getTraceId();
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
@@ -101,6 +97,7 @@ public final class OkhttpTraceInterceptorTest {
         assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotEqualTo(parentState.getSpanId());
         assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
         assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isEqualTo(parentState.getSpanId());
+        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEqualTo(originatingSpanId);
     }
 
     @Test

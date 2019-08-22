@@ -51,6 +51,9 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         if (span.getParentSpanId().isPresent()) {
             tracedRequest.header(TraceHttpHeaders.PARENT_SPAN_ID, span.getParentSpanId().get());
         }
+        if (span.getOriginatingSpanId().isPresent()) {
+            tracedRequest.header(TraceHttpHeaders.ORIGINATING_SPAN_ID, span.getOriginatingSpanId().get());
+        }
 
         Response response;
         try {
