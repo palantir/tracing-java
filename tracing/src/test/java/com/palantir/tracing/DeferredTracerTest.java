@@ -44,7 +44,7 @@ public class DeferredTracerTest {
         try (ObjectInputStream objectInputStream = new ObjectInputStream(bais)) {
             DeferredTracer deserialized = (DeferredTracer) objectInputStream.readObject();
 
-            String trace = deserialized.withTrace(() -> Tracer.getTraceId());
+            String trace = deserialized.withTrace(Tracer::getTraceId);
             assertThat(trace).isEqualTo("defaultTraceId");
         }
     }

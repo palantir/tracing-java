@@ -258,9 +258,7 @@ public final class TracersTest {
     public void testWrapCallableWithNewTrace_traceStateInsideCallableIsIsolated() throws Exception {
         String traceIdBeforeConstruction = Tracer.getTraceId();
 
-        Callable<String> wrappedCallable = Tracers.wrapWithNewTrace(() -> {
-            return Tracer.getTraceId();
-        });
+        Callable<String> wrappedCallable = Tracers.wrapWithNewTrace(Tracer::getTraceId);
 
         String traceIdFirstCall = wrappedCallable.call();
         String traceIdSecondCall = wrappedCallable.call();
@@ -282,9 +280,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallableWithNewTrace_traceStateInsideCallableHasSpan() throws Exception {
-        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace(() -> {
-            return getCurrentTrace();
-        });
+        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace(TracersTest::getCurrentTrace);
 
         List<OpenSpan> spans = wrappedCallable.call();
 
@@ -298,9 +294,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallableWithNewTrace_traceStateInsideCallableHasGivenSpan() throws Exception {
-        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace("operation", () -> {
-            return getCurrentTrace();
-        });
+        Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithNewTrace("operation", TracersTest::getCurrentTrace);
 
         List<OpenSpan> spans = wrappedCallable.call();
 
