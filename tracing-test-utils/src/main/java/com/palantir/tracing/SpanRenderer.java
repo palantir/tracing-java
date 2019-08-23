@@ -65,37 +65,32 @@ final class SpanRenderer implements SpanObserver {
         MutableGraph<Span> graph = GraphBuilder.directed().build();
         spans.forEach(graph::addNode);
 
-        // it's possible there's an unclosed parent, so we can make up a fake root span
-        Map<String, Span> spansBySpanId = spans.stream()
-                .collect(Collectors.toMap(Span::getSpanId, Function.identity()));
-        Optional<Span> maybeRootSpan = spansBySpanId.values().stream()
+        // it's possible there's an unclosed parent, so we can make up a fake root span just in case we need it later
+        Span fakeRootSpan = createFakeRootSpan(spans);
+
+        Map<String, Span> spansBySpanId =
+                spans.stream().collect(Collectors.toMap(Span::getSpanId, Function.identity()));
+
+        Span rootSpan = spansBySpanId.values().stream()
                 .filter(span -> !span.getParentSpanId().isPresent())
-                .findFirst();
-        Span rootSpan;
-        if (maybeRootSpan.isPresent()) {
-            rootSpan = maybeRootSpan.get();
-        } else {
-            Span fake = createFakeRootSpan(spans);
-            graph.addNode(fake);
-            rootSpan = fake;
-        }
+                .findFirst()
+                .orElse(fakeRootSpan);
 
+        // set up edges:
         for (Span span : spans) {
-            if (!span.getParentSpanId().isPresent()) {
-                // the root node will have no parentSpanId
-                continue;
-            }
+            // the root node will have no parentSpanId
+            span.getParentSpanId().ifPresent(parentSpanId -> {
+                Optional<Span> parentSpan = Optional.ofNullable(spansBySpanId.get(parentSpanId));
 
-            Optional<Span> parentSpan = Optional.ofNullable(spansBySpanId.get(span.getParentSpanId().get()));
+                if (!parentSpan.isPresent()) {
+                    // people do crazy things with traces - they might have a trace already initialized which doesn't
+                    // get closed (and therefore emitted) by the time we need to render, so just hook it up to the fake
+                    graph.putEdge(span, fakeRootSpan);
+                    return;
+                }
 
-            if (!parentSpan.isPresent()) {
-                // people do crazy things with traces - they might have a trace already initialized which doesn't get
-                // closed (and therefore emitted) by the time we need to render, so we just hook it up to the root
-                graph.putEdge(span, rootSpan);
-                continue;
-            }
-
-            graph.putEdge(span, parentSpan.get());
+                graph.putEdge(span, parentSpan.get());
+            });
         }
 
 
