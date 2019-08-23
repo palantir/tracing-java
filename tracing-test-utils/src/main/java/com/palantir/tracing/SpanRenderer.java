@@ -23,6 +23,7 @@ import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
+import com.palantir.tracing.api.SpanType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,12 +32,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@SuppressWarnings("PreferSafeLoggableExceptions") // test-lib, no need for SafeArgs
+@SuppressWarnings({"PreferSafeLoggableExceptions", "Slf4jLogsafeArgs"}) // test-lib, no need for SafeArgs
 final class SpanRenderer implements SpanObserver {
 
     private final List<Span> allSpans = new ArrayList<>();
@@ -55,25 +57,47 @@ final class SpanRenderer implements SpanObserver {
 
     @SuppressWarnings("BanSystemOut")
     private static void renderSingleTrace(List<Span> spans) {
-        Map<String, Span> spansBySpanId = spans.stream()
-                .collect(Collectors.toMap(Span::getSpanId, Function.identity()));
-
-        // represent spans as a graph, each pointing to their parent with an edge
-        MutableGraph<Span> graph = GraphBuilder.directed().build();
-
-        for (Span span : spansBySpanId.values()) {
-            graph.addNode(span);
-            // the root node will have no parentSpanId
-            span.getParentSpanId().ifPresent(parent -> {
-                graph.putEdge(span, spansBySpanId.get(parent));
-            });
+        if (spans.isEmpty()) {
+            return;
         }
 
-        Span rootSpan = spansBySpanId.values().stream()
+        // every span is a node in a graph, each pointing to their parent with an edge
+        MutableGraph<Span> graph = GraphBuilder.directed().build();
+        spans.forEach(graph::addNode);
+
+        // it's possible there's an unclosed parent, so we can make up a fake root span
+        Map<String, Span> spansBySpanId = spans.stream()
+                .collect(Collectors.toMap(Span::getSpanId, Function.identity()));
+        Optional<Span> maybeRootSpan = spansBySpanId.values().stream()
                 .filter(span -> !span.getParentSpanId().isPresent())
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException(
-                        "Unable to find a root span (i.e. a span with no parent) - this implies a cycle?"));
+                .findFirst();
+        Span rootSpan;
+        if (maybeRootSpan.isPresent()) {
+            rootSpan = maybeRootSpan.get();
+        } else {
+            Span fake = createFakeRootSpan(spans);
+            graph.addNode(fake);
+            rootSpan = fake;
+        }
+
+        for (Span span : spans) {
+            if (!span.getParentSpanId().isPresent()) {
+                // the root node will have no parentSpanId
+                continue;
+            }
+
+            Optional<Span> parentSpan = Optional.ofNullable(spansBySpanId.get(span.getParentSpanId().get()));
+
+            if (!parentSpan.isPresent()) {
+                // people do crazy things with traces - they might have a trace already initialized which doesn't get
+                // closed (and therefore emitted) by the time we need to render, so we just hook it up to the root
+                graph.putEdge(span, rootSpan);
+                continue;
+            }
+
+            graph.putEdge(span, parentSpan.get());
+        }
+
 
         List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
                 .collect(ImmutableList.toImmutableList());
@@ -87,6 +111,31 @@ final class SpanRenderer implements SpanObserver {
         for (Span span : orderedspans) {
             System.out.println(ascii.formatSpan(span));
         }
+    }
+
+    /** Synthesizes a root span which encapsulates all known spans. */
+    private static Span createFakeRootSpan(List<Span> spans) {
+        long startTimeMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
+
+        long endTimeNanos = spans.stream()
+                .mapToLong(span -> {
+                    long startTimeNanos = TimeUnit.NANOSECONDS.convert(
+                            span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
+                    return startTimeNanos + span.getDurationNanoSeconds();
+                })
+                .max()
+                .getAsLong();
+
+        long startTimeNanos = TimeUnit.NANOSECONDS.convert(startTimeMicros, TimeUnit.MICROSECONDS);
+
+        return Span.builder()
+                .type(SpanType.LOCAL)
+                .startTimeMicroSeconds(startTimeMicros)
+                .durationNanoSeconds(endTimeNanos - startTimeNanos)
+                .spanId("???")
+                .traceId("???")
+                .operation("<unknown root span>")
+                .build();
     }
 
     private static Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
