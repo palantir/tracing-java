@@ -172,7 +172,7 @@ public final class Tracer {
 
     private static Optional<String> getParentSpanId(@Nullable Trace trace) {
         if (trace != null) {
-            Optional<OpenSpan> maybeOpenSpan = trace.pop();
+            Optional<OpenSpan> maybeOpenSpan = trace.top();
             if (maybeOpenSpan.isPresent()) {
                 return Optional.of(maybeOpenSpan.get().getSpanId());
             }
