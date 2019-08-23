@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableMap;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -433,6 +434,9 @@ public final class TracerTest {
 
     @Test
     public void testDetachedTraceBuildsUponExistingTrace() {
+        Tracer.setSampler(sampler);
+        when(sampler.sample()).thenReturn(true);
+        Tracer.subscribe("1", observer1);
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
         // Standard span starts first, so the detached tracer should build from the current threads state.
         Tracer.fastStartSpan("standard");
@@ -443,8 +447,23 @@ public final class TracerTest {
         }
         assertThat(Tracer.getTraceId()).isEqualTo(standardTraceId);
         Tracer.fastCompleteSpan();
+        assertThat(Tracer.hasTraceId()).isEqualTo(false);
         detached.close();
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        verify(sampler, times(1)).sample();
+        ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);
+        verify(observer1, times(3)).consume(captor.capture());
+        List<Span> spans = captor.getAllValues();
+        Span standardSpan = spans.get(1);
+        Span operationSpan = spans.get(0);
+        Span detachedSpan = spans.get(2);
+        assertThat(standardSpan.getOperation()).isEqualTo("standard");
+        assertThat(standardSpan.getParentSpanId()).isEmpty();
+        assertThat(operationSpan.getOperation()).isEqualTo("operation");
+        assertThat(operationSpan.getParentSpanId()).hasValue(detachedSpan.getSpanId());
+        assertThat(detachedSpan.getOperation()).isEqualTo("detached");
+        assertThat(detachedSpan.getParentSpanId()).hasValue(standardSpan.getSpanId());
+        Tracer.unsubscribe("1");
     }
 
     private static void startAndFastCompleteSpan() {

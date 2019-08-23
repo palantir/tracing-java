@@ -208,7 +208,7 @@ public final class Tracer {
             Trace maybeCurrentTrace = currentTrace.get();
             Trace trace = Trace.of(sampled, traceId);
             setTrace(trace);
-            Tracer.fastStartSpan(operationName, type);
+            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
             return maybeCurrentTrace == null
                     ? DEFAULT_TOKEN : new TraceRestoringSpanToken(maybeCurrentTrace);
         }
