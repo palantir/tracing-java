@@ -35,23 +35,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public final class HtmlSpanObserver implements SpanObserver {
+final class SpanRenderer implements SpanObserver {
 
-    private final List<Span> spans = new ArrayList<>();
+    private final List<Span> allSpans = new ArrayList<>();
 
     @Override
     public synchronized void consume(Span span) {
-        spans.add(span);
+        allSpans.add(span);
     }
 
-    public void output() {
-
-        Map<String, List<Span>> distinctTraces = spans.stream().collect(Collectors.groupingBy(Span::getTraceId));
+    void output() {
+        Map<String, List<Span>> distinctTraces = allSpans.stream().collect(Collectors.groupingBy(Span::getTraceId));
         distinctTraces.forEach((traceId, spans) -> {
             renderSingleTrace(spans);
         });
     }
 
+    @SuppressWarnings("BanSystemOut")
     private void renderSingleTrace(List<Span> spans) {
 
         Map<String, Span> spansBySpanId = spans.stream()
@@ -97,23 +97,17 @@ public final class HtmlSpanObserver implements SpanObserver {
         return Stream.concat(Stream.of(parentSpan), children);
     }
 
-
-    interface Formatter {
-        String formatSpan(Span span);
-    }
-
     private static float percentage(long numerator, long denominator) {
         return 100f * numerator / denominator;
     }
 
-    private static final class HtmlFormatter implements Formatter {
+    private static final class HtmlFormatter {
         private final Span rootSpan;
 
         HtmlFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
 
-        @Override
         public String formatSpan(Span span) {
             long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
                     rootSpan.getDurationNanoSeconds(),
@@ -126,7 +120,7 @@ public final class HtmlSpanObserver implements SpanObserver {
                             + "left: %s%%; "
                             + "width: %s%%; "
                             + "background: grey;\""
-                            + "title=\"start-time: %s millis, finish-time: %s millis\">"
+                            + "title=\"start-time: %s ms, finish-time: %s ms\">"
                             + "%s"
                             + "</div>",
                     percentage(transposedStartMicros, rootDurationMicros),
@@ -155,14 +149,13 @@ public final class HtmlSpanObserver implements SpanObserver {
         }
     }
 
-    private static class AsciiFormatter implements Formatter {
+    private static class AsciiFormatter {
         private final Span rootSpan;
 
         AsciiFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
 
-        @Override
         public String formatSpan(Span span) {
             long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
                     rootSpan.getDurationNanoSeconds(),

@@ -1,0 +1,12 @@
+apply from: "${rootDir}/gradle/publish-jar.gradle"
+
+dependencies {
+    implementation project(":tracing")
+    compileOnly 'junit:junit'
+    compileOnly 'org.junit.jupiter:junit-jupiter-api'
+
+    testImplementation "junit:junit"
+    testImplementation 'org.assertj:assertj-core'
+
+    compileOnly "org.immutables:value::annotations"
+}

@@ -16,20 +16,24 @@
 
 package com.palantir.tracing;
 
-import java.io.IOException;
+import org.junit.Rule;
 import org.junit.Test;
 
-public class HtmlSpanObserverTest {
+public class SpanRendererTest {
+
+    @Rule
+    public final TracingVizRule rule = new TracingVizRule();
 
     @Test
-    public void name() throws InterruptedException, IOException {
-        Tracer.setSampler(AlwaysSampler.INSTANCE);
-        HtmlSpanObserver consumer = new HtmlSpanObserver();
-        Tracer.subscribe("whatever", consumer);
-
+    @SuppressWarnings("NestedTryDepth") // contrived example just to get enough complexity!
+    public void name() throws InterruptedException {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
                 Thread.sleep(100);
+                try (CloseableTracer nested = CloseableTracer.startSpan("nested")) {
+                    Thread.sleep(90);
+                }
+                Thread.sleep(10);
             }
             try (CloseableTracer second = CloseableTracer.startSpan("second")) {
                 Thread.sleep(100);
@@ -38,7 +42,5 @@ public class HtmlSpanObserverTest {
                 Thread.sleep(100);
             }
         }
-
-        consumer.output();
     }
 }
