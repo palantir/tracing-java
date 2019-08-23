@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,10 +54,10 @@ public class HtmlSpanObserver implements SpanObserver {
         }
 
         Span rootSpan = spansBySpanId.values().stream().filter(span -> !span.getParentSpanId().isPresent()).findFirst().get();
-        Stream<Span> spanStream = orderedSpans(graph, rootSpan);
+        Stream<Span> orderedSpans = depthFirstTraversalOrderedByStartTime(graph, rootSpan);
 
         StringBuilder stringBuilder = new StringBuilder();
-        spanStream.forEachOrdered(span -> {
+        orderedSpans.forEachOrdered(span -> {
             stringBuilder.append(formatSpan(rootSpan, span));
         });
 
@@ -66,15 +65,16 @@ public class HtmlSpanObserver implements SpanObserver {
         Files.write(
                 file,
                 stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
-        System.out.println("open " + file);
+
+        System.out.println(file);
     }
 
-    private Stream<Span> orderedSpans(MutableGraph<Span> graph, Span parentSpan) {
+    private Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
         Stream<Span> children = graph.incidentEdges(parentSpan).stream()
                 .filter(pair -> pair.nodeV().equals(parentSpan))
                 .map(pair -> pair.nodeU())
                 .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds))
-                .flatMap(child -> orderedSpans(graph, child));
+                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
         return Stream.concat(Stream.of(parentSpan), children);
     }
