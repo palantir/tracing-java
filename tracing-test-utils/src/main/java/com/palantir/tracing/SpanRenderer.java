@@ -57,7 +57,8 @@ final class SpanRenderer implements SpanObserver {
 
     @SuppressWarnings("BanSystemOut")
     private static void renderSingleTrace(List<Span> spans) {
-        if (spans.isEmpty()) {
+        if (spans.isEmpty() || spans.size() == 1) {
+            // I really don't think people want to see a visualization with one bar on it.
             return;
         }
 
