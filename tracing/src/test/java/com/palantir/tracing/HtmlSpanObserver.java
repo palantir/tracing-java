@@ -26,25 +26,36 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class HtmlSpanObserver implements SpanObserver {
 
-    private final Map<String, Span> spansBySpanId = new ConcurrentHashMap<>();
+    private final List<Span> spans = new ArrayList<>();
 
     @Override
-    public void consume(Span span) {
-        spansBySpanId.put(span.getSpanId(), span);
+    public synchronized void consume(Span span) {
+        spans.add(span);
     }
 
-    public void output() throws IOException {
+    public void output() {
 
-        // TODO(dfox): assert we're only dealing with one traceid
+        Map<String, List<Span>> distinctTraces = spans.stream().collect(Collectors.groupingBy(Span::getTraceId));
+        distinctTraces.forEach((traceId, spans) -> {
+            renderSingleTrace(spans);
+        });
+    }
+
+    private void renderSingleTrace(List<Span> spans) {
+
+        Map<String, Span> spansBySpanId = spans.stream()
+                .collect(Collectors.toMap(Span::getSpanId, Function.identity()));
 
         MutableGraph<Span> graph = GraphBuilder.directed()
                 .build();
@@ -64,72 +75,16 @@ public final class HtmlSpanObserver implements SpanObserver {
         List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
                 .collect(ImmutableList.toImmutableList());
 
-        Formatter htmlFormatter = new Formatter() {
-            long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
-                    rootSpan.getDurationNanoSeconds(),
-                    TimeUnit.NANOSECONDS);
-
-            @Override
-            public String formatSpan(Span span) {
-                long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
-                long startMillis = TimeUnit.MILLISECONDS.convert(transposedStartMicros, TimeUnit.MICROSECONDS);
-
-                return String.format("<div style=\"position: relative; "
-                                + "left: %s%%; "
-                                + "width: %s%%; "
-                                + "background: grey;\""
-                                + "title=\"start-time: %s millis, finish-time: %s millis\">"
-                                + "%s"
-                                + "</div>",
-                        percentage(transposedStartMicros, rootDurationMicros),
-                        percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds()),
-                        startMillis,
-                        startMillis + TimeUnit.MILLISECONDS.convert(
-                                span.getDurationNanoSeconds(),
-                                TimeUnit.NANOSECONDS),
-                        span.getOperation());
-            }
-        };
-
-        Formatter ascii = new Formatter() {
-            long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
-                    rootSpan.getDurationNanoSeconds(),
-                    TimeUnit.NANOSECONDS);
-
-            @Override
-            public String formatSpan(Span span) {
-                long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
-                float leftPercentage = percentage(transposedStartMicros, rootDurationMicros);
-                float widthPercentage = percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds());
-
-                int numSpaces = (int) Math.floor(leftPercentage);
-                int numHashes = (int) Math.floor(widthPercentage);
-
-                String spaces = Strings.repeat(" ", numSpaces);
-
-                String name = span.getOperation().substring(0, Math.min(numHashes, span.getOperation().length()));
-                String hashes = name + Strings.repeat("-", numHashes - name.length());
-
-                return spaces + hashes;
-            }
-        };
-
         // emit HTML first
-        StringBuilder stringBuilder = new StringBuilder();
-        for (Span span : orderedspans) {
-            stringBuilder.append(htmlFormatter.formatSpan(span));
-        }
-        Path file = Files.createTempFile("spans", ".html");
-        Files.write(
-                file,
-                stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
+        HtmlFormatter htmlFormatter = new HtmlFormatter(rootSpan);
+        Path file = htmlFormatter.emitToTempFile(orderedspans);
+        System.out.println("HTML span visualization: " + file);
 
         // emit ASCII
+        AsciiFormatter ascii = new AsciiFormatter(rootSpan);
         for (Span span : orderedspans) {
             System.out.println(ascii.formatSpan(span));
         }
-
-        System.out.println("HTML span visualization: " + file);
     }
 
     private Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
@@ -149,5 +104,83 @@ public final class HtmlSpanObserver implements SpanObserver {
 
     private static float percentage(long numerator, long denominator) {
         return 100f * numerator / denominator;
+    }
+
+    private static final class HtmlFormatter implements Formatter {
+        private final Span rootSpan;
+
+        HtmlFormatter(Span rootSpan) {
+            this.rootSpan = rootSpan;
+        }
+
+        @Override
+        public String formatSpan(Span span) {
+            long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
+                    rootSpan.getDurationNanoSeconds(),
+                    TimeUnit.NANOSECONDS);
+
+            long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
+            long startMillis = TimeUnit.MILLISECONDS.convert(transposedStartMicros, TimeUnit.MICROSECONDS);
+
+            return String.format("<div style=\"position: relative; "
+                            + "left: %s%%; "
+                            + "width: %s%%; "
+                            + "background: grey;\""
+                            + "title=\"start-time: %s millis, finish-time: %s millis\">"
+                            + "%s"
+                            + "</div>",
+                    percentage(transposedStartMicros, rootDurationMicros),
+                    percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds()),
+                    startMillis,
+                    startMillis + TimeUnit.MILLISECONDS.convert(
+                            span.getDurationNanoSeconds(),
+                            TimeUnit.NANOSECONDS),
+                    span.getOperation());
+        }
+
+        public Path emitToTempFile(List<Span> spans) {
+            StringBuilder stringBuilder = new StringBuilder();
+            for (Span span : spans) {
+                stringBuilder.append(formatSpan(span));
+            }
+            try {
+                Path file = Files.createTempFile("trace-" + rootSpan.getTraceId() + "-", ".html");
+                Files.write(
+                        file,
+                        stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
+                return file;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static class AsciiFormatter implements Formatter {
+        private final Span rootSpan;
+
+        AsciiFormatter(Span rootSpan) {
+            this.rootSpan = rootSpan;
+        }
+
+        @Override
+        public String formatSpan(Span span) {
+            long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
+                    rootSpan.getDurationNanoSeconds(),
+                    TimeUnit.NANOSECONDS);
+
+            long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
+            float leftPercentage = percentage(transposedStartMicros, rootDurationMicros);
+            float widthPercentage = percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds());
+
+            int numSpaces = (int) Math.floor(leftPercentage);
+            int numHashes = (int) Math.floor(widthPercentage);
+
+            String spaces = Strings.repeat(" ", numSpaces);
+
+            String name = span.getOperation().substring(0, Math.min(numHashes, span.getOperation().length()));
+            String hashes = name + Strings.repeat("-", numHashes - name.length());
+
+            return spaces + hashes;
+        }
     }
 }
