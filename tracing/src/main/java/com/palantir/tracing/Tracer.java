@@ -254,7 +254,7 @@ public final class Tracer {
 
         @Override
         public DetachedSpan detach(String operation, SpanType type) {
-            return new UnsampledDetachedSpan(traceId);
+            return this;
         }
 
         @Override
