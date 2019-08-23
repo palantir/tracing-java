@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
 import com.palantir.tracing.api.Span;
@@ -35,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@SuppressWarnings("PreferSafeLoggableExceptions") // test-lib, no need for SafeArgs
 final class SpanRenderer implements SpanObserver {
 
     private final List<Span> allSpans = new ArrayList<>();
@@ -52,16 +54,16 @@ final class SpanRenderer implements SpanObserver {
     }
 
     @SuppressWarnings("BanSystemOut")
-    private void renderSingleTrace(List<Span> spans) {
-
+    private static void renderSingleTrace(List<Span> spans) {
         Map<String, Span> spansBySpanId = spans.stream()
                 .collect(Collectors.toMap(Span::getSpanId, Function.identity()));
 
-        MutableGraph<Span> graph = GraphBuilder.directed()
-                .build();
+        // represent spans as a graph, each pointing to their parent with an edge
+        MutableGraph<Span> graph = GraphBuilder.directed().build();
 
         for (Span span : spansBySpanId.values()) {
             graph.addNode(span);
+            // the root node will have no parentSpanId
             span.getParentSpanId().ifPresent(parent -> {
                 graph.putEdge(span, spansBySpanId.get(parent));
             });
@@ -70,14 +72,14 @@ final class SpanRenderer implements SpanObserver {
         Span rootSpan = spansBySpanId.values().stream()
                 .filter(span -> !span.getParentSpanId().isPresent())
                 .findFirst()
-                .get();
+                .orElseThrow(() -> new RuntimeException(
+                        "Unable to find a root span (i.e. a span with no parent) - this implies a cycle?"));
 
         List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
                 .collect(ImmutableList.toImmutableList());
 
         // emit HTML first
-        HtmlFormatter htmlFormatter = new HtmlFormatter(rootSpan);
-        Path file = htmlFormatter.emitToTempFile(orderedspans);
+        Path file = new HtmlFormatter(rootSpan).emitToTempFile(orderedspans);
         System.out.println("HTML span visualization: " + file);
 
         // emit ASCII
@@ -87,10 +89,11 @@ final class SpanRenderer implements SpanObserver {
         }
     }
 
-    private Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
+    private static Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
         Stream<Span> children = graph.incidentEdges(parentSpan).stream()
+                // we only care about incoming edges to the 'parentSpan', not outgoing ones
                 .filter(pair -> pair.nodeV().equals(parentSpan))
-                .map(pair -> pair.nodeU())
+                .map(EndpointPair::nodeU)
                 .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds))
                 .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
@@ -102,13 +105,13 @@ final class SpanRenderer implements SpanObserver {
     }
 
     private static final class HtmlFormatter {
-        private final Span rootSpan;
+        private final Span rootSpan; // only necessary for scaling
 
         HtmlFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
 
-        public String formatSpan(Span span) {
+        private String formatSpan(Span span) {
             long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
                     rootSpan.getDurationNanoSeconds(),
                     TimeUnit.NANOSECONDS);
@@ -150,7 +153,7 @@ final class SpanRenderer implements SpanObserver {
     }
 
     private static class AsciiFormatter {
-        private final Span rootSpan;
+        private final Span rootSpan; // only necessary for scaling
 
         AsciiFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;

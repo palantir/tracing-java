@@ -22,7 +22,7 @@ import org.junit.Test;
 public class SpanRendererTest {
 
     @Rule
-    public final TracingVizRule rule = new TracingVizRule();
+    public final RenderTracingRule rule = new RenderTracingRule();
 
     @Test
     @SuppressWarnings("NestedTryDepth") // contrived example just to get enough complexity!

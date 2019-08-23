@@ -18,18 +18,18 @@ package com.palantir.tracing;
 
 import org.junit.rules.ExternalResource;
 
-public final class TracingVizRule extends ExternalResource {
+public final class RenderTracingRule extends ExternalResource {
     private final SpanRenderer renderer = new SpanRenderer();
 
     @Override
     protected void before() {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe("TracingVizRule", renderer);
+        Tracer.subscribe("RenderTracingRule", renderer);
     }
 
     @Override
     protected void after() {
-        Tracer.unsubscribe("TracingVizRule");
+        Tracer.unsubscribe("RenderTracingRule");
         renderer.output();
     }
 }

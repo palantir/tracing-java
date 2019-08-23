@@ -20,20 +20,20 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public final class TracingVizExtension implements BeforeAllCallback, AfterAllCallback {
+public final class RenderTracingExtension implements BeforeAllCallback, AfterAllCallback {
 
     private final SpanRenderer renderer = new SpanRenderer();
 
     @Override
     public void beforeAll(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe("TracingVizExtension", renderer);
+        Tracer.subscribe("RenderTracingExtension", renderer);
     }
 
     @Override
     public void afterAll(ExtensionContext context) {
         // TODO(dfox): this will not behave well if things run in parallel
-        Tracer.unsubscribe("TracingVizExtension");
+        Tracer.unsubscribe("RenderTracingExtension");
         renderer.output();
     }
 }
