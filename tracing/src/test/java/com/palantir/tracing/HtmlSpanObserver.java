@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-public class HtmlSpanObserver implements SpanObserver {
+public final class HtmlSpanObserver implements SpanObserver {
 
     private final Map<String, Span> spansBySpanId = new ConcurrentHashMap<>();
 
@@ -56,7 +56,11 @@ public class HtmlSpanObserver implements SpanObserver {
             });
         }
 
-        Span rootSpan = spansBySpanId.values().stream().filter(span -> !span.getParentSpanId().isPresent()).findFirst().get();
+        Span rootSpan = spansBySpanId.values().stream()
+                .filter(span -> !span.getParentSpanId().isPresent())
+                .findFirst()
+                .get();
+
         List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
                 .collect(ImmutableList.toImmutableList());
 
@@ -80,7 +84,9 @@ public class HtmlSpanObserver implements SpanObserver {
                         percentage(transposedStartMicros, rootDurationMicros),
                         percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds()),
                         startMillis,
-                        startMillis + TimeUnit.MILLISECONDS.convert(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS),
+                        startMillis + TimeUnit.MILLISECONDS.convert(
+                                span.getDurationNanoSeconds(),
+                                TimeUnit.NANOSECONDS),
                         span.getOperation());
             }
         };
@@ -123,7 +129,7 @@ public class HtmlSpanObserver implements SpanObserver {
             System.out.println(ascii.formatSpan(span));
         }
 
-        System.out.println(file);
+        System.out.println("HTML span visualization: " + file);
     }
 
     private Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
