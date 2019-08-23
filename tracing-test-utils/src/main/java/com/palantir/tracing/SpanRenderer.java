@@ -95,6 +95,7 @@ final class SpanRenderer implements SpanObserver {
 
 
         List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
+                .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
 
         // emit HTML first
@@ -220,7 +221,7 @@ final class SpanRenderer implements SpanObserver {
             String name = span.getOperation().substring(0, Math.min(numHashes, span.getOperation().length()));
             String hashes = name + Strings.repeat("-", numHashes - name.length());
 
-            return spaces + hashes;
+            return spaces + (hashes.isEmpty() ? "|" : hashes);
         }
     }
 }
