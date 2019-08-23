@@ -19,6 +19,8 @@ package com.palantir.tracing;
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -409,6 +411,24 @@ public final class TracerTest {
         Tracer.fastCompleteSpan();
         detached.close();
         assertThat(Tracer.hasTraceId()).isEqualTo(false);
+    }
+
+    @Test
+    public void testDetachedTraceRestoresOriginalTrace() {
+        Tracer.setSampler(sampler);
+        Tracer.subscribe("1", observer1);
+        when(sampler.sample()).thenReturn(true);
+        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        try (CloseableTracer outer = CloseableTracer.startSpan("root")) {
+            assertThat(Tracer.hasTraceId()).isEqualTo(true);
+            DetachedSpan.start("detached").close();
+            assertThat(Tracer.hasTraceId()).isEqualTo(true);
+        }
+        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        verify(sampler).sample();
+        verify(observer1, times(2)).consume(any(Span.class));
+        verifyNoMoreInteractions(observer1, sampler);
+        Tracer.unsubscribe("1");
     }
 
     @Test
