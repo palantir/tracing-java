@@ -172,10 +172,6 @@ final class SpanRenderer implements SpanObserver {
 
         TimeBounds bounds = bounds(orderedspans);
         return new AnalyzedSpans() {
-            @Override
-            public Span rootSpan() {
-                return rootSpan;
-            }
 
             @Override
             public ImmutableList<Span> orderedSpans() {
@@ -197,7 +193,6 @@ final class SpanRenderer implements SpanObserver {
     interface AnalyzedSpans {
         Set<Span> collisions();
         TimeBounds bounds();
-        Span rootSpan();
         ImmutableList<Span> orderedSpans();
     }
 
