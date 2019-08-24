@@ -16,6 +16,10 @@
 
 package com.palantir.tracing;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -66,16 +70,10 @@ final class SpanRenderer implements SpanObserver {
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
                 .forEachOrdered(entry -> {
-
-                    // sb.append("\n<h1>");
-                    // sb.append(entry.getKey());
-                    // sb.append("</h1>\n");
-
-                    entry.getValue().orderedSpans().forEach(span -> {
-                        sb.append(formatter.formatSpan(span));
-                        sb.append('\n');
-                    });
+                    entry.getValue().orderedSpans().forEach(span -> sb.append(formatter.formatSpan(span)));
                 });
+
+        formatter.rawSpanJson(allSpans, sb);
 
         try {
             Path file = Paths.get("/Users/dfox/Downloads/foo.html");//Files.createTempFile("trace", ".html");
@@ -235,6 +233,8 @@ final class SpanRenderer implements SpanObserver {
     }
 
     private static final class HtmlFormatter {
+
+        private static final ObjectWriter writer = new ObjectMapper().registerModule(new Jdk8Module()).writer();
         private final TimeBounds bounds;
 
         HtmlFormatter(TimeBounds bounds) {
@@ -256,7 +256,7 @@ final class SpanRenderer implements SpanObserver {
                             + "font-family: monospace; \""
                             + "title=\"start: %s, finish: %s\">"
                             + "%s - %s"
-                            + "</div>",
+                            + "</div>\n",
                     percentage(transposedStartMicros, bounds.durationMicros()),
                     percentage(span.getDurationNanoSeconds(), bounds.durationNanos()),
                     hue,
@@ -266,6 +266,24 @@ final class SpanRenderer implements SpanObserver {
                             TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS),
                     span.getOperation(),
                     renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS));
+        }
+
+
+        public void rawSpanJson(Collection<Span> spans, StringBuilder sb) {
+            sb.append("\n<pre style=\"background: #CED9E0;"
+                    + "color: #738694;"
+                    + "padding: 30px;"
+                    + "overflow-x: scroll;"
+                    + "margin-top: 100px;\">");
+            spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEach(s -> {
+                try {
+                    sb.append('\n');
+                    sb.append(writer.writeValueAsString(s));
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException("Unable to JSON serialize span " + s, e);
+                }
+            });
+            sb.append("\n</pre>");
         }
 
         public Path emitToTempFile(List<Span> spans) {
