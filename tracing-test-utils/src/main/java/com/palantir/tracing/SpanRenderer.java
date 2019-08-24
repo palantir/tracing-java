@@ -96,7 +96,6 @@ final class SpanRenderer implements SpanObserver {
             });
         }
 
-
         List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
                 .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
@@ -154,6 +153,7 @@ final class SpanRenderer implements SpanObserver {
 
     private static final class HtmlFormatter {
         private final Span rootSpan; // only necessary for scaling
+
         HtmlFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
@@ -164,21 +164,24 @@ final class SpanRenderer implements SpanObserver {
                     TimeUnit.NANOSECONDS);
 
             long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
-            long startMillis = TimeUnit.MILLISECONDS.convert(transposedStartMicros, TimeUnit.MICROSECONDS);
 
-            return String.format("<div style=\"position: relative; "
+            return String.format(
+                    "<div style=\"position: relative; "
                             + "left: %s%%; "
                             + "width: %s%%; "
-                            + "background: grey;\""
-                            + "title=\"start-time: %s ms, finish-time: %s ms\">"
+                            + "background: #CED9E0; "
+                            + "color: #293742; "
+                            + "white-space: nowrap; "
+                            + "font-family: monospace; \""
+                            + "title=\"start: %s, finish: %s\">"
                             + "%s - %s"
                             + "</div>",
                     percentage(transposedStartMicros, rootDurationMicros),
                     percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds()),
-                    startMillis,
-                    startMillis + TimeUnit.MILLISECONDS.convert(
+                    renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS),
+                    renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                             span.getDurationNanoSeconds(),
-                            TimeUnit.NANOSECONDS),
+                            TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS),
                     span.getOperation(),
                     renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS));
         }
@@ -202,6 +205,7 @@ final class SpanRenderer implements SpanObserver {
 
     private static class AsciiFormatter {
         private final Span rootSpan; // only necessary for scaling
+
         AsciiFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
@@ -242,7 +246,7 @@ final class SpanRenderer implements SpanObserver {
                 .build();
 
         TimeUnit bigger = largerUnit.get(timeUnit);
-        if (amount > 1000 && bigger != null) {
+        if (amount >= 1000 && bigger != null) {
             return renderDuration(bigger.convert(amount, timeUnit), bigger);
         }
 
