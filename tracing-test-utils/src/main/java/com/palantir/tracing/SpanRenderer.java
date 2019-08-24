@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
@@ -28,11 +29,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,10 +43,10 @@ import java.util.stream.Stream;
 @SuppressWarnings({"PreferSafeLoggableExceptions", "Slf4jLogsafeArgs"}) // test-lib, no need for SafeArgs
 final class SpanRenderer implements SpanObserver {
 
-    private final List<Span> allSpans = new ArrayList<>();
+    private final Collection<Span> allSpans = new ArrayBlockingQueue<>(1000);
 
     @Override
-    public synchronized void consume(Span span) {
+    public void consume(Span span) {
         allSpans.add(span);
     }
 
@@ -152,7 +154,6 @@ final class SpanRenderer implements SpanObserver {
 
     private static final class HtmlFormatter {
         private final Span rootSpan; // only necessary for scaling
-
         HtmlFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
@@ -170,7 +171,7 @@ final class SpanRenderer implements SpanObserver {
                             + "width: %s%%; "
                             + "background: grey;\""
                             + "title=\"start-time: %s ms, finish-time: %s ms\">"
-                            + "%s"
+                            + "%s - %s"
                             + "</div>",
                     percentage(transposedStartMicros, rootDurationMicros),
                     percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds()),
@@ -178,7 +179,8 @@ final class SpanRenderer implements SpanObserver {
                     startMillis + TimeUnit.MILLISECONDS.convert(
                             span.getDurationNanoSeconds(),
                             TimeUnit.NANOSECONDS),
-                    span.getOperation());
+                    span.getOperation(),
+                    renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS));
         }
 
         public Path emitToTempFile(List<Span> spans) {
@@ -200,7 +202,6 @@ final class SpanRenderer implements SpanObserver {
 
     private static class AsciiFormatter {
         private final Span rootSpan; // only necessary for scaling
-
         AsciiFormatter(Span rootSpan) {
             this.rootSpan = rootSpan;
         }
@@ -224,5 +225,27 @@ final class SpanRenderer implements SpanObserver {
 
             return spaces + (hashes.isEmpty() ? "|" : hashes);
         }
+    }
+
+    private static String renderDuration(long amount, TimeUnit timeUnit) {
+        ImmutableMap<TimeUnit, TimeUnit> largerUnit = ImmutableMap.<TimeUnit, TimeUnit>builder()
+                .put(TimeUnit.NANOSECONDS, TimeUnit.MICROSECONDS)
+                .put(TimeUnit.MICROSECONDS, TimeUnit.MILLISECONDS)
+                .put(TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
+                .build();
+
+        ImmutableMap<TimeUnit, String> abbreviation = ImmutableMap.<TimeUnit, String>builder()
+                .put(TimeUnit.NANOSECONDS, "ns")
+                .put(TimeUnit.MICROSECONDS, "micros")
+                .put(TimeUnit.MILLISECONDS, "ms")
+                .put(TimeUnit.SECONDS, "s")
+                .build();
+
+        TimeUnit bigger = largerUnit.get(timeUnit);
+        if (amount > 1000 && bigger != null) {
+            return renderDuration(bigger.convert(amount, timeUnit), bigger);
+        }
+
+        return String.format("%s %s", amount, abbreviation.get(timeUnit));
     }
 }
