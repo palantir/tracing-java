@@ -52,18 +52,31 @@ final class SpanRenderer implements SpanObserver {
 
     void output() {
         Map<String, List<Span>> distinctTraces = allSpans.stream().collect(Collectors.groupingBy(Span::getTraceId));
+
+        if (distinctTraces.size() > 1) {
+            System.out.println("Observed " + distinctTraces.size() + " distinct traces");
+        }
+
         distinctTraces.forEach((traceId, spans) -> {
-            renderSingleTrace(spans);
+            if (spans.size() > 1) {
+                // I really don't think people want to see a visualization with one bar on it.
+                AnalyzedSpans analysis = analyze(spans);
+
+                // emit HTML first
+                Path file = new HtmlFormatter(analysis.rootSpan()).emitToTempFile(analysis.orderedSpans());
+                System.out.println("HTML span visualization: " + file);
+
+                // emit ASCII
+                AsciiFormatter ascii = new AsciiFormatter(analysis.rootSpan());
+                for (Span span : analysis.orderedSpans()) {
+                    System.out.println(ascii.formatSpan(span));
+                }
+            }
         });
     }
 
     @SuppressWarnings("BanSystemOut")
-    private static void renderSingleTrace(List<Span> spans) {
-        if (spans.isEmpty() || spans.size() == 1) {
-            // I really don't think people want to see a visualization with one bar on it.
-            return;
-        }
-
+    private static AnalyzedSpans analyze(List<Span> spans) {
         // every span is a node in a graph, each pointing to their parent with an edge
         MutableGraph<Span> graph = GraphBuilder.directed().build();
         spans.forEach(graph::addNode);
@@ -96,44 +109,26 @@ final class SpanRenderer implements SpanObserver {
             });
         }
 
-        List<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
+        ImmutableList<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
                 .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
 
-        // emit HTML first
-        Path file = new HtmlFormatter(rootSpan).emitToTempFile(orderedspans);
-        System.out.println("HTML span visualization: " + file);
+        return new AnalyzedSpans() {
+            @Override
+            public Span rootSpan() {
+                return rootSpan;
+            }
 
-        // emit ASCII
-        AsciiFormatter ascii = new AsciiFormatter(rootSpan);
-        for (Span span : orderedspans) {
-            System.out.println(ascii.formatSpan(span));
-        }
+            @Override
+            public ImmutableList<Span> orderedSpans() {
+                return orderedspans;
+            }
+        };
     }
 
-    /** Synthesizes a root span which encapsulates all known spans. */
-    private static Span createFakeRootSpan(List<Span> spans) {
-        long startTimeMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
-
-        long endTimeNanos = spans.stream()
-                .mapToLong(span -> {
-                    long startTimeNanos = TimeUnit.NANOSECONDS.convert(
-                            span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
-                    return startTimeNanos + span.getDurationNanoSeconds();
-                })
-                .max()
-                .getAsLong();
-
-        long startTimeNanos = TimeUnit.NANOSECONDS.convert(startTimeMicros, TimeUnit.MICROSECONDS);
-
-        return Span.builder()
-                .type(SpanType.LOCAL)
-                .startTimeMicroSeconds(startTimeMicros)
-                .durationNanoSeconds(endTimeNanos - startTimeNanos)
-                .spanId("???")
-                .traceId("???")
-                .operation("<unknown root span>")
-                .build();
+    interface AnalyzedSpans {
+        Span rootSpan();
+        ImmutableList<Span> orderedSpans();
     }
 
     private static Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
@@ -145,6 +140,50 @@ final class SpanRenderer implements SpanObserver {
                 .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
         return Stream.concat(Stream.of(parentSpan), children);
+    }
+
+    /** Synthesizes a root span which encapsulates all known spans. */
+    private static Span createFakeRootSpan(List<Span> spans) {
+        TimeBounds bounds = bounds(spans);
+        return Span.builder()
+                .type(SpanType.LOCAL)
+                .startTimeMicroSeconds(bounds.startMicros())
+                .durationNanoSeconds(bounds.endNanos() - bounds.startNanos())
+                .spanId("???")
+                .traceId("???")
+                .operation("<unknown root span>")
+                .build();
+    }
+
+    private static TimeBounds bounds(List<Span> spans) {
+        long earliestStartMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
+        long latestEndNanos = spans.stream()
+                .mapToLong(span -> {
+                    long startTimeNanos = TimeUnit.NANOSECONDS.convert(
+                            span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
+                    return startTimeNanos + span.getDurationNanoSeconds();
+                })
+                .max()
+                .getAsLong();
+        return new TimeBounds() {
+            @Override
+            public long startMicros() {
+                return earliestStartMicros;
+            }
+
+            @Override
+            public long endNanos() {
+                return latestEndNanos;
+            }
+        };
+    }
+
+    interface TimeBounds {
+        long startMicros();
+        long endNanos();
+        default long startNanos() {
+            return TimeUnit.NANOSECONDS.convert(startMicros(), TimeUnit.MICROSECONDS);
+        }
     }
 
     private static float percentage(long numerator, long denominator) {
