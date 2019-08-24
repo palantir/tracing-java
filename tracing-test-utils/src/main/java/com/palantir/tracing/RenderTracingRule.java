@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import java.nio.file.Path;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -36,7 +37,9 @@ public final class RenderTracingRule implements TestRule {
                     base.evaluate();
                 } finally {
                     Tracer.unsubscribe("RenderTracingRule");
-                    renderer.output(description.getClassName() + "#" + description.getMethodName());
+                    String displayName = description.getClassName() + "#" + description.getMethodName();
+                    Path path = HtmlOutputFile.createFile(description.getTestClass(), description.getMethodName());
+                    renderer.output(displayName, path);
                 }
             }
         };

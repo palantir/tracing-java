@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -35,6 +36,8 @@ public final class RenderTracingExtension implements BeforeEachCallback, AfterEa
         // TODO(dfox): this will not behave well if things run in parallel
         Tracer.unsubscribe("RenderTracingExtension");
 
-        renderer.output(context.getDisplayName());
+        renderer.output(
+                context.getRequiredTestClass().getName().toString() + "#" + context.getRequiredTestMethod().getName(),
+                HtmlOutputFile.createFile(context.getRequiredTestClass(), context.getRequiredTestMethod().getName()));
     }
 }

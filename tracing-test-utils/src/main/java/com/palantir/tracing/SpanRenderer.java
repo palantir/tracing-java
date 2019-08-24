@@ -36,6 +36,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -63,7 +67,8 @@ final class SpanRenderer implements SpanObserver {
         allSpans.add(span);
     }
 
-    void output(String displayName) {
+    @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
+    void output(String displayName, Path path) {
         TimeBounds bounds = bounds(allSpans);
 
         Map<String, List<Span>> spansByTraceId = allSpans.stream()
@@ -77,22 +82,25 @@ final class SpanRenderer implements SpanObserver {
         sb.append("<h1>");
         sb.append(displayName);
         sb.append("</h1>");
+        sb.append("<p>");
+        sb.append(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                .format(LocalDateTime.now(Clock.systemDefaultZone())));
+        sb.append("</p>");
         analyzedByTraceId.entrySet()
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
                 .forEachOrdered(entry -> {
                     AnalyzedSpans analysis = entry.getValue();
-                    formatter.renderAllSpansForOneTraceId(analysis, sb);
+                    formatter.renderAllSpansForOneTraceId(entry.getKey(), analysis, sb);
                 });
 
         formatter.rawSpanJson(allSpans, sb);
 
         try {
-            Path file = Paths.get("/Users/dfox/Downloads/foo.html");
             Files.write(
-                    file,
+                    path,
                     sb.toString().getBytes(StandardCharsets.UTF_8));
-            System.out.println(file);
+            System.out.println(path.toAbsolutePath());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -267,8 +275,8 @@ final class SpanRenderer implements SpanObserver {
             this.bounds = bounds;
         }
 
-        public void renderAllSpansForOneTraceId(AnalyzedSpans analysis, StringBuilder sb) {
-            sb.append("<div style=\"border-top: 1px solid #E1E8ED\">\n");
+        public void renderAllSpansForOneTraceId(String traceId, AnalyzedSpans analysis, StringBuilder sb) {
+            sb.append("<div style=\"border-top: 1px solid #E1E8ED\" title=\"" + traceId + "\">\n");
             analysis.orderedSpans().forEach(span -> {
                 boolean suspectedCollision = analysis.collisions().contains(span);
                 sb.append(formatSpan(span, suspectedCollision));
