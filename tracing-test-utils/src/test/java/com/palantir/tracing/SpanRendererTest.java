@@ -26,7 +26,7 @@ public class SpanRendererTest {
 
     @Test
     @SuppressWarnings("NestedTryDepth") // contrived example just to get enough complexity!
-    public void name() throws InterruptedException {
+    public void my_test() throws InterruptedException {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
                 Thread.sleep(100);

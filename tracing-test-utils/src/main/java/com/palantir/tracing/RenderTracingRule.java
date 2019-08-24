@@ -16,20 +16,29 @@
 
 package com.palantir.tracing;
 
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
-public final class RenderTracingRule extends ExternalResource {
+public final class RenderTracingRule implements TestRule {
     private final SpanRenderer renderer = new SpanRenderer();
 
     @Override
-    protected void before() {
-        Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe("RenderTracingRule", renderer);
-    }
+    public Statement apply(
+            Statement base, Description description) {
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                try {
+                    Tracer.setSampler(AlwaysSampler.INSTANCE);
+                    Tracer.subscribe("RenderTracingRule", renderer);
 
-    @Override
-    protected void after() {
-        Tracer.unsubscribe("RenderTracingRule");
-        renderer.output();
+                    base.evaluate();
+                } finally {
+                    Tracer.unsubscribe("RenderTracingRule");
+                    renderer.output(description.getClassName() + "#" + description.getMethodName());
+                }
+            }
+        };
     }
 }

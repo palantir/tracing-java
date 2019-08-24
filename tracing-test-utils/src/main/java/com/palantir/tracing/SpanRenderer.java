@@ -63,7 +63,7 @@ final class SpanRenderer implements SpanObserver {
         allSpans.add(span);
     }
 
-    void output() {
+    void output(String displayName) {
         TimeBounds bounds = bounds(allSpans);
 
         Map<String, List<Span>> spansByTraceId = allSpans.stream()
@@ -73,6 +73,10 @@ final class SpanRenderer implements SpanObserver {
 
         HtmlFormatter formatter = new HtmlFormatter(bounds);
         StringBuilder sb = new StringBuilder();
+
+        sb.append("<h1>");
+        sb.append(displayName);
+        sb.append("</h1>");
         analyzedByTraceId.entrySet()
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
@@ -84,7 +88,7 @@ final class SpanRenderer implements SpanObserver {
         formatter.rawSpanJson(allSpans, sb);
 
         try {
-            Path file = Paths.get("/Users/dfox/Downloads/foo.html");//Files.createTempFile("trace", ".html");
+            Path file = Paths.get("/Users/dfox/Downloads/foo.html");
             Files.write(
                     file,
                     sb.toString().getBytes(StandardCharsets.UTF_8));

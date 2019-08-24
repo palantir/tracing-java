@@ -34,6 +34,7 @@ public final class RenderTracingExtension implements BeforeEachCallback, AfterEa
     public void afterEach(ExtensionContext context) {
         // TODO(dfox): this will not behave well if things run in parallel
         Tracer.unsubscribe("RenderTracingExtension");
-        renderer.output();
+
+        renderer.output(context.getDisplayName());
     }
 }
