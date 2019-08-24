@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 
 final class HtmlOutputFile {
 
-    public static final Path createFile(Class<?> clazz, String methodName) {
+    public static Path createFile(Class<?> clazz, String methodName) {
         try {
             Path dir = Files.createDirectories(Paths.get("build/tracing").resolve(clazz.getSimpleName()));
             return dir.resolve(methodName + ".html");

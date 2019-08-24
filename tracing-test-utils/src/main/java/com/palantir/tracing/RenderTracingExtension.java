@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import java.nio.file.Path;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;

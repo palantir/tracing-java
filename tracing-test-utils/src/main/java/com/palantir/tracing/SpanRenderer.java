@@ -35,9 +35,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Clock;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -67,7 +65,7 @@ final class SpanRenderer implements SpanObserver {
         allSpans.add(span);
     }
 
-    @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
+    @SuppressWarnings({"JavaTimeDefaultTimeZone", "BanSystemOut"}) // I actually want the system default time zone!
     void output(String displayName, Path path) {
         TimeBounds bounds = bounds(allSpans);
 
@@ -133,7 +131,7 @@ final class SpanRenderer implements SpanObserver {
         // it's possible there's an unclosed parent, so we can make up a fake root span just in case we need it later
         Span fakeRootSpan = createFakeRootSpan(spans);
 
-        HashSet<Span> collisions = new HashSet<>();
+        Set<Span> collisions = new HashSet<>();
 
         Map<String, Span> spansBySpanId = spans.stream()
                 .collect(Collectors.toMap(
@@ -190,7 +188,9 @@ final class SpanRenderer implements SpanObserver {
             }
 
             @Override
-            public Set<Span> collisions() { return Collections.unmodifiableSet(collisions); }
+            public Set<Span> collisions() {
+                return Collections.unmodifiableSet(collisions);
+            }
         };
     }
 
@@ -207,7 +207,7 @@ final class SpanRenderer implements SpanObserver {
                 .filter(pair -> pair.nodeV().equals(parentSpan))
                 .map(EndpointPair::nodeU)
                 .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds))
-                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child).collect(Collectors.toList()).stream());
+                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
         return Stream.concat(Stream.of(parentSpan), children);
     }
