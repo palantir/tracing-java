@@ -57,17 +57,19 @@ final class SpanRenderer implements SpanObserver {
             System.out.println("Observed " + distinctTraces.size() + " distinct traces");
         }
 
+        TimeBounds bounds = bounds(allSpans);
+
         distinctTraces.forEach((traceId, spans) -> {
             if (spans.size() > 1) {
                 // I really don't think people want to see a visualization with one bar on it.
                 AnalyzedSpans analysis = analyze(spans);
 
                 // emit HTML first
-                Path file = new HtmlFormatter(analysis.rootSpan()).emitToTempFile(analysis.orderedSpans());
+                Path file = new HtmlFormatter(bounds).emitToTempFile(analysis.orderedSpans());
                 System.out.println("HTML span visualization: " + file);
 
                 // emit ASCII
-                AsciiFormatter ascii = new AsciiFormatter(analysis.rootSpan());
+                AsciiFormatter ascii = new AsciiFormatter(bounds);
                 for (Span span : analysis.orderedSpans()) {
                     System.out.println(ascii.formatSpan(span));
                 }
@@ -155,7 +157,7 @@ final class SpanRenderer implements SpanObserver {
                 .build();
     }
 
-    private static TimeBounds bounds(List<Span> spans) {
+    private static TimeBounds bounds(Collection<Span> spans) {
         long earliestStartMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
         long latestEndNanos = spans.stream()
                 .mapToLong(span -> {
@@ -184,6 +186,12 @@ final class SpanRenderer implements SpanObserver {
         default long startNanos() {
             return TimeUnit.NANOSECONDS.convert(startMicros(), TimeUnit.MICROSECONDS);
         }
+        default long durationNanos() {
+            return endNanos() - startNanos();
+        }
+        default long durationMicros() {
+            return TimeUnit.MICROSECONDS.convert(durationNanos(), TimeUnit.NANOSECONDS);
+        }
     }
 
     private static float percentage(long numerator, long denominator) {
@@ -191,18 +199,14 @@ final class SpanRenderer implements SpanObserver {
     }
 
     private static final class HtmlFormatter {
-        private final Span rootSpan; // only necessary for scaling
+        private final TimeBounds bounds;
 
-        HtmlFormatter(Span rootSpan) {
-            this.rootSpan = rootSpan;
+        HtmlFormatter(TimeBounds bounds) {
+            this.bounds = bounds;
         }
 
         private String formatSpan(Span span) {
-            long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
-                    rootSpan.getDurationNanoSeconds(),
-                    TimeUnit.NANOSECONDS);
-
-            long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
+            long transposedStartMicros = span.getStartTimeMicroSeconds() - bounds.startMicros();
 
             return String.format(
                     "<div style=\"position: relative; "
@@ -215,8 +219,8 @@ final class SpanRenderer implements SpanObserver {
                             + "title=\"start: %s, finish: %s\">"
                             + "%s - %s"
                             + "</div>",
-                    percentage(transposedStartMicros, rootDurationMicros),
-                    percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds()),
+                    percentage(transposedStartMicros, bounds.durationMicros()),
+                    percentage(span.getDurationNanoSeconds(), bounds.durationNanos()),
                     renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS),
                     renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                             span.getDurationNanoSeconds(),
@@ -231,7 +235,7 @@ final class SpanRenderer implements SpanObserver {
                 stringBuilder.append(formatSpan(span));
             }
             try {
-                Path file = Files.createTempFile("trace-" + rootSpan.getTraceId() + "-", ".html");
+                Path file = Files.createTempFile("trace", ".html");
                 Files.write(
                         file,
                         stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
@@ -243,20 +247,16 @@ final class SpanRenderer implements SpanObserver {
     }
 
     private static class AsciiFormatter {
-        private final Span rootSpan; // only necessary for scaling
+        private final TimeBounds bounds;
 
-        AsciiFormatter(Span rootSpan) {
-            this.rootSpan = rootSpan;
+        AsciiFormatter(TimeBounds bounds) {
+            this.bounds = bounds;
         }
 
         public String formatSpan(Span span) {
-            long rootDurationMicros = TimeUnit.MICROSECONDS.convert(
-                    rootSpan.getDurationNanoSeconds(),
-                    TimeUnit.NANOSECONDS);
-
-            long transposedStartMicros = span.getStartTimeMicroSeconds() - rootSpan.getStartTimeMicroSeconds();
-            float leftPercentage = percentage(transposedStartMicros, rootDurationMicros);
-            float widthPercentage = percentage(span.getDurationNanoSeconds(), rootSpan.getDurationNanoSeconds());
+            long transposedStartMicros = span.getStartTimeMicroSeconds() - bounds.startMicros();
+            float leftPercentage = percentage(transposedStartMicros, bounds.durationMicros());
+            float widthPercentage = percentage(span.getDurationNanoSeconds(), bounds.durationNanos());
 
             int numSpaces = (int) Math.floor(leftPercentage);
             int numHashes = (int) Math.floor(widthPercentage);
