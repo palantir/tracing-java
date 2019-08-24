@@ -19,9 +19,11 @@ package com.palantir.tracing;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.MutableGraph;
+import com.google.common.hash.Hashing;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
@@ -29,6 +31,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -51,22 +54,48 @@ final class SpanRenderer implements SpanObserver {
     }
 
     void output() {
+        TimeBounds bounds = bounds(allSpans);
+
         Map<String, List<Span>> distinctTraces = allSpans.stream().collect(Collectors.groupingBy(Span::getTraceId));
 
-        if (distinctTraces.size() > 1) {
-            System.out.println("Observed " + distinctTraces.size() + " distinct traces");
+        Map<String, AnalyzedSpans> analyzed = Maps.transformValues(distinctTraces, SpanRenderer::analyze);
+
+        HtmlFormatter formatter = new HtmlFormatter(bounds);
+        StringBuilder sb = new StringBuilder();
+        analyzed.entrySet()
+                .stream()
+                .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
+                .forEachOrdered(entry -> {
+
+                    // sb.append("\n<h1>");
+                    // sb.append(entry.getKey());
+                    // sb.append("</h1>\n");
+
+                    entry.getValue().orderedSpans().forEach(span -> {
+                        sb.append(formatter.formatSpan(span));
+                        sb.append('\n');
+                    });
+                });
+
+        try {
+            Path file = Paths.get("/Users/dfox/Downloads/foo.html");//Files.createTempFile("trace", ".html");
+            Files.write(
+                    file,
+                    sb.toString().getBytes(StandardCharsets.UTF_8));
+            System.out.println(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
-        TimeBounds bounds = bounds(allSpans);
 
         distinctTraces.forEach((traceId, spans) -> {
             if (spans.size() > 1) {
                 // I really don't think people want to see a visualization with one bar on it.
                 AnalyzedSpans analysis = analyze(spans);
 
-                // emit HTML first
-                Path file = new HtmlFormatter(bounds).emitToTempFile(analysis.orderedSpans());
-                System.out.println("HTML span visualization: " + file);
+                // // emit HTML first
+                // Path file = new HtmlFormatter(bounds).emitToTempFile(analysis.orderedSpans());
+                // System.out.println("HTML span visualization: " + file);
 
                 // emit ASCII
                 AsciiFormatter ascii = new AsciiFormatter(bounds);
@@ -115,6 +144,7 @@ final class SpanRenderer implements SpanObserver {
                 .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
 
+        TimeBounds bounds = bounds(orderedspans);
         return new AnalyzedSpans() {
             @Override
             public Span rootSpan() {
@@ -125,10 +155,16 @@ final class SpanRenderer implements SpanObserver {
             public ImmutableList<Span> orderedSpans() {
                 return orderedspans;
             }
+
+            @Override
+            public TimeBounds bounds() {
+                return bounds;
+            }
         };
     }
 
     interface AnalyzedSpans {
+        TimeBounds bounds();
         Span rootSpan();
         ImmutableList<Span> orderedSpans();
     }
@@ -208,11 +244,13 @@ final class SpanRenderer implements SpanObserver {
         private String formatSpan(Span span) {
             long transposedStartMicros = span.getStartTimeMicroSeconds() - bounds.startMicros();
 
+            long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
+
             return String.format(
                     "<div style=\"position: relative; "
                             + "left: %s%%; "
                             + "width: %s%%; "
-                            + "background: #CED9E0; "
+                            + "background: hsl(%s, 82%%, 44%%); "
                             + "color: #293742; "
                             + "white-space: nowrap; "
                             + "font-family: monospace; \""
@@ -221,6 +259,7 @@ final class SpanRenderer implements SpanObserver {
                             + "</div>",
                     percentage(transposedStartMicros, bounds.durationMicros()),
                     percentage(span.getDurationNanoSeconds(), bounds.durationNanos()),
+                    hue,
                     renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS),
                     renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                             span.getDurationNanoSeconds(),
