@@ -16,22 +16,22 @@
 
 package com.palantir.tracing;
 
-import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public final class RenderTracingExtension implements BeforeAllCallback, AfterAllCallback {
+public final class RenderTracingExtension implements BeforeEachCallback, AfterEachCallback {
 
     private final SpanRenderer renderer = new SpanRenderer();
 
     @Override
-    public void beforeAll(ExtensionContext context) {
+    public void beforeEach(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.subscribe("RenderTracingExtension", renderer);
     }
 
     @Override
-    public void afterAll(ExtensionContext context) {
+    public void afterEach(ExtensionContext context) {
         // TODO(dfox): this will not behave well if things run in parallel
         Tracer.unsubscribe("RenderTracingExtension");
         renderer.output();
