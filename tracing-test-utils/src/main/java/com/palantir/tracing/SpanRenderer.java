@@ -37,19 +37,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings({"PreferSafeLoggableExceptions", "Slf4jLogsafeArgs"}) // test-lib, no need for SafeArgs
 final class SpanRenderer implements SpanObserver {
 
+    private static final Logger log = LoggerFactory.getLogger(SpanRenderer.class);
     private final Collection<Span> allSpans = new ArrayBlockingQueue<>(1000);
 
     @Override
@@ -60,17 +66,19 @@ final class SpanRenderer implements SpanObserver {
     void output() {
         TimeBounds bounds = bounds(allSpans);
 
-        Map<String, List<Span>> distinctTraces = allSpans.stream().collect(Collectors.groupingBy(Span::getTraceId));
+        Map<String, List<Span>> spansByTraceId = allSpans.stream()
+                .collect(Collectors.groupingBy(Span::getTraceId));
 
-        Map<String, AnalyzedSpans> analyzed = Maps.transformValues(distinctTraces, SpanRenderer::analyze);
+        Map<String, AnalyzedSpans> analyzedByTraceId = Maps.transformValues(spansByTraceId, SpanRenderer::analyze);
 
         HtmlFormatter formatter = new HtmlFormatter(bounds);
         StringBuilder sb = new StringBuilder();
-        analyzed.entrySet()
+        analyzedByTraceId.entrySet()
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
                 .forEachOrdered(entry -> {
-                    entry.getValue().orderedSpans().forEach(span -> sb.append(formatter.formatSpan(span)));
+                    AnalyzedSpans analysis = entry.getValue();
+                    formatter.renderAllSpansForOneTraceId(analysis, sb);
                 });
 
         formatter.rawSpanJson(allSpans, sb);
@@ -86,7 +94,7 @@ final class SpanRenderer implements SpanObserver {
         }
 
 
-        distinctTraces.forEach((traceId, spans) -> {
+        spansByTraceId.forEach((traceId, spans) -> {
             if (spans.size() > 1) {
                 // I really don't think people want to see a visualization with one bar on it.
                 AnalyzedSpans analysis = analyze(spans);
@@ -113,8 +121,18 @@ final class SpanRenderer implements SpanObserver {
         // it's possible there's an unclosed parent, so we can make up a fake root span just in case we need it later
         Span fakeRootSpan = createFakeRootSpan(spans);
 
-        Map<String, Span> spansBySpanId =
-                spans.stream().collect(Collectors.toMap(Span::getSpanId, Function.identity()));
+        HashSet<Span> collisions = new HashSet<>();
+
+        Map<String, Span> spansBySpanId = spans.stream()
+                .collect(Collectors.toMap(
+                        Span::getSpanId,
+                        Function.identity(),
+                        (left, right) -> {
+                            log.warn("Collision on span id {}", left.getSpanId());
+                            collisions.add(left);
+                            collisions.add(right);
+                            return left;
+                        }));
 
         Span rootSpan = spansBySpanId.values().stream()
                 .filter(span -> !span.getParentSpanId().isPresent())
@@ -158,10 +176,14 @@ final class SpanRenderer implements SpanObserver {
             public TimeBounds bounds() {
                 return bounds;
             }
+
+            @Override
+            public Set<Span> collisions() { return Collections.unmodifiableSet(collisions); }
         };
     }
 
     interface AnalyzedSpans {
+        Set<Span> collisions();
         TimeBounds bounds();
         Span rootSpan();
         ImmutableList<Span> orderedSpans();
@@ -173,7 +195,7 @@ final class SpanRenderer implements SpanObserver {
                 .filter(pair -> pair.nodeV().equals(parentSpan))
                 .map(EndpointPair::nodeU)
                 .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds))
-                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
+                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child).collect(Collectors.toList()).stream());
 
         return Stream.concat(Stream.of(parentSpan), children);
     }
@@ -241,7 +263,16 @@ final class SpanRenderer implements SpanObserver {
             this.bounds = bounds;
         }
 
-        private String formatSpan(Span span) {
+        public void renderAllSpansForOneTraceId(AnalyzedSpans analysis, StringBuilder sb) {
+            sb.append("<div style=\"border-top: 1px solid #E1E8ED\">\n");
+            analysis.orderedSpans().forEach(span -> {
+                boolean suspectedCollision = analysis.collisions().contains(span);
+                sb.append(formatSpan(span, suspectedCollision));
+            });
+            sb.append("</div>\n");
+        }
+
+        private String formatSpan(Span span, boolean suspectedCollision) {
             long transposedStartMicros = span.getStartTimeMicroSeconds() - bounds.startMicros();
 
             long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
@@ -250,22 +281,26 @@ final class SpanRenderer implements SpanObserver {
                     "<div style=\"position: relative; "
                             + "left: %s%%; "
                             + "width: %s%%; "
-                            + "background: hsl(%s, 82%%, 44%%); "
+                            + "background: hsl(%s, 80%%, 80%%); "
+                            + "box-shadow: -1px 0px 0px 1.5px hsl(%s, 80%%, 80%%); "
                             + "color: #293742; "
                             + "white-space: nowrap; "
                             + "font-family: monospace; \""
-                            + "title=\"start: %s, finish: %s\">"
-                            + "%s - %s"
+                            + "title=\"%s start: %s, finish: %s\">"
+                            + "%s - %s%s"
                             + "</div>\n",
                     percentage(transposedStartMicros, bounds.durationMicros()),
                     percentage(span.getDurationNanoSeconds(), bounds.durationNanos()),
                     hue,
+                    hue,
+                    span.getTraceId(),
                     renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS),
                     renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                             span.getDurationNanoSeconds(),
                             TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS),
                     span.getOperation(),
-                    renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS));
+                    renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS),
+                    suspectedCollision ? " (collision)" : "");
         }
 
 
@@ -284,22 +319,6 @@ final class SpanRenderer implements SpanObserver {
                 }
             });
             sb.append("\n</pre>");
-        }
-
-        public Path emitToTempFile(List<Span> spans) {
-            StringBuilder stringBuilder = new StringBuilder();
-            for (Span span : spans) {
-                stringBuilder.append(formatSpan(span));
-            }
-            try {
-                Path file = Files.createTempFile("trace", ".html");
-                Files.write(
-                        file,
-                        stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
-                return file;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
@@ -327,7 +346,7 @@ final class SpanRenderer implements SpanObserver {
         }
     }
 
-    private static String renderDuration(long amount, TimeUnit timeUnit) {
+    private static String renderDuration(float amount, TimeUnit timeUnit) {
         ImmutableMap<TimeUnit, TimeUnit> largerUnit = ImmutableMap.<TimeUnit, TimeUnit>builder()
                 .put(TimeUnit.NANOSECONDS, TimeUnit.MICROSECONDS)
                 .put(TimeUnit.MICROSECONDS, TimeUnit.MILLISECONDS)
@@ -343,9 +362,9 @@ final class SpanRenderer implements SpanObserver {
 
         TimeUnit bigger = largerUnit.get(timeUnit);
         if (amount >= 1000 && bigger != null) {
-            return renderDuration(bigger.convert(amount, timeUnit), bigger);
+            return renderDuration(amount / 1000, bigger);
         }
 
-        return String.format("%s %s", amount, abbreviation.get(timeUnit));
+        return String.format("%.2f %s", amount, abbreviation.get(timeUnit));
     }
 }
