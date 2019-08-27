@@ -65,25 +65,25 @@ final class SpanRenderer implements SpanObserver {
         allSpans.add(span);
     }
 
-    @SuppressWarnings({"JavaTimeDefaultTimeZone", "BanSystemOut"}) // I actually want the system default time zone!
+    @SuppressWarnings("BanSystemOut")
     void output(String displayName, Path path) {
         TimeBounds bounds = bounds(allSpans);
 
         Map<String, List<Span>> spansByTraceId = allSpans.stream()
                 .collect(Collectors.groupingBy(Span::getTraceId));
 
-        Map<String, AnalyzedSpans> analyzedByTraceId = Maps.transformValues(spansByTraceId, SpanRenderer::analyze);
 
-        HtmlFormatter formatter = new HtmlFormatter(bounds);
+        HtmlFormatter formatter = new HtmlFormatter(bounds, displayName);
         StringBuilder sb = new StringBuilder();
 
-        sb.append("<h1>");
-        sb.append(displayName);
-        sb.append("</h1>");
-        sb.append("<p>");
-        sb.append(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-                .format(LocalDateTime.now(Clock.systemDefaultZone())));
-        sb.append("</p>");
+        formatter.header(sb);
+
+        // TODO(dfox): switch betwen plain chrono and topological
+        allSpans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEachOrdered(span -> {
+            formatter.formatSpan(span, false, sb);
+        });
+
+        Map<String, AnalyzedSpans> analyzedByTraceId = Maps.transformValues(spansByTraceId, SpanRenderer::analyze);
         analyzedByTraceId.entrySet()
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
@@ -108,10 +108,6 @@ final class SpanRenderer implements SpanObserver {
             if (spans.size() > 1) {
                 // I really don't think people want to see a visualization with one bar on it.
                 AnalyzedSpans analysis = analyze(spans);
-
-                // // emit HTML first
-                // Path file = new HtmlFormatter(bounds).emitToTempFile(analysis.orderedSpans());
-                // System.out.println("HTML span visualization: " + file);
 
                 // emit ASCII
                 AsciiFormatter ascii = new AsciiFormatter(bounds);
@@ -265,26 +261,39 @@ final class SpanRenderer implements SpanObserver {
 
         private static final ObjectWriter writer = new ObjectMapper().registerModule(new Jdk8Module()).writer();
         private final TimeBounds bounds;
+        private String displayName;
 
-        HtmlFormatter(TimeBounds bounds) {
+        HtmlFormatter(TimeBounds bounds, String displayName) {
             this.bounds = bounds;
+            this.displayName = displayName;
+        }
+
+        @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
+        private void header(StringBuilder sb) {
+            sb.append("<h1>");
+            sb.append(displayName);
+            sb.append("</h1>");
+            sb.append("<p>");
+            sb.append(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                    .format(LocalDateTime.now(Clock.systemDefaultZone())));
+            sb.append("</p>");
         }
 
         public void renderAllSpansForOneTraceId(String traceId, AnalyzedSpans analysis, StringBuilder sb) {
             sb.append("<div style=\"border-top: 1px solid #E1E8ED\" title=\"" + traceId + "\">\n");
             analysis.orderedSpans().forEach(span -> {
                 boolean suspectedCollision = analysis.collisions().contains(span);
-                sb.append(formatSpan(span, suspectedCollision));
+                formatSpan(span, suspectedCollision, sb);
             });
             sb.append("</div>\n");
         }
 
-        private String formatSpan(Span span, boolean suspectedCollision) {
+        public void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
             long transposedStartMicros = span.getStartTimeMicroSeconds() - bounds.startMicros();
 
             long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
 
-            return String.format(
+            sb.append(String.format(
                     "<div style=\"position: relative; "
                             + "left: %s%%; "
                             + "width: %s%%; "
@@ -307,7 +316,7 @@ final class SpanRenderer implements SpanObserver {
                             TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS),
                     span.getOperation(),
                     renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS),
-                    suspectedCollision ? " (collision)" : "");
+                    suspectedCollision ? " (collision)" : ""));
         }
 
 
