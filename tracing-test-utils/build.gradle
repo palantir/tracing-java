@@ -6,8 +6,9 @@ dependencies {
     compileOnly 'org.junit.jupiter:junit-jupiter-api'
     implementation 'com.palantir.conjure.java.runtime:conjure-java-jackson-serialization'
 
+    annotationProcessor "org.immutables:value"
+    compileOnly "org.immutables:value::annotations"
+
     testImplementation "junit:junit"
     testImplementation 'org.assertj:assertj-core'
-
-    compileOnly "org.immutables:value::annotations"
 }
