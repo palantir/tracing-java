@@ -51,6 +51,7 @@ final class SpanAnalyzer {
                 .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds));
     }
 
+    // TODO(dfox): make sure we don't re-run this unnecessarily
     public static Result analyze(Collection<Span> spans) {
         ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
         // MutableGraph<Span> graph = immutable.buildAndFormat();
@@ -73,6 +74,7 @@ final class SpanAnalyzer {
 
         Span rootSpan = spansBySpanId.values().stream()
                 .filter(span -> !span.getParentSpanId().isPresent())
+                // TODO(dfox): there can be more than one valid root span
                 .findFirst()
                 .orElse(fakeRootSpan);
 

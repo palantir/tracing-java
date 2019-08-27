@@ -17,10 +17,15 @@
 package com.palantir.tracing;
 
 import java.nio.file.Path;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public final class DemoTestUtils {
+
+    @BeforeEach
+    public void beforeEach() throws InterruptedException {
+    }
 
     @SuppressWarnings("NestedTryDepth")
     void prod_code() throws InterruptedException {
@@ -44,6 +49,9 @@ public final class DemoTestUtils {
     @Test
     @TestTracing
     void prod_code_produces_expected_traces() throws InterruptedException {
+        try (CloseableTracer t = CloseableTracer.startSpan("irrelevant-setup-stuff")) {
+            Thread.sleep(100);
+        }
         prod_code();
     }
 

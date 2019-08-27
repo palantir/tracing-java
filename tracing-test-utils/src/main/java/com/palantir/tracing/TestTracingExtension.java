@@ -23,7 +23,9 @@ import com.palantir.tracing.api.Span;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -50,37 +52,38 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         Path file = Paths.get("src/test/resources").resolve(testName(context));
 
         // match recorded traces against expected file (or create)
+        Collection<Span> actualSpans = subscriber.getAllSpans();
         if (!Files.exists(file) || Boolean.valueOf(System.getProperty("recreate", "false"))) {
-            Serialization.serialize(file, subscriber.getAllSpans());
+            Serialization.serialize(file, actualSpans);
             return;
         }
 
         // TODO(df0x): filter for just one traceId (??) to figure out concurrency
-        SpanAnalyzer.Result expected = SpanAnalyzer.analyze(Serialization.deserialize(file));
-        SpanAnalyzer.Result actual = SpanAnalyzer.analyze(subscriber.getAllSpans());
+        List<Span> expectedSpans = Serialization.deserialize(file);
+        SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedSpans);
+        SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
+        // TODO(dfox): no guarantee there is just one root span, so gotta explore everythnig (or make a fake root span)
         ImmutableSet<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
 
+        Path actualPath = Paths.get("/Users/dfox/Downloads/actual.html");
+        HtmlFormatter.builder()
+                .spans(actualSpans)
+                .path(actualPath)
+                .displayName("actual")
+                .problemSpanIds(problemSpanIds)
+                .buildAndFormat();
+
+        Path expectedPath = Paths.get("/Users/dfox/Downloads/expected.html");
+        HtmlFormatter.builder()
+                .spans(expectedSpans)
+                .path(expectedPath)
+                .displayName("expected")
+                .problemSpanIds(problemSpanIds)
+                .buildAndFormat();
+
         if (!problemSpanIds.isEmpty()) {
-            Path actualPath = Paths.get("/Users/dfox/Downloads/actual.html");
-
-            HtmlFormatter.builder()
-                    .spans(actual.orderedSpans())
-                    .path(actualPath)
-                    .displayName("actual")
-                    .problemSpanIds(problemSpanIds)
-                    .buildAndFormat();
-
-            Path expectedPath = Paths.get("/Users/dfox/Downloads/expected.html");
-            HtmlFormatter.builder()
-                    .spans(expected.orderedSpans())
-                    .path(expectedPath)
-                    .displayName("expected")
-                    .problemSpanIds(problemSpanIds)
-                    .buildAndFormat();
-
-            // TODO(dfox): render nicely here
             throw new AssertionError(
                     String.format(
                             "traces did not match the expected file '%s'.\n"
