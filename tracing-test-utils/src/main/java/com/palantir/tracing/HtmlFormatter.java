@@ -20,11 +20,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
 import com.palantir.tracing.api.Span;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,13 +73,24 @@ final class HtmlFormatter {
 
     @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
     private void header(String displayName, StringBuilder sb) throws IOException {
-        String template = Resources.toString(Resources.getResource("header.html"), StandardCharsets.UTF_8);
+        sb.append(template("header.html", ImmutableMap.<String, String>builder()
+                .put("{{DISPLAY_NAME}}", displayName)
+                .put("{{DATE}}",
+                        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                                .format(LocalDateTime.now(Clock.systemDefaultZone())))
+                .build()));
+    }
 
-        String date = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-                .format(LocalDateTime.now(Clock.systemDefaultZone()));
-        sb.append(template
-                .replaceAll("\\{\\{DISPLAY_NAME\\}\\}", displayName)
-                .replaceAll("\\{\\{DATE\\}\\}", date));
+    private static String template(String resourceName, Map<String, String> values) {
+        try {
+            String template = Resources.toString(Resources.getResource(resourceName), StandardCharsets.UTF_8);
+            for (Map.Entry<String, String> entry : values.entrySet()) {
+                template = template.replace(entry.getKey(), entry.getValue());
+            }
+            return template;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to read resource " + resourceName, e);
+        }
     }
 
     private void renderAllSpansForOneTraceId(String traceId, SpanAnalyzer.Result analysis, StringBuilder sb) {
@@ -94,30 +107,19 @@ final class HtmlFormatter {
 
         long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
 
-        sb.append(String.format(
-                "<div style=\"position: relative; "
-                        + "left: %s%%; "
-                        + "width: %s%%; "
-                        + "background: hsl(%s, 80%%, 80%%); "
-                        + "box-shadow: -1px 0px 0px 1.5px hsl(%s, 80%%, 80%%); "
-                        + "color: #293742; "
-                        + "white-space: nowrap; "
-                        + "font-family: monospace; \""
-                        + "title=\"%s start: %s, finish: %s\">"
-                        + "%s - %s%s"
-                        + "</div>\n",
-                Utils.percentage(transposedStartMicros, bounds.durationMicros()),
-                Utils.percentage(span.getDurationNanoSeconds(), bounds.durationNanos()),
-                hue,
-                hue,
-                span.getTraceId(),
-                Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS),
-                Utils.renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
+        sb.append(template("span.html", ImmutableMap.<String, String>builder()
+                .put("{{LEFT}}", Float.toString(Utils.percentage(transposedStartMicros, bounds.durationMicros())))
+                .put("{{WIDTH}}", Float.toString(Utils.percentage(span.getDurationNanoSeconds(), bounds.durationNanos())))
+                .put("{{HUE}}", Long.toString(hue))
+                .put("{{TRACEID}}", span.getTraceId())
+                .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
+                .put("{{FINISH}}", Utils.renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                         span.getDurationNanoSeconds(),
-                        TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS),
-                span.getOperation(),
-                Utils.renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS),
-                suspectedCollision ? " (collision)" : ""));
+                        TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS))
+                .put("{{OPERATION}}", span.getOperation())
+                .put("{{DURATION}}", Utils.renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
+                .put("{{COLLISION}}", suspectedCollision ? " (collision)" : "")
+                .build()));
     }
 
 
