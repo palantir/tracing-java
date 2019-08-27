@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.ImmutableGraph;
-import com.google.common.graph.MutableGraph;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collection;
@@ -38,16 +37,19 @@ final class SpanAnalyzer {
 
     private SpanAnalyzer() {}
 
-
     private static Stream<Span> depthFirstTraversalOrderedByStartTime(ImmutableGraph<Span> graph, Span parentSpan) {
-        Stream<Span> children = graph.incidentEdges(parentSpan).stream()
-                // we only care about incoming edges to the 'parentSpan', not outgoing ones
-                .filter(pair -> pair.nodeV().equals(parentSpan))
-                .map(EndpointPair::nodeU)
-                .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds))
+        Stream<Span> children = children(graph, parentSpan)
                 .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
         return Stream.concat(Stream.of(parentSpan), children);
+    }
+
+    public static Stream<Span> children(ImmutableGraph<Span> graph, Span parentSpan) {
+        return graph.incidentEdges(parentSpan).stream()
+                // we only care about incoming edges to the 'parentSpan', not outgoing ones
+                .filter(pair -> pair.nodeV().equals(parentSpan))
+                .map(EndpointPair::nodeU)
+                .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds));
     }
 
     public static Result analyze(Collection<Span> spans) {
@@ -107,6 +109,11 @@ final class SpanAnalyzer {
             }
 
             @Override
+            public Span root() {
+                return rootSpan;
+            }
+
+            @Override
             public Set<Span> collisions() {
                 return collisions;
             }
@@ -125,6 +132,7 @@ final class SpanAnalyzer {
 
     interface Result {
         ImmutableGraph<Span> graph();
+        Span root();
         Set<Span> collisions();
         SpanAnalyzer.TimeBounds bounds();
         ImmutableList<Span> orderedSpans();

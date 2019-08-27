@@ -27,9 +27,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -69,9 +72,41 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         }
     }
 
-    private boolean compare(List<Span> expected, Collection<Span> actual) {
+    private boolean compare(List<Span> expectedUnordered, Collection<Span> actualUnordered) {
         // TODO(dfox): ensure structure of the graph is the same (don't mind about real start times / durations)
-        return false;
+        SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedUnordered);
+        SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualUnordered);
+
+        return compareSpansRecursively(expected, actual, expected.root(), actual.root());
+    }
+
+    private Boolean compareSpansRecursively(
+            SpanAnalyzer.Result expected,
+            SpanAnalyzer.Result actual,
+            Span ex, Span ac) {
+        Assertions.assertEquals(ex.getOperation(), ac.getOperation());
+        // other fields, type, params, metadata(???)
+
+        // TODO(dfox): when there are non-overlapping spans (aka no concurrency/async), we do care about order
+        // i.e. queue then run is different from run then queue.
+
+        // ensure we have the same number of children, same child operation names in the same order
+        ImmutableList<Span> sortedExpectedChildren = SpanAnalyzer.children(expected.graph(), ex)
+                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
+                .collect(ImmutableList.toImmutableList());
+        ImmutableList<Span> sortedActualChildren = SpanAnalyzer.children(actual.graph(), ac)
+                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
+                .collect(ImmutableList.toImmutableList());
+
+        Assertions.assertEquals(sortedExpectedChildren.size(), sortedActualChildren.size());
+
+        return IntStream.range(0, sortedActualChildren.size()).allMatch(i -> {
+            return compareSpansRecursively(
+                    expected,
+                    actual,
+                    sortedExpectedChildren.get(i),
+                    sortedActualChildren.get(i));
+        });
     }
 
     private static String testName(ExtensionContext context) {
