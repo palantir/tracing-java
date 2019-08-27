@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -50,17 +51,27 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     public void afterEach(ExtensionContext context) throws Exception {
         Tracer.unsubscribe(testName(context));
 
-        System.out.println(subscriber.getAllSpans());
-
         Path file = Paths.get("src/test/resources").resolve(testName(context));
 
         // match recorded traces against expected file (or create)
-        // if (!Files.exists(file)) {
-        serialize(file, subscriber.getAllSpans());
+        if (!Files.exists(file) || Boolean.valueOf(System.getProperty("recreate", "false"))) {
+            serialize(file, subscriber.getAllSpans());
+            return;
+        }
 
-        System.out.println(deserialize(file));
-        // }
+        List<Span> expected = deserialize(file);
+        // TODO filter for just one traceId (??) to figure out concurrency
+        Collection<Span> actual = subscriber.getAllSpans();
 
+        if (!compare(expected, actual)) {
+            // TODO(dfox): render nicely here
+            throw new AssertionError("traces did not match up with expected, use -Drecreate=true to overwrite");
+        }
+    }
+
+    private boolean compare(List<Span> expected, Collection<Span> actual) {
+        // TODO(dfox): ensure structure of the graph is the same (don't mind about real start times / durations)
+        return false;
     }
 
     private static String testName(ExtensionContext context) {
