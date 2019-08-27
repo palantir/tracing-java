@@ -65,15 +65,34 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                 .collect(ImmutableSet.toImmutableSet());
 
         if (!problemSpanIds.isEmpty()) {
+            Path actualPath = Paths.get("/Users/dfox/Downloads/actual.html");
+
             HtmlFormatter.builder()
                     .spans(actual.orderedSpans())
-                    .path(Paths.get("/Users/dfox/Downloads/actual.html"))
+                    .path(actualPath)
                     .displayName("actual")
                     .problemSpanIds(problemSpanIds)
                     .buildAndFormat();
 
+            Path expectedPath = Paths.get("/Users/dfox/Downloads/expected.html");
+            HtmlFormatter.builder()
+                    .spans(expected.orderedSpans())
+                    .path(expectedPath)
+                    .displayName("expected")
+                    .problemSpanIds(problemSpanIds)
+                    .buildAndFormat();
+
             // TODO(dfox): render nicely here
-            throw new AssertionError("traces did not match up with expected, use -Drecreate=true to overwrite");
+            throw new AssertionError(
+                    String.format(
+                            "traces did not match the expected file '%s'.\n"
+                                    + "Compare:\n"
+                                    + " - expected: %s\n"
+                                    + " - actual:   %s\n"
+                                    + "Or re-run with -Drecreate=true to accept the new behaviour.",
+                            file,
+                            expectedPath,
+                            actualPath));
         }
     }
 
