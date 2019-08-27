@@ -37,8 +37,9 @@ public final class RenderTracingExtension implements BeforeEachCallback, AfterEa
         // TODO(dfox): this will not behave well if things run in parallel
         Tracer.unsubscribe("RenderTracingExtension");
 
-        Path path =
-                HtmlOutputFile.createFile(context.getRequiredTestClass(), context.getRequiredTestMethod().getName());
+        Path path = Utils.createBuildDirectoryOutputFile(
+                context.getRequiredTestClass(),
+                context.getRequiredTestMethod().getName());
         String displayName = context.getRequiredTestClass().getName() + "#" + context.getRequiredTestMethod().getName();
 
         HtmlFormatter.renderChronologically(

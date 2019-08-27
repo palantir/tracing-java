@@ -97,7 +97,11 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         }
 
         return IntStream.range(0, sortedActualChildren.size())
-                .mapToObj(i -> compareSpansRecursively(expected, actual, sortedExpectedChildren.get(i), sortedActualChildren.get(i)))
+                .mapToObj(i -> compareSpansRecursively(
+                        expected,
+                        actual,
+                        sortedExpectedChildren.get(i),
+                        sortedActualChildren.get(i)))
                 .flatMap(Function.identity());
     }
 

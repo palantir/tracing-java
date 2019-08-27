@@ -17,6 +17,10 @@
 package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 final class Utils {
@@ -48,4 +52,13 @@ final class Utils {
     }
 
     private Utils() {}
+
+    public static Path createBuildDirectoryOutputFile(Class<?> clazz, String methodName) {
+        try {
+            Path dir = Files.createDirectories(Paths.get("build/tracing").resolve(clazz.getSimpleName()));
+            return dir.resolve(methodName + ".html");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
