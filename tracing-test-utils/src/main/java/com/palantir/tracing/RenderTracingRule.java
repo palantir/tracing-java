@@ -22,24 +22,28 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public final class RenderTracingRule implements TestRule {
-    private final SpanRenderer renderer = new SpanRenderer();
+    private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
 
     @Override
-    public Statement apply(
-            Statement base, Description description) {
+    public Statement apply(Statement base, Description description) {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
                 try {
                     Tracer.setSampler(AlwaysSampler.INSTANCE);
-                    Tracer.subscribe("RenderTracingRule", renderer);
+                    Tracer.subscribe("RenderTracingRule", subscriber);
 
                     base.evaluate();
                 } finally {
                     Tracer.unsubscribe("RenderTracingRule");
+
                     String displayName = description.getClassName() + "#" + description.getMethodName();
                     Path path = HtmlOutputFile.createFile(description.getTestClass(), description.getMethodName());
-                    renderer.output(displayName, path);
+
+                    HtmlFormatter.renderChronologically(
+                            subscriber.getAllSpans(),
+                            path,
+                            displayName);
                 }
             }
         };

@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,7 +99,7 @@ final class SpanAnalyzer {
                 .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
 
-        SpanAnalyzer.TimeBounds bounds = bounds(orderedspans);
+        TimeBounds bounds = TimeBounds.fromSpans(orderedspans);
         return new Result() {
 
             @Override
@@ -119,7 +118,7 @@ final class SpanAnalyzer {
             }
 
             @Override
-            public SpanAnalyzer.TimeBounds bounds() {
+            public TimeBounds bounds() {
                 return bounds;
             }
 
@@ -134,13 +133,13 @@ final class SpanAnalyzer {
         ImmutableGraph<Span> graph();
         Span root();
         Set<Span> collisions();
-        SpanAnalyzer.TimeBounds bounds();
+        TimeBounds bounds();
         ImmutableList<Span> orderedSpans();
     }
 
     /** Synthesizes a root span which encapsulates all known spans. */
     private static Span createFakeRootSpan(Collection<Span> spans) {
-        SpanAnalyzer.TimeBounds bounds = bounds(spans);
+        TimeBounds bounds = TimeBounds.fromSpans(spans);
         return Span.builder()
                 .type(SpanType.LOCAL)
                 .startTimeMicroSeconds(bounds.startMicros())
@@ -149,42 +148,5 @@ final class SpanAnalyzer {
                 .traceId("???")
                 .operation("<unknown root span>")
                 .build();
-    }
-
-    public static SpanAnalyzer.TimeBounds bounds(Collection<Span> spans) {
-        long earliestStartMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
-        long latestEndNanos = spans.stream()
-                .mapToLong(span -> {
-                    long startTimeNanos = TimeUnit.NANOSECONDS.convert(
-                            span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
-                    return startTimeNanos + span.getDurationNanoSeconds();
-                })
-                .max()
-                .getAsLong();
-        return new SpanAnalyzer.TimeBounds() {
-            @Override
-            public long startMicros() {
-                return earliestStartMicros;
-            }
-
-            @Override
-            public long endNanos() {
-                return latestEndNanos;
-            }
-        };
-    }
-
-    interface TimeBounds {
-        long startMicros();
-        long endNanos();
-        default long startNanos() {
-            return TimeUnit.NANOSECONDS.convert(startMicros(), TimeUnit.MICROSECONDS);
-        }
-        default long durationNanos() {
-            return endNanos() - startNanos();
-        }
-        default long durationMicros() {
-            return TimeUnit.MICROSECONDS.convert(durationNanos(), TimeUnit.NANOSECONDS);
-        }
     }
 }

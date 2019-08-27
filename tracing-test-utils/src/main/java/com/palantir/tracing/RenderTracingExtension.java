@@ -16,27 +16,37 @@
 
 package com.palantir.tracing;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 public final class RenderTracingExtension implements BeforeEachCallback, AfterEachCallback {
 
-    private final SpanRenderer renderer = new SpanRenderer();
+    private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
 
     @Override
     public void beforeEach(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe("RenderTracingExtension", renderer);
+        Tracer.subscribe("RenderTracingExtension", subscriber);
     }
 
     @Override
-    public void afterEach(ExtensionContext context) {
+    public void afterEach(ExtensionContext context) throws IOException {
         // TODO(dfox): this will not behave well if things run in parallel
         Tracer.unsubscribe("RenderTracingExtension");
 
-        renderer.output(
-                context.getRequiredTestClass().getName().toString() + "#" + context.getRequiredTestMethod().getName(),
-                HtmlOutputFile.createFile(context.getRequiredTestClass(), context.getRequiredTestMethod().getName()));
+        Path path =
+                HtmlOutputFile.createFile(context.getRequiredTestClass(), context.getRequiredTestMethod().getName());
+        String displayName = context.getRequiredTestClass().getName() + "#" + context.getRequiredTestMethod().getName();
+
+        HtmlFormatter.renderChronologically(
+                subscriber.getAllSpans(),
+                path,
+                displayName);
+
+        // TODO(dfox): switch betwen plain chrono and topological
+        // HtmlFormatter.renderByTraceId(allSpans, path, displayName);
     }
 }
