@@ -60,14 +60,15 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(Serialization.deserialize(file));
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(subscriber.getAllSpans());
 
-        List<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
+        ImmutableList<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableList.toImmutableList());
-        if (!problemSpanIds.isEmpty()) {
 
+        if (!problemSpanIds.isEmpty()) {
             HtmlFormatter.builder()
                     .spans(actual.orderedSpans())
                     .path(Paths.get("/Users/dfox/Downloads/actual.html"))
                     .displayName("actual")
+                    .problemSpanIds(problemSpanIds)
                     .buildAndFormat();
 
             // TODO(dfox): render nicely here

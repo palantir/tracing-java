@@ -44,10 +44,12 @@ import java.util.stream.Collectors;
 final class HtmlFormatter {
 
     private static final ObjectWriter writer = new ObjectMapper().registerModule(new Jdk8Module()).writer();
+    private final Builder builder;
     private final TimeBounds bounds;
 
-    private HtmlFormatter(TimeBounds bounds) {
+    private HtmlFormatter(Builder builder, TimeBounds bounds) {
         this.bounds = bounds;
+        this.builder = builder;
     }
 
     public static Builder builder() {
@@ -57,49 +59,38 @@ final class HtmlFormatter {
     private static void render(Builder builder) throws IOException {
         StringBuilder sb = new StringBuilder();
 
-        HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(builder.spans));
-        formatter.header(builder.displayName, sb);
+        HtmlFormatter formatter = new HtmlFormatter(builder, TimeBounds.fromSpans(builder.spans));
+        formatter.header(sb);
+
         if (builder.chronological) {
-            formatter.renderChronological(builder.spans, sb);
+            formatter.renderChronological(sb);
         } else {
-            formatter.renderSplitByTraceId(builder.spans, sb);
+            formatter.renderSplitByTraceId(sb);
         }
-        formatter.rawSpanJson(builder.spans, sb);
+
+        formatter.rawSpanJson(sb);
 
         Files.write(builder.path, sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 
-    private static void renderChronologically(Collection<Span> spans, Path path, String displayName) throws IOException {
-        StringBuilder sb = new StringBuilder();
-
-        HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(spans));
-        formatter.header(displayName, sb);
-        formatter.renderChronological(spans, sb);
-        formatter.rawSpanJson(spans, sb);
-
-        Files.write(path, sb.toString().getBytes(StandardCharsets.UTF_8));
+    private void renderChronological(StringBuilder sb) {
+        builder.spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEachOrdered(span -> {
+            formatSpan(span, false, sb);
+        });
     }
 
-    @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
-    private void header(String displayName, StringBuilder sb) throws IOException {
-        sb.append(template("header.html", ImmutableMap.<String, String>builder()
-                .put("{{DISPLAY_NAME}}", displayName)
-                .put("{{DATE}}",
-                        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-                                .format(LocalDateTime.now(Clock.systemDefaultZone())))
-                .build()));
-    }
+    private void renderSplitByTraceId(StringBuilder sb) {
+        Map<String, List<Span>> spansByTraceId = builder.spans.stream()
+                .collect(Collectors.groupingBy(Span::getTraceId));
 
-    private static String template(String resourceName, Map<String, String> values) {
-        try {
-            String template = Resources.toString(Resources.getResource(resourceName), StandardCharsets.UTF_8);
-            for (Map.Entry<String, String> entry : values.entrySet()) {
-                template = template.replace(entry.getKey(), entry.getValue());
-            }
-            return template;
-        } catch (IOException e) {
-            throw new UncheckedIOException("Unable to read resource " + resourceName, e);
-        }
+        Map<String, SpanAnalyzer.Result> analyzedByTraceId = Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
+        analyzedByTraceId.entrySet()
+                .stream()
+                .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
+                .forEachOrdered(entry -> {
+                    SpanAnalyzer.Result analysis = entry.getValue();
+                    renderAllSpansForOneTraceId(entry.getKey(), analysis, sb);
+                });
     }
 
     private void renderAllSpansForOneTraceId(String traceId, SpanAnalyzer.Result analysis, StringBuilder sb) {
@@ -109,6 +100,16 @@ final class HtmlFormatter {
             formatSpan(span, suspectedCollision, sb);
         });
         sb.append("</div>\n");
+    }
+
+    @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
+    private void header(StringBuilder sb) throws IOException {
+        sb.append(template("header.html", ImmutableMap.<String, String>builder()
+                .put("{{DISPLAY_NAME}}", builder.displayName)
+                .put("{{DATE}}",
+                        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                                .format(LocalDateTime.now(Clock.systemDefaultZone())))
+                .build()));
     }
 
     private void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
@@ -132,13 +133,13 @@ final class HtmlFormatter {
     }
 
 
-    private void rawSpanJson(Collection<Span> spans, StringBuilder sb) {
+    private void rawSpanJson(StringBuilder sb) {
         sb.append("\n<pre style=\"background: #CED9E0;"
                 + "color: #738694;"
                 + "padding: 30px;"
                 + "overflow-x: scroll;"
                 + "margin-top: 100px;\">");
-        spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEach(s -> {
+        builder.spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEach(s -> {
             try {
                 sb.append('\n');
                 sb.append(writer.writeValueAsString(s));
@@ -149,24 +150,16 @@ final class HtmlFormatter {
         sb.append("\n</pre>");
     }
 
-    private void renderChronological(Collection<Span> spans, StringBuilder sb) {
-        spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEachOrdered(span -> {
-            formatSpan(span, false, sb);
-        });
-    }
-
-    private void renderSplitByTraceId(Collection<Span> spans, StringBuilder sb) {
-        Map<String, List<Span>> spansByTraceId = spans.stream()
-                .collect(Collectors.groupingBy(Span::getTraceId));
-
-        Map<String, SpanAnalyzer.Result> analyzedByTraceId = Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
-        analyzedByTraceId.entrySet()
-                .stream()
-                .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
-                .forEachOrdered(entry -> {
-                    SpanAnalyzer.Result analysis = entry.getValue();
-                    renderAllSpansForOneTraceId(entry.getKey(), analysis, sb);
-                });
+    private static String template(String resourceName, Map<String, String> values) {
+        try {
+            String template = Resources.toString(Resources.getResource(resourceName), StandardCharsets.UTF_8);
+            for (Map.Entry<String, String> entry : values.entrySet()) {
+                template = template.replace(entry.getKey(), entry.getValue());
+            }
+            return template;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to read resource " + resourceName, e);
+        }
     }
 
     public static class Builder {
