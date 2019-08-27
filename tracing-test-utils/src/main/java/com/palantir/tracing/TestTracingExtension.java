@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.nio.file.Files;
@@ -60,8 +61,8 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(Serialization.deserialize(file));
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(subscriber.getAllSpans());
 
-        ImmutableList<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
-                .collect(ImmutableList.toImmutableList());
+        ImmutableSet<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
+                .collect(ImmutableSet.toImmutableSet());
 
         if (!problemSpanIds.isEmpty()) {
             HtmlFormatter.builder()

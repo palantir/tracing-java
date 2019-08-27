@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
@@ -122,6 +123,7 @@ final class HtmlFormatter {
                 .put("{{WIDTH}}", Float.toString(Utils.percentage(span.getDurationNanoSeconds(), bounds.durationNanos())))
                 .put("{{HUE}}", Long.toString(hue))
                 .put("{{TRACEID}}", span.getTraceId())
+                .put("{{CLASS}}", builder.problemSpanIds.contains(span.getSpanId()) ? "problem-span" : "")
                 .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
                 .put("{{FINISH}}", Utils.renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                         span.getDurationNanoSeconds(),
@@ -167,7 +169,7 @@ final class HtmlFormatter {
         private Path path;
         private String displayName;
         private boolean chronological = true;
-        private ImmutableList<String> problemSpanIds;
+        private ImmutableSet<String> problemSpanIds;
 
         public Builder spans(Collection<Span> spans) {
             this.spans = spans;
@@ -189,7 +191,7 @@ final class HtmlFormatter {
             return this;
         }
 
-        public Builder problemSpanIds(ImmutableList<String> problemSpanIds) {
+        public Builder problemSpanIds(ImmutableSet<String> problemSpanIds) {
             this.problemSpanIds = problemSpanIds;
             return this;
         }
