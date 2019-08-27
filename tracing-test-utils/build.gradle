@@ -4,6 +4,7 @@ dependencies {
     implementation project(":tracing")
     compileOnly 'junit:junit'
     compileOnly 'org.junit.jupiter:junit-jupiter-api'
+    implementation 'com.palantir.conjure.java.runtime:conjure-java-jackson-serialization'
 
     testImplementation "junit:junit"
     testImplementation 'org.assertj:assertj-core'

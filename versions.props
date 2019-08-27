@@ -12,6 +12,7 @@ javax.servlet:javax.servlet-api = 3.1.0
 javax.ws.rs:javax.ws.rs-api = 2.0.1
 org.glassfish.jersey.*:* = 2.22.2
 org.slf4j:slf4j-api = 1.7.12
+com.palantir.conjure.java.runtime:* = 4.19.0
 
 # dependency-upgrader:ON
 junit:junit = 4.12
