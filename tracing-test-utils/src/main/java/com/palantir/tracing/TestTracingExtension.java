@@ -24,11 +24,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.List;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -57,7 +55,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
             return;
         }
 
-        // TODO filter for just one traceId (??) to figure out concurrency
+        // TODO(df0x): filter for just one traceId (??) to figure out concurrency
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(Serialization.deserialize(file));
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(subscriber.getAllSpans());
 

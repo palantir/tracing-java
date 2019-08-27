@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -84,7 +83,8 @@ final class HtmlFormatter {
         Map<String, List<Span>> spansByTraceId = builder.spans.stream()
                 .collect(Collectors.groupingBy(Span::getTraceId));
 
-        Map<String, SpanAnalyzer.Result> analyzedByTraceId = Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
+        Map<String, SpanAnalyzer.Result> analyzedByTraceId =
+                Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
         analyzedByTraceId.entrySet()
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
@@ -119,8 +119,8 @@ final class HtmlFormatter {
         long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
 
         sb.append(template("span.html", ImmutableMap.<String, String>builder()
-                .put("{{LEFT}}", Float.toString(Utils.percentage(transposedStartMicros, bounds.durationMicros())))
-                .put("{{WIDTH}}", Float.toString(Utils.percentage(span.getDurationNanoSeconds(), bounds.durationNanos())))
+                .put("{{LEFT}}", Float.toString(Utils.percent(transposedStartMicros, bounds.durationMicros())))
+                .put("{{WIDTH}}", Float.toString(Utils.percent(span.getDurationNanoSeconds(), bounds.durationNanos())))
                 .put("{{HUE}}", Long.toString(hue))
                 .put("{{TRACEID}}", span.getTraceId())
                 .put("{{CLASS}}", builder.problemSpanIds.contains(span.getSpanId()) ? "problem-span" : "")
@@ -171,28 +171,28 @@ final class HtmlFormatter {
         private boolean chronological = true;
         private ImmutableSet<String> problemSpanIds;
 
-        public Builder spans(Collection<Span> spans) {
-            this.spans = spans;
+        public Builder spans(Collection<Span> value) {
+            this.spans = value;
             return this;
         }
 
-        public Builder path(Path path) {
-            this.path = path;
+        public Builder path(Path value) {
+            this.path = value;
             return this;
         }
 
-        public Builder displayName(String displayName) {
-            this.displayName = displayName;
+        public Builder displayName(String value) {
+            this.displayName = value;
             return this;
         }
 
-        public Builder chronological(boolean chronological) {
-            this.chronological = chronological;
+        public Builder chronological(boolean value) {
+            this.chronological = value;
             return this;
         }
 
-        public Builder problemSpanIds(ImmutableSet<String> problemSpanIds) {
-            this.problemSpanIds = problemSpanIds;
+        public Builder problemSpanIds(ImmutableSet<String> value) {
+            this.problemSpanIds = value;
             return this;
         }
 

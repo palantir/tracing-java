@@ -37,7 +37,7 @@ public final class Serialization {
         try (Stream<String> lines = Files.lines(file)) {
             return lines.map(line -> {
                 try {
-                    return deserialize(mapper, line);
+                    return mapper.readValue(line, SerializableSpan.class).asSpan();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -58,9 +58,5 @@ public final class Serialization {
                 }
             });
         }
-    }
-
-    private static final Span deserialize(ObjectMapper mapper, String string) throws IOException {
-        return mapper.readValue(string, SerializableSpan.class).asSpan();
     }
 }

@@ -10,6 +10,7 @@ dependencies {
     compileOnly "org.immutables:value::annotations"
 
     testImplementation "junit:junit"
+    testCompileOnly "org.immutables:value::annotations"
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine") {

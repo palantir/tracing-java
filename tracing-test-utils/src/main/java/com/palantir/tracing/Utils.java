@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 final class Utils {
 
-    public static float percentage(long numerator, long denominator) {
+    public static float percent(long numerator, long denominator) {
         return 100f * numerator / denominator;
     }
 

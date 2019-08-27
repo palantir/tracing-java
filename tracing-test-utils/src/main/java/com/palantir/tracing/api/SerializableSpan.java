@@ -16,9 +16,7 @@
 
 package com.palantir.tracing.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;

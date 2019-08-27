@@ -20,8 +20,9 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class DemoTestUtils {
+public final class DemoTestUtils {
 
+    @SuppressWarnings("NestedTryDepth")
     void prod_code() throws InterruptedException {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
