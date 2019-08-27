@@ -42,10 +42,11 @@ public final class RenderTracingExtension implements BeforeEachCallback, AfterEa
                 context.getRequiredTestMethod().getName());
         String displayName = context.getRequiredTestClass().getName() + "#" + context.getRequiredTestMethod().getName();
 
-        HtmlFormatter.renderChronologically(
-                subscriber.getAllSpans(),
-                path,
-                displayName);
+        HtmlFormatter.builder()
+                .spans(subscriber.getAllSpans())
+                .path(path)
+                .displayName(displayName)
+                .buildAndFormat();
 
         // TODO(dfox): switch betwen plain chrono and topological
         // HtmlFormatter.renderByTraceId(allSpans, path, displayName);

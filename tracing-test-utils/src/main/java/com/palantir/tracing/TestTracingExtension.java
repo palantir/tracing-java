@@ -63,6 +63,13 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         List<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableList.toImmutableList());
         if (!problemSpanIds.isEmpty()) {
+
+            HtmlFormatter.builder()
+                    .spans(actual.orderedSpans())
+                    .path(Paths.get("/Users/dfox/Downloads/actual.html"))
+                    .displayName("actual")
+                    .buildAndFormat();
+
             // TODO(dfox): render nicely here
             throw new AssertionError("traces did not match up with expected, use -Drecreate=true to overwrite");
         }
@@ -73,9 +80,8 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
             SpanAnalyzer.Result actual,
             Span ex,
             Span ac) {
-        Assertions.assertEquals(ex.getOperation(), ac.getOperation(), "Spans should have the same operation name");
         if (!ex.getOperation().equals(ac.getOperation())) {
-            // highlight these to the user
+            // TODO(dfox): explain to users that these needed span operations to be equal
             return Stream.of(ex.getSpanId(), ac.getSpanId());
         }
         // other fields, type, params, metadata(???)

@@ -40,10 +40,11 @@ public final class RenderTracingRule implements TestRule {
                     String displayName = description.getClassName() + "#" + description.getMethodName();
                     Path path = Utils.createBuildDirectoryOutputFile(description.getTestClass(), description.getMethodName());
 
-                    HtmlFormatter.renderChronologically(
-                            subscriber.getAllSpans(),
-                            path,
-                            displayName);
+                    HtmlFormatter.builder()
+                            .spans(subscriber.getAllSpans())
+                            .path(path)
+                            .displayName(displayName)
+                            .buildAndFormat();
                 }
             }
         };

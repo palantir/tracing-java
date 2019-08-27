@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
@@ -49,18 +50,26 @@ final class HtmlFormatter {
         this.bounds = bounds;
     }
 
-    public static void renderByTraceId(Collection<Span> spans, Path path, String displayName) throws IOException {
-        StringBuilder sb = new StringBuilder();
-
-        HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(spans));
-        formatter.header(displayName, sb);
-        formatter.renderSplitByTraceId(spans, sb);
-        formatter.rawSpanJson(spans, sb);
-
-        Files.write(path, sb.toString().getBytes(StandardCharsets.UTF_8));
+    public static Builder builder() {
+        return new Builder();
     }
 
-    public static void renderChronologically(Collection<Span> spans, Path path, String displayName) throws IOException {
+    private static void render(Builder builder) throws IOException {
+        StringBuilder sb = new StringBuilder();
+
+        HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(builder.spans));
+        formatter.header(builder.displayName, sb);
+        if (builder.chronological) {
+            formatter.renderChronological(builder.spans, sb);
+        } else {
+            formatter.renderSplitByTraceId(builder.spans, sb);
+        }
+        formatter.rawSpanJson(builder.spans, sb);
+
+        Files.write(builder.path, sb.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void renderChronologically(Collection<Span> spans, Path path, String displayName) throws IOException {
         StringBuilder sb = new StringBuilder();
 
         HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(spans));
@@ -146,8 +155,7 @@ final class HtmlFormatter {
         });
     }
 
-    void renderSplitByTraceId(Collection<Span> spans, StringBuilder sb) {
-
+    private void renderSplitByTraceId(Collection<Span> spans, StringBuilder sb) {
         Map<String, List<Span>> spansByTraceId = spans.stream()
                 .collect(Collectors.groupingBy(Span::getTraceId));
 
@@ -159,5 +167,42 @@ final class HtmlFormatter {
                     SpanAnalyzer.Result analysis = entry.getValue();
                     renderAllSpansForOneTraceId(entry.getKey(), analysis, sb);
                 });
+    }
+
+    public static class Builder {
+        private Collection<Span> spans;
+        private Path path;
+        private String displayName;
+        private boolean chronological = true;
+        private ImmutableList<String> problemSpanIds;
+
+        public Builder spans(Collection<Span> spans) {
+            this.spans = spans;
+            return this;
+        }
+
+        public Builder path(Path path) {
+            this.path = path;
+            return this;
+        }
+
+        public Builder displayName(String displayName) {
+            this.displayName = displayName;
+            return this;
+        }
+
+        public Builder chronological(boolean chronological) {
+            this.chronological = chronological;
+            return this;
+        }
+
+        public Builder problemSpanIds(ImmutableList<String> problemSpanIds) {
+            this.problemSpanIds = problemSpanIds;
+            return this;
+        }
+
+        public void buildAndFormat() throws IOException {
+            HtmlFormatter.render(this);
+        }
     }
 }

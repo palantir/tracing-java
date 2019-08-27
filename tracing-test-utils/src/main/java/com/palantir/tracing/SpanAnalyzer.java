@@ -53,7 +53,7 @@ final class SpanAnalyzer {
 
     public static Result analyze(Collection<Span> spans) {
         ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
-        // MutableGraph<Span> graph = immutable.build();
+        // MutableGraph<Span> graph = immutable.buildAndFormat();
         spans.forEach(graph::addNode);
 
         // it's possible there's an unclosed parent, so we can make up a fake root span just in case we need it later

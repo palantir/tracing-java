@@ -35,7 +35,10 @@ public class HtmlFormatterTest {
         // Path file = Files.createTempFile("test", ".html");
         Path file = Paths.get("/Users/dfox/Downloads/file.html");
 
-        HtmlFormatter.renderChronologically(spans, file, "poop");
-        System.out.println(file);
+        HtmlFormatter.builder()
+                .spans(spans)
+                .path(file)
+                .displayName("poop")
+                .buildAndFormat();
     }
 }
