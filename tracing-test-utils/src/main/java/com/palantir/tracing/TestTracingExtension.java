@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -65,17 +66,24 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(deserialize(file));
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(subscriber.getAllSpans());
 
-        if (!compareSpansRecursively(expected, actual, expected.root(), actual.root())) {
+        List<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
+                .collect(ImmutableList.toImmutableList());
+        if (!problemSpanIds.isEmpty()) {
             // TODO(dfox): render nicely here
             throw new AssertionError("traces did not match up with expected, use -Drecreate=true to overwrite");
         }
     }
 
-    private Boolean compareSpansRecursively(
+    private static Stream<String> compareSpansRecursively(
             SpanAnalyzer.Result expected,
             SpanAnalyzer.Result actual,
-            Span ex, Span ac) {
+            Span ex,
+            Span ac) {
         Assertions.assertEquals(ex.getOperation(), ac.getOperation(), "Spans should have the same operation name");
+        if (!ex.getOperation().equals(ac.getOperation())) {
+            // highlight these to the user
+            return Stream.of(ex.getSpanId(), ac.getSpanId());
+        }
         // other fields, type, params, metadata(???)
 
         // TODO(dfox): when there are non-overlapping spans (aka no concurrency/async), we do care about order
@@ -89,15 +97,14 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                 .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
                 .collect(ImmutableList.toImmutableList());
 
-        Assertions.assertEquals(sortedExpectedChildren.size(), sortedActualChildren.size());
+        if (sortedExpectedChildren.size() != sortedActualChildren.size()) {
+            // just highlighting the parents for now.
+            return Stream.of(ex.getSpanId(), ac.getSpanId());
+        }
 
-        return IntStream.range(0, sortedActualChildren.size()).allMatch(i -> {
-            return compareSpansRecursively(
-                    expected,
-                    actual,
-                    sortedExpectedChildren.get(i),
-                    sortedActualChildren.get(i));
-        });
+        return IntStream.range(0, sortedActualChildren.size())
+                .mapToObj(i -> compareSpansRecursively(expected, actual, sortedExpectedChildren.get(i), sortedActualChildren.get(i)))
+                .flatMap(Function.identity());
     }
 
     private static String testName(ExtensionContext context) {
