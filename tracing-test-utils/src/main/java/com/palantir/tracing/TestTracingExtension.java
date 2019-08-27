@@ -29,7 +29,6 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
@@ -62,29 +61,21 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
             return;
         }
 
-        List<Span> expected = deserialize(file);
         // TODO filter for just one traceId (??) to figure out concurrency
-        Collection<Span> actual = subscriber.getAllSpans();
+        SpanAnalyzer.Result expected = SpanAnalyzer.analyze(deserialize(file));
+        SpanAnalyzer.Result actual = SpanAnalyzer.analyze(subscriber.getAllSpans());
 
-        if (!compare(expected, actual)) {
+        if (!compareSpansRecursively(expected, actual, expected.root(), actual.root())) {
             // TODO(dfox): render nicely here
             throw new AssertionError("traces did not match up with expected, use -Drecreate=true to overwrite");
         }
-    }
-
-    private boolean compare(List<Span> expectedUnordered, Collection<Span> actualUnordered) {
-        // TODO(dfox): ensure structure of the graph is the same (don't mind about real start times / durations)
-        SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedUnordered);
-        SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualUnordered);
-
-        return compareSpansRecursively(expected, actual, expected.root(), actual.root());
     }
 
     private Boolean compareSpansRecursively(
             SpanAnalyzer.Result expected,
             SpanAnalyzer.Result actual,
             Span ex, Span ac) {
-        Assertions.assertEquals(ex.getOperation(), ac.getOperation());
+        Assertions.assertEquals(ex.getOperation(), ac.getOperation(), "Spans should have the same operation name");
         // other fields, type, params, metadata(???)
 
         // TODO(dfox): when there are non-overlapping spans (aka no concurrency/async), we do care about order
