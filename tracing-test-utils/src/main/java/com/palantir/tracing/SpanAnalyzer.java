@@ -19,13 +19,13 @@ package com.palantir.tracing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
+import com.google.common.graph.ImmutableGraph;
 import com.google.common.graph.MutableGraph;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -39,7 +39,7 @@ final class SpanAnalyzer {
     private SpanAnalyzer() {}
 
 
-    private static Stream<Span> depthFirstTraversalOrderedByStartTime(MutableGraph<Span> graph, Span parentSpan) {
+    private static Stream<Span> depthFirstTraversalOrderedByStartTime(ImmutableGraph<Span> graph, Span parentSpan) {
         Stream<Span> children = graph.incidentEdges(parentSpan).stream()
                 // we only care about incoming edges to the 'parentSpan', not outgoing ones
                 .filter(pair -> pair.nodeV().equals(parentSpan))
@@ -51,7 +51,8 @@ final class SpanAnalyzer {
     }
 
     public static Result analyze(Collection<Span> spans) {
-        MutableGraph<Span> graph = GraphBuilder.directed().build();
+        ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
+        // MutableGraph<Span> graph = immutable.build();
         spans.forEach(graph::addNode);
 
         // it's possible there's an unclosed parent, so we can make up a fake root span just in case we need it later
@@ -91,7 +92,9 @@ final class SpanAnalyzer {
             });
         }
 
-        ImmutableList<Span> orderedspans = depthFirstTraversalOrderedByStartTime(graph, rootSpan)
+        ImmutableGraph<Span> spanGraph = graph.build();
+
+        ImmutableList<Span> orderedspans = depthFirstTraversalOrderedByStartTime(spanGraph, rootSpan)
                 .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
 
@@ -99,8 +102,8 @@ final class SpanAnalyzer {
         return new Result() {
 
             @Override
-            public MutableGraph<Span> graph() {
-                return graph;
+            public ImmutableGraph<Span> graph() {
+                return spanGraph;
             }
 
             @Override
@@ -121,14 +124,14 @@ final class SpanAnalyzer {
     }
 
     interface Result {
-        MutableGraph<Span> graph();
+        ImmutableGraph<Span> graph();
         Set<Span> collisions();
         SpanAnalyzer.TimeBounds bounds();
         ImmutableList<Span> orderedSpans();
     }
 
     /** Synthesizes a root span which encapsulates all known spans. */
-    private static Span createFakeRootSpan(List<Span> spans) {
+    private static Span createFakeRootSpan(Collection<Span> spans) {
         SpanAnalyzer.TimeBounds bounds = bounds(spans);
         return Span.builder()
                 .type(SpanType.LOCAL)
@@ -140,7 +143,7 @@ final class SpanAnalyzer {
                 .build();
     }
 
-    private static SpanAnalyzer.TimeBounds bounds(Collection<Span> spans) {
+    public static SpanAnalyzer.TimeBounds bounds(Collection<Span> spans) {
         long earliestStartMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
         long latestEndNanos = spans.stream()
                 .mapToLong(span -> {
