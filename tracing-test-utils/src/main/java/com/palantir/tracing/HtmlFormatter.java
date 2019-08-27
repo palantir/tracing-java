@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
+import com.google.common.io.Resources;
 import com.palantir.tracing.api.Span;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +51,7 @@ final class HtmlFormatter {
         StringBuilder sb = new StringBuilder();
 
         HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(spans));
-        formatter.header(sb, displayName);
+        formatter.header(displayName, sb);
         formatter.renderSplitByTraceId(spans, sb);
         formatter.rawSpanJson(spans, sb);
 
@@ -61,7 +62,7 @@ final class HtmlFormatter {
         StringBuilder sb = new StringBuilder();
 
         HtmlFormatter formatter = new HtmlFormatter(TimeBounds.fromSpans(spans));
-        formatter.header(sb, displayName);
+        formatter.header(displayName, sb);
         formatter.renderChronological(spans, sb);
         formatter.rawSpanJson(spans, sb);
 
@@ -69,14 +70,14 @@ final class HtmlFormatter {
     }
 
     @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
-    private void header(StringBuilder sb, String displayName) {
-        sb.append("<h1>");
-        sb.append(displayName);
-        sb.append("</h1>");
-        sb.append("<p>");
-        sb.append(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-                .format(LocalDateTime.now(Clock.systemDefaultZone())));
-        sb.append("</p>");
+    private void header(String displayName, StringBuilder sb) throws IOException {
+        String template = Resources.toString(Resources.getResource("header.html"), StandardCharsets.UTF_8);
+
+        String date = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                .format(LocalDateTime.now(Clock.systemDefaultZone()));
+        sb.append(template
+                .replaceAll("\\{\\{DISPLAY_NAME\\}\\}", displayName)
+                .replaceAll("\\{\\{DATE\\}\\}", date));
     }
 
     private void renderAllSpansForOneTraceId(String traceId, SpanAnalyzer.Result analysis, StringBuilder sb) {
