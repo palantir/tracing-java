@@ -24,7 +24,7 @@ public final class TestTracingExtensionTest {
     @BeforeEach
     public void beforeEach() throws InterruptedException {
         // Ensure traces created in test setup are not captured by the test annotation
-        try(CloseableTracer ignored = CloseableTracer.startSpan("ignored")) {
+        try (CloseableTracer ignored = CloseableTracer.startSpan("ignored")) {
             Thread.sleep(10);
         }
     }

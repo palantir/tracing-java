@@ -17,17 +17,21 @@
 package com.palantir.tracing;
 
 import com.palantir.tracing.api.Span;
-import com.spotify.dataenum.DataEnum;
-import com.spotify.dataenum.dataenum_case;
-import java.util.List;
+import java.util.Comparator;
 
-@SuppressWarnings("checkstyle:TypeName")
-@DataEnum
-interface ComparisonFailure_dataenum {
-    dataenum_case unequalOperation(Span expected, Span actual);
+enum SpanComparator implements Comparator<Span> {
+    INSTANCE;
 
-    dataenum_case unequalChildren(
-            Span expected, Span actual, List<Span> expectedChildren, List<Span> actualChildren);
-
-    dataenum_case incompatibleStructure(Span expected, Span actual);
+    @Override
+    public int compare(Span o1, Span o2) {
+        int startTimeCompare = Long.compare(o1.getStartTimeMicroSeconds(), o2.getStartTimeMicroSeconds());
+        if (startTimeCompare != 0) {
+            return startTimeCompare;
+        }
+        int durationCompare = Long.compare(o1.getDurationNanoSeconds(), o2.getDurationNanoSeconds());
+        if (durationCompare != 0) {
+            return durationCompare;
+        }
+        throw new IllegalStateException(String.format("comparing duplicate spans %s %s", o1, o2));
+    }
 }

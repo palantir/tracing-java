@@ -53,7 +53,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     public void afterEach(ExtensionContext context) throws Exception {
         String name = testName(context);
         Tracer.unsubscribe(name);
-        Path snapshotFile = Paths.get("src/test/resources/test-tracing").resolve(name);
+        Path snapshotFile = Paths.get("src/test/resources/tracing").resolve(name + ".log");
         Path outputPath = Paths.get("build/reports/tracing").resolve(name);
         Files.createDirectories(outputPath);
         Path actualPath = outputPath.resolve("actual.html");

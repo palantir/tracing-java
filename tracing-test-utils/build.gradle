@@ -1,5 +1,9 @@
 apply from: "${rootDir}/gradle/publish-jar.gradle"
 
+versionsLock {
+    testProject()
+}
+
 dependencies {
     implementation project(":tracing")
     compileOnly 'junit:junit'

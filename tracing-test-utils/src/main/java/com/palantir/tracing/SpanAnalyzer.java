@@ -55,7 +55,7 @@ final class SpanAnalyzer {
                 // we only care about incoming edges to the 'parentSpan', not outgoing ones
                 .filter(pair -> pair.nodeV().equals(parentSpan))
                 .map(EndpointPair::nodeU)
-                .sorted(Comparator.comparing(Span::getStartTimeMicroSeconds));
+                .sorted(SpanComparator.INSTANCE);
     }
 
     // TODO(dfox): make sure we don't re-run this unnecessarily
