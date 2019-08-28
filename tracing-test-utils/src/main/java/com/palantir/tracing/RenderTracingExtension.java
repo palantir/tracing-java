@@ -47,7 +47,7 @@ public final class RenderTracingExtension implements BeforeEachCallback, AfterEa
                 .path(path)
                 .displayName(displayName)
                 // TODO(dfox): switch betwen plain chrono and topological
-                .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
                 .build());
     }
 }

@@ -16,19 +16,7 @@
 
 package com.palantir.tracing;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import org.junit.jupiter.api.extension.ExtendWith;
-
-// TODO(dfox): maybe support annotating classes too?
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-@ExtendWith(TestTracingExtension.class)
-public @interface TestTracing {
-
-    boolean snapshot() default false;
-
-    LayoutStrategy layout() default LayoutStrategy.SPLIT_BY_TRACE;
+public enum LayoutStrategy {
+    CHRONOLOGICAL,
+    SPLIT_BY_TRACE
 }

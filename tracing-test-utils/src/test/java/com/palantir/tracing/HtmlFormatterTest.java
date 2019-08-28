@@ -40,7 +40,7 @@ public class HtmlFormatterTest {
                 .spans(spans)
                 .path(file)
                 .displayName("poop")
-                .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
                 .build());
     }
 }

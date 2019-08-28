@@ -46,8 +46,10 @@ public final class RenderTracingRule implements TestRule {
                             .spans(subscriber.getAllSpans())
                             .path(path)
                             .displayName(displayName)
-                            .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                            .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
                             .build());
+
+                    System.out.println(path.toAbsolutePath());
                 }
             }
         };

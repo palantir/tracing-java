@@ -187,9 +187,4 @@ final class HtmlFormatter {
             return new Builder();
         }
     }
-
-    enum LayoutStrategy {
-        CHRONOLOGICAL,
-        SPLIT_BY_TRACE
-    }
 }
