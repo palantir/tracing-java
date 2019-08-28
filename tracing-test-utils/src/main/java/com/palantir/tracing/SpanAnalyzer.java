@@ -60,7 +60,6 @@ final class SpanAnalyzer {
                 .sorted(SpanComparator.INSTANCE);
     }
 
-    // TODO(dfox): make sure we don't re-run this unnecessarily
     public static Result analyze(Collection<Span> spans) {
         TimeBounds bounds = TimeBounds.fromSpans(spans);
         Span fakeRootSpan = createFakeRootSpan(bounds);

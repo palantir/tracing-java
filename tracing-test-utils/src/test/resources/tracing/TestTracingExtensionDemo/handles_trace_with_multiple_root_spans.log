@@ -1,0 +1,11 @@
+{"traceId":"ffb44935adf068ec","parentSpanId":null,"spanId":"ce568f4d0baeefd4","operation":"ignored","startTimeMicroSeconds":1567002162954713,"durationNanoSeconds":10611833,"metadata":{}}
+{"traceId":"02781b74d022d5b1","parentSpanId":"5a2b4cc70c156e0f","spanId":"8ea93001ee55b2de","operation":"nested","startTimeMicroSeconds":1567002163067655,"durationNanoSeconds":90290953,"metadata":{}}
+{"traceId":"02781b74d022d5b1","parentSpanId":"28e60359004a90aa","spanId":"5a2b4cc70c156e0f","operation":"first","startTimeMicroSeconds":1567002162967228,"durationNanoSeconds":201418576,"metadata":{}}
+{"traceId":"02781b74d022d5b1","parentSpanId":"28e60359004a90aa","spanId":"5ee9ae4c55a49ca2","operation":"second","startTimeMicroSeconds":1567002163168717,"durationNanoSeconds":104754163,"metadata":{}}
+{"traceId":"02781b74d022d5b1","parentSpanId":"28e60359004a90aa","spanId":"c582684e83378522","operation":"third","startTimeMicroSeconds":1567002163273572,"durationNanoSeconds":102814156,"metadata":{}}
+{"traceId":"02781b74d022d5b1","parentSpanId":null,"spanId":"28e60359004a90aa","operation":"root","startTimeMicroSeconds":1567002162967209,"durationNanoSeconds":409229930,"metadata":{}}
+{"traceId":"f4233b8914c6efd3","parentSpanId":"80580398f21e95f2","spanId":"733c6df0370e6947","operation":"nested","startTimeMicroSeconds":1567002163477180,"durationNanoSeconds":93233594,"metadata":{}}
+{"traceId":"f4233b8914c6efd3","parentSpanId":"4b9820802e1d79b7","spanId":"80580398f21e95f2","operation":"first","startTimeMicroSeconds":1567002163376525,"durationNanoSeconds":204654673,"metadata":{}}
+{"traceId":"f4233b8914c6efd3","parentSpanId":"4b9820802e1d79b7","spanId":"bbf84827ddd28ecc","operation":"second","startTimeMicroSeconds":1567002163581247,"durationNanoSeconds":100311416,"metadata":{}}
+{"traceId":"f4233b8914c6efd3","parentSpanId":"4b9820802e1d79b7","spanId":"e04b65ab51a572a3","operation":"third","startTimeMicroSeconds":1567002163681611,"durationNanoSeconds":100134451,"metadata":{}}
+{"traceId":"f4233b8914c6efd3","parentSpanId":null,"spanId":"4b9820802e1d79b7","operation":"root","startTimeMicroSeconds":1567002163376510,"durationNanoSeconds":405288538,"metadata":{}}

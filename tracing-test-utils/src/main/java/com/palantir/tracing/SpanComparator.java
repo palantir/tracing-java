@@ -19,19 +19,12 @@ package com.palantir.tracing;
 import com.palantir.tracing.api.Span;
 import java.util.Comparator;
 
-enum SpanComparator implements Comparator<Span> {
-    INSTANCE;
+final class SpanComparator {
 
-    @Override
-    public int compare(Span o1, Span o2) {
-        int startTimeCompare = Long.compare(o1.getStartTimeMicroSeconds(), o2.getStartTimeMicroSeconds());
-        if (startTimeCompare != 0) {
-            return startTimeCompare;
-        }
-        int durationCompare = Long.compare(o1.getDurationNanoSeconds(), o2.getDurationNanoSeconds());
-        if (durationCompare != 0) {
-            return durationCompare;
-        }
-        throw new IllegalStateException(String.format("comparing duplicate spans %s %s", o1, o2));
-    }
+    public static final Comparator<Span> INSTANCE = Comparator
+            .comparing(Span::getStartTimeMicroSeconds)
+            .thenComparing(Span::getDurationNanoSeconds)
+            .thenComparing(Span::getOperation);
+
+    private SpanComparator() {}
 }
