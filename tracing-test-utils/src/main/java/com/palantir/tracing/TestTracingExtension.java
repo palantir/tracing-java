@@ -51,54 +51,59 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        Tracer.unsubscribe(testName(context));
+        String name = testName(context);
+        Tracer.unsubscribe(name);
 
-        Path file = Paths.get("src/test/resources").resolve(testName(context));
+        Path snapshotFile = Paths.get("src/test/resources").resolve(name);
 
         // match recorded traces against expected file (or create)
         Collection<Span> actualSpans = subscriber.getAllSpans();
-        if (!Files.exists(file) || Boolean.valueOf(System.getProperty("recreate", "false"))) {
-            Serialization.serialize(file, actualSpans);
+        if (!Files.exists(snapshotFile) || Boolean.valueOf(System.getProperty("recreate", "false"))) {
+            Serialization.serialize(snapshotFile, actualSpans);
             return;
         }
 
         // TODO(df0x): filter for just one traceId (??) to figure out concurrency
-        List<Span> expectedSpans = Serialization.deserialize(file);
+        List<Span> expectedSpans = Serialization.deserialize(snapshotFile);
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedSpans);
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
         Set<ComparisonFailure> failures = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
 
-        Path actualPath = Paths.get("/Users/forozco/Downloads/actual.html");
-        HtmlFormatter.builder()
-                .spans(actualSpans)
-                .path(actualPath)
-                .displayName("actual")
-                .problemSpanIds(failures.stream()
-                        .map(res -> res.map(
-                                ComparisonFailure.unequalOperation::expected,
-                                ComparisonFailure.unequalChildren::expected,
-                                ComparisonFailure.incompatibleStructure::expected))
-                        .map(Span::getSpanId)
-                        .collect(ImmutableSet.toImmutableSet()))
-                .buildAndFormat();
-
-        Path expectedPath = Paths.get("/Users/forozco/Downloads/expected.html");
-        HtmlFormatter.builder()
-                .spans(expectedSpans)
-                .path(expectedPath)
-                .displayName("expected")
-                .problemSpanIds(failures.stream()
-                        .map(res -> res.map(
-                                ComparisonFailure.unequalOperation::actual,
-                                ComparisonFailure.unequalChildren::actual,
-                                ComparisonFailure.incompatibleStructure::actual))
-                        .map(Span::getSpanId)
-                        .collect(ImmutableSet.toImmutableSet()))
-                .buildAndFormat();
-
         if (!failures.isEmpty()) {
+            Path outputPath = Paths.get("build/reports/tracing").resolve(name);
+            Files.createDirectories(outputPath);
+
+            Path actualPath = outputPath.resolve("actual.html");
+            HtmlFormatter.builder()
+                    .spans(actualSpans)
+                    .path(actualPath)
+                    .displayName("actual")
+                    .problemSpanIds(failures.stream()
+                            .map(res -> res.map(
+                                    ComparisonFailure.unequalOperation::expected,
+                                    ComparisonFailure.unequalChildren::expected,
+                                    ComparisonFailure.incompatibleStructure::expected))
+                            .map(Span::getSpanId)
+                            .collect(ImmutableSet.toImmutableSet()))
+                    .buildAndFormat();
+
+            Path expectedPath = outputPath.resolve("expected.html");
+            HtmlFormatter.builder()
+                    .spans(expectedSpans)
+                    .path(expectedPath)
+                    .displayName("expected")
+                    .problemSpanIds(failures.stream()
+                            .map(res -> res.map(
+                                    ComparisonFailure.unequalOperation::actual,
+                                    ComparisonFailure.unequalChildren::actual,
+                                    ComparisonFailure.incompatibleStructure::actual))
+                            .map(Span::getSpanId)
+                            .collect(ImmutableSet.toImmutableSet()))
+                    .buildAndFormat();
+
+
             throw new AssertionError(
                     String.format(
                             "Traces did not match the expected file '%s'.\n"
@@ -107,12 +112,12 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                                     + " - expected: %s\n"
                                     + " - actual:   %s\n"
                                     + "Or re-run with -Drecreate=true to accept the new behaviour.",
-                            file,
+                            snapshotFile,
                             failures.stream()
                                     .map(TestTracingExtension::renderFailure)
                                     .collect(Collectors.joining("\n")),
-                            expectedPath,
-                            actualPath));
+                            expectedPath.toAbsolutePath(),
+                            actualPath.toAbsolutePath()));
         }
     }
 
