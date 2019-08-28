@@ -16,10 +16,8 @@
 
 package com.palantir.tracing;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Streams;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import com.spotify.dataenum.DataEnum;
@@ -27,7 +25,6 @@ import com.spotify.dataenum.dataenum_case;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -156,8 +153,9 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
             return Stream.of(ComparisonFailure.incompatibleStructure(ex, ac));
         }
 
-        if (actualContainsOverlappingSpans) {
-            return sudokuMatching(expected, actual, ex, ac, sortedExpectedChildren, sortedActualChildren);
+        if (actualContainsOverlappingSpans && !compatibleOverlappingSpans(
+                expected, actual, sortedExpectedChildren, sortedActualChildren)){
+            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
         }
 
         return IntStream.range(0, sortedActualChildren.size())
@@ -169,14 +167,16 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                 .flatMap(Function.identity());
     }
 
-    private static Stream<ComparisonFailure> sudokuMatching(
-            SpanAnalyzer.Result expected,
-            SpanAnalyzer.Result actual,
-            Span exParent,
-            Span acParent,
-            List<Span> ex,
-            List<Span> ac) {
-        Boolean[][] compatibility = new Boolean[ex.size()][ac.size()];
+    /**
+     * When async spans are involved, there can be many overlapping children with the same operation name.
+     * We exhaustively check each possible pair, and require that each span in the 'expected' list lines up with
+     * something and each span in the 'actual' list also lines up with something.
+     *
+     * It's OK for some spans to be compatible with more than one span (as subtrees could be identical).
+     */
+    private static boolean compatibleOverlappingSpans(
+            SpanAnalyzer.Result expected, SpanAnalyzer.Result actual, List<Span> ex, List<Span> ac) {
+        boolean[][] compatibility = new boolean[ex.size()][ac.size()];
 
         for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
             for (int acIndex = 0; acIndex < ac.size(); acIndex++) {
@@ -187,11 +187,13 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
 
         // check rows first
         for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
-            Boolean[] compatibilityRow = compatibility[exIndex];
-            boolean rowContainedAtLeastOneSuccess = Arrays.stream(compatibilityRow).anyMatch(Boolean::booleanValue);
+            boolean atLeastOneCompatible = false;
+            for (int acIndex = 0; acIndex < ac.size(); acIndex++) {
+                atLeastOneCompatible |= compatibility[exIndex][acIndex];
+            }
 
-            if (!rowContainedAtLeastOneSuccess) {
-                return Stream.of(ComparisonFailure.unequalChildren(exParent, acParent, ex, ac));
+            if (!atLeastOneCompatible) {
+                return false;
             }
         }
 
@@ -203,12 +205,11 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
             }
 
             if (!atLeastOneCompatible) {
-                return Stream.of(ComparisonFailure.unequalChildren(exParent, acParent, ex, ac));
+                return false;
             }
         }
 
-
-        return Stream.empty(); // no errors, everything was compatible
+        return true;
     }
 
     private static String renderFailure(ComparisonFailure failure) {
