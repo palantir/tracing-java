@@ -64,5 +64,10 @@ public final class TestTracingExtensionDemo {
         prod_code();
     }
 
+    @Test
+    void vacuous() {
+        // no spans here - nothing should break
+    }
+
     // TODO(forozco): Add test demonstrating async support
 }

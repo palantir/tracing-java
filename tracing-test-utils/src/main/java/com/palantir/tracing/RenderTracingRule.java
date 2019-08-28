@@ -16,7 +16,9 @@
 
 package com.palantir.tracing;
 
+import com.palantir.tracing.api.Span;
 import java.nio.file.Path;
+import java.util.Collection;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -45,14 +47,18 @@ public final class RenderTracingRule implements TestRule {
                             description.getTestClass(),
                             description.getMethodName());
 
-                    HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
-                            .spans(subscriber.getAllSpans())
-                            .path(path)
-                            .displayName(displayName)
-                            .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
-                            .build());
+                    Collection<Span> allSpans = subscriber.getAllSpans();
 
-                    log.info("Tracing report file://{}", path.toAbsolutePath());
+                    if (!allSpans.isEmpty()) {
+                        HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
+                                .spans(allSpans)
+                                .path(path)
+                                .displayName(displayName)
+                                .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
+                                .build());
+
+                        log.info("Tracing report file://{}", path.toAbsolutePath());
+                    }
                 }
             }
         };
