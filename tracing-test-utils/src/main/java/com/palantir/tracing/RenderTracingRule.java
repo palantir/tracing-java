@@ -42,11 +42,12 @@ public final class RenderTracingRule implements TestRule {
                             description.getTestClass(),
                             description.getMethodName());
 
-                    HtmlFormatter.builder()
+                    HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                             .spans(subscriber.getAllSpans())
                             .path(path)
                             .displayName(displayName)
-                            .buildAndFormat();
+                            .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                            .build());
                 }
             }
         };

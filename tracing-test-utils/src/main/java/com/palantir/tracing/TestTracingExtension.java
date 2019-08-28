@@ -76,7 +76,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
             Files.createDirectories(outputPath);
 
             Path actualPath = outputPath.resolve("actual.html");
-            HtmlFormatter.builder()
+            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                     .spans(actualSpans)
                     .path(actualPath)
                     .displayName("actual")
@@ -87,10 +87,11 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                                     ComparisonFailure.incompatibleStructure::expected))
                             .map(Span::getSpanId)
                             .collect(ImmutableSet.toImmutableSet()))
-                    .buildAndFormat();
+                    .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                    .build());
 
             Path expectedPath = outputPath.resolve("expected.html");
-            HtmlFormatter.builder()
+            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                     .spans(expectedSpans)
                     .path(expectedPath)
                     .displayName("expected")
@@ -101,7 +102,8 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                                     ComparisonFailure.incompatibleStructure::actual))
                             .map(Span::getSpanId)
                             .collect(ImmutableSet.toImmutableSet()))
-                    .buildAndFormat();
+                    .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                    .build());
 
 
             throw new AssertionError(

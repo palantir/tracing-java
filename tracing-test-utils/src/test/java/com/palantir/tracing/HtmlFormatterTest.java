@@ -19,6 +19,7 @@ package com.palantir.tracing;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -32,13 +33,14 @@ public class HtmlFormatterTest {
 
         List<Span> spans = Serialization.deserialize(Paths.get("src/test/resources/log-receiver.txt"));
 
-        // Path file = Files.createTempFile("test", ".html");
-        Path file = Paths.get("/Users/dfox/Downloads/file.html");
+        Path file = Files.createTempFile("test", ".html");
+//        Path file = Paths.get("/Users/dfox/Downloads/file.html");
 
-        HtmlFormatter.builder()
+        HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(spans)
                 .path(file)
                 .displayName("poop")
-                .buildAndFormat();
+                .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
+                .build());
     }
 }

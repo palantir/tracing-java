@@ -55,7 +55,7 @@ final class Utils {
 
     public static Path createBuildDirectoryOutputFile(Class<?> clazz, String methodName) {
         try {
-            Path dir = Files.createDirectories(Paths.get("buildAndFormat/tracing").resolve(clazz.getSimpleName()));
+            Path dir = Files.createDirectories(Paths.get("build/tracing").resolve(clazz.getSimpleName()));
             return dir.resolve(methodName + ".html");
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -40,47 +40,45 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.immutables.value.Value;
 
 final class HtmlFormatter {
 
     private static final ObjectWriter writer = new ObjectMapper().registerModule(new Jdk8Module()).writer();
-    private final Builder builder;
-    private final TimeBounds bounds;
+    private RenderConfig config;
 
-    private HtmlFormatter(Builder builder, TimeBounds bounds) {
-        this.bounds = bounds;
-        this.builder = builder;
+    private HtmlFormatter(RenderConfig config) {
+        this.config = config;
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    private static void render(Builder builder) throws IOException {
+    public static void render(RenderConfig config) throws IOException {
         StringBuilder sb = new StringBuilder();
 
-        HtmlFormatter formatter = new HtmlFormatter(builder, TimeBounds.fromSpans(builder.spans));
+        HtmlFormatter formatter = new HtmlFormatter(config);
         formatter.header(sb);
 
-        if (builder.chronological) {
-            formatter.renderChronological(sb);
-        } else {
-            formatter.renderSplitByTraceId(sb);
+        switch (config.layoutStrategy()) {
+            case CHRONOLOGICAL:
+                formatter.renderChronological(sb);
+                break;
+            case SPLIT_BY_TRACE:
+                formatter.renderSplitByTraceId(sb);
+                break;
         }
 
         formatter.rawSpanJson(sb);
 
-        Files.write(builder.path, sb.toString().getBytes(StandardCharsets.UTF_8));
+        Files.write(config.path(), sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     private void renderChronological(StringBuilder sb) {
-        builder.spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEachOrdered(span -> {
-            formatSpan(span, false, sb);
-        });
+        config.spans().stream()
+                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
+                .forEachOrdered(span -> formatSpan(span, false, sb));
     }
 
     private void renderSplitByTraceId(StringBuilder sb) {
-        Map<String, List<Span>> spansByTraceId = builder.spans.stream()
+        Map<String, List<Span>> spansByTraceId = config.spans().stream()
                 .collect(Collectors.groupingBy(Span::getTraceId));
 
         Map<String, SpanAnalyzer.Result> analyzedByTraceId =
@@ -106,7 +104,7 @@ final class HtmlFormatter {
     @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
     private void header(StringBuilder sb) throws IOException {
         sb.append(template("header.html", ImmutableMap.<String, String>builder()
-                .put("{{DISPLAY_NAME}}", builder.displayName)
+                .put("{{DISPLAY_NAME}}", config.displayName())
                 .put("{{DATE}}",
                         DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
                                 .format(LocalDateTime.now(Clock.systemDefaultZone())))
@@ -114,16 +112,18 @@ final class HtmlFormatter {
     }
 
     private void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
-        long transposedStartMicros = span.getStartTimeMicroSeconds() - bounds.startMicros();
+        long transposedStartMicros = span.getStartTimeMicroSeconds() - config.bounds().startMicros();
 
         long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
 
         sb.append(template("span.html", ImmutableMap.<String, String>builder()
-                .put("{{LEFT}}", Float.toString(Utils.percent(transposedStartMicros, bounds.durationMicros())))
-                .put("{{WIDTH}}", Float.toString(Utils.percent(span.getDurationNanoSeconds(), bounds.durationNanos())))
+                .put("{{LEFT}}", Float.toString(Utils.percent(
+                        transposedStartMicros, config.bounds().durationMicros())))
+                .put("{{WIDTH}}", Float.toString(Utils.percent(
+                        span.getDurationNanoSeconds(), config.bounds().durationNanos())))
                 .put("{{HUE}}", Long.toString(hue))
                 .put("{{TRACEID}}", span.getTraceId())
-                .put("{{CLASS}}", builder.problemSpanIds.contains(span.getSpanId()) ? "problem-span" : "")
+                .put("{{CLASS}}", config.problemSpanIds().contains(span.getSpanId()) ? "problem-span" : "")
                 .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
                 .put("{{FINISH}}", Utils.renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
                         span.getDurationNanoSeconds(),
@@ -141,7 +141,7 @@ final class HtmlFormatter {
                 + "padding: 30px;"
                 + "overflow-x: scroll;"
                 + "margin-top: 100px;\">");
-        builder.spans.stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEach(s -> {
+        config.spans().stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEach(s -> {
             try {
                 sb.append('\n');
                 sb.append(writer.writeValueAsString(s));
@@ -164,40 +164,32 @@ final class HtmlFormatter {
         }
     }
 
-    public static class Builder {
-        private Collection<Span> spans;
-        private Path path;
-        private String displayName;
-        private boolean chronological = true;
-        private Set<String> problemSpanIds;
+    @Value.Immutable
+    interface RenderConfig {
+        Collection<Span> spans();
 
-        public Builder spans(Collection<Span> value) {
-            this.spans = value;
-            return this;
+        Path path();
+
+        String displayName();
+
+        LayoutStrategy layoutStrategy();
+
+        Set<String> problemSpanIds();
+
+        @Value.Derived
+        default TimeBounds bounds() {
+            return TimeBounds.fromSpans(spans());
         }
 
-        public Builder path(Path value) {
-            this.path = value;
-            return this;
-        }
+        class Builder extends ImmutableRenderConfig.Builder {}
 
-        public Builder displayName(String value) {
-            this.displayName = value;
-            return this;
+        static Builder builder() {
+            return new Builder();
         }
+    }
 
-        public Builder chronological(boolean value) {
-            this.chronological = value;
-            return this;
-        }
-
-        public Builder problemSpanIds(Set<String> value) {
-            this.problemSpanIds = value;
-            return this;
-        }
-
-        public void buildAndFormat() throws IOException {
-            HtmlFormatter.render(this);
-        }
+    enum LayoutStrategy {
+        CHRONOLOGICAL,
+        SPLIT_BY_TRACE
     }
 }
