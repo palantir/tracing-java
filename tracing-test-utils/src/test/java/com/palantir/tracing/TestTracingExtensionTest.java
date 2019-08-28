@@ -16,15 +16,17 @@
 
 package com.palantir.tracing;
 
-import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-public final class DemoTestUtils {
+public final class TestTracingExtensionTest {
 
     @BeforeEach
     public void beforeEach() throws InterruptedException {
+        // Ensure traces created in test setup are not captured by the test annotation
+        try(CloseableTracer ignored = CloseableTracer.startSpan("ignored")) {
+            Thread.sleep(10);
+        }
     }
 
     @SuppressWarnings("NestedTryDepth")
@@ -47,15 +49,17 @@ public final class DemoTestUtils {
     }
 
     @Test
-    @TestTracing
+    @TestTracing(snapshot = true)
     void handles_trace_with_multiple_root_spans() throws InterruptedException {
         prod_code();
         prod_code();
     }
 
     @Test
-    @TestTracing
-    void handles_trace_with_single_root_span(@TempDir Path unused) throws InterruptedException {
+    @TestTracing(snapshot = true)
+    void handles_trace_with_single_root_span() throws InterruptedException {
         prod_code();
     }
+
+    // TODO(forozco): Add test demonstrating async support
 }

@@ -20,8 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
-import com.spotify.dataenum.DataEnum;
-import com.spotify.dataenum.dataenum_case;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,15 +43,17 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     public void beforeEach(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.subscribe(testName(context), subscriber);
-
+        // TODO(dfox): sample can be modified by other code, we should be try ensure that the trace is always sampled
+        // for the lifetime of the test
         // TODO(dfox): clear existing tracing??
+        // TODO(forozco): cleanup stale snapshots from outdated tests cases/classes
     }
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         String name = testName(context);
         Tracer.unsubscribe(name);
-        Path snapshotFile = Paths.get("src/test/resources").resolve(name);
+        Path snapshotFile = Paths.get("src/test/resources/test-tracing").resolve(name);
         Path outputPath = Paths.get("build/reports/tracing").resolve(name);
         Files.createDirectories(outputPath);
         Path actualPath = outputPath.resolve("actual.html");
@@ -93,8 +93,8 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedSpans);
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
-        Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(expected, actual, expected.root(), actual.root())
-                .collect(ImmutableSet.toImmutableSet());
+        Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(
+                expected, actual, expected.root(), actual.root()).collect(ImmutableSet.toImmutableSet());
 
         HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(actualSpans)
