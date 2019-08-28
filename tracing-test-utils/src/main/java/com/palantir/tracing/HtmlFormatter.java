@@ -103,10 +103,13 @@ final class HtmlFormatter {
 
     private void renderAllSpansForOneTraceId(String traceId, SpanAnalyzer.Result analysis, StringBuilder sb) {
         sb.append("<div style=\"border-top: 1px solid #E1E8ED\" title=\"" + traceId + "\">\n");
-        analysis.orderedSpans().forEach(span -> {
-            boolean suspectedCollision = analysis.collisions().contains(span);
-            formatSpan(span, suspectedCollision, sb);
-        });
+        analysis.orderedSpans()
+                .stream()
+                .filter(s -> !SpanAnalyzer.isSyntheticRoot(s))
+                .forEach(span -> {
+                    boolean suspectedCollision = analysis.collisions().contains(span);
+                    formatSpan(span, suspectedCollision, sb);
+                });
         sb.append("</div>\n");
     }
 

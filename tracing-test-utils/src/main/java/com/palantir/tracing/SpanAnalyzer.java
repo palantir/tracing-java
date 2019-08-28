@@ -41,6 +41,8 @@ import org.immutables.value.Value;
 
 final class SpanAnalyzer {
 
+    private static final String SYNTHETIC_ROOT_SPAN_ID = "SYNTHETIC_ROOT_SPAN_ID";
+
     private SpanAnalyzer() {}
 
     private static Stream<Span> depthFirstTraversalOrderedByStartTime(ImmutableGraph<Span> graph, Span parentSpan) {
@@ -222,6 +224,10 @@ final class SpanAnalyzer {
         return span.getStartTimeMicroSeconds() + (span.getDurationNanoSeconds() * 1000);
     }
 
+    public static boolean isSyntheticRoot(Span span) {
+        return span.getSpanId().equals(SYNTHETIC_ROOT_SPAN_ID);
+    }
+
     @Value.Immutable
     interface Result {
         ImmutableGraph<Span> graph();
@@ -243,7 +249,7 @@ final class SpanAnalyzer {
                 .type(SpanType.LOCAL)
                 .startTimeMicroSeconds(bounds.startMicros())
                 .durationNanoSeconds(bounds.endNanos() - bounds.startNanos())
-                .spanId("???")
+                .spanId(SYNTHETIC_ROOT_SPAN_ID)
                 .traceId("???")
                 .operation("<unknown root span>")
                 .build();
