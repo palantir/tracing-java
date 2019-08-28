@@ -93,11 +93,7 @@ final class HtmlFormatter {
     }
 
     private void renderSplitByTraceId(StringBuilder sb) {
-        Map<String, List<Span>> spansByTraceId = config.spans().stream()
-                .collect(Collectors.groupingBy(Span::getTraceId));
-
-        Map<String, SpanAnalyzer.Result> analyzedByTraceId =
-                Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
+        Map<String, SpanAnalyzer.Result> analyzedByTraceId = SpanAnalyzer.analyzeByTraceId(config.spans());
         analyzedByTraceId.entrySet()
                 .stream()
                 .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
