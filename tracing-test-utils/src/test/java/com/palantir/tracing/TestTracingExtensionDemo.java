@@ -16,17 +16,21 @@
 
 package com.palantir.tracing;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class SpanRendererTest {
+public final class TestTracingExtensionDemo {
 
-    @Rule
-    public final RenderTracingRule rule = new RenderTracingRule();
+    @BeforeEach
+    public void beforeEach() throws InterruptedException {
+        // Ensure traces created in test setup are not captured by the test annotation
+        try (CloseableTracer ignored = CloseableTracer.startSpan("ignored")) {
+            Thread.sleep(10);
+        }
+    }
 
-    @Test
-    @SuppressWarnings("NestedTryDepth") // contrived example just to get enough complexity!
-    public void my_test() throws InterruptedException {
+    @SuppressWarnings("NestedTryDepth")
+    void prod_code() throws InterruptedException {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
                 Thread.sleep(100);
@@ -43,4 +47,19 @@ public class SpanRendererTest {
             }
         }
     }
+
+    @Test
+    @TestTracing(snapshot = true)
+    void handles_trace_with_multiple_root_spans() throws InterruptedException {
+        prod_code();
+        prod_code();
+    }
+
+    @Test
+    @TestTracing(snapshot = true)
+    void handles_trace_with_single_root_span() throws InterruptedException {
+        prod_code();
+    }
+
+    // TODO(forozco): Add test demonstrating async support
 }

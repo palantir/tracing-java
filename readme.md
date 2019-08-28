@@ -64,14 +64,16 @@ whose themselves register observers).
 
 ## tracing-test-utils
 
-If your tests use JUnit5, you can set up 'snapshot testing' by adding the `@TestTracing` annotation to a test method.
+You can set up 'snapshot testing' by adding the `@TestTracing` annotation to a test method (this requires JUnit 5).
 
 ```diff
+ import org.junit.jupiter.api.Test;
+ import com.palantir.tracing.TestTracing;
+
  public class MyTest {
      @Test
-+    @TestTracing
++    @TestTracing(snapshot = true)
      public void foo() {
-         // elided
      }
  }
 ```
@@ -84,6 +86,23 @@ When you run this test for the first time, it will capture all spans and write t
 ```
 
 If your production code changes and starts producing different spans, the test will fail and render two HTML visualizations: `expected.html` and `actual.html`.
+
+Snapshot-testing is not available in JUnit4, but you can still see a HTML visualization of your traces using the `RenderTracingRule`:
+
+```diff
+ import org.junit.Test;
+ import com.palantir.tracing.RenderTracingRule;
+
+ public class MyTest {
+
++    @Rule
++    public final RenderTracingRule rule = new RenderTracingRule();
+
+     @Test
+     public void foo() {
+     }
+ }
+```
 
 ## License
 
