@@ -46,10 +46,30 @@ final class HtmlFormatter {
         this.config = config;
     }
 
-    public static void render(RenderConfig config) throws IOException {
-        StringBuilder sb = new StringBuilder();
+    @Value.Immutable
+    interface RenderConfig {
+        Collection<Span> spans();
+        Path path();
+        String displayName();
+        LayoutStrategy layoutStrategy();
+        Set<String> problemSpanIds();
 
+        @Value.Derived
+        default TimeBounds bounds() {
+            return TimeBounds.fromSpans(spans());
+        }
+
+        class Builder extends ImmutableRenderConfig.Builder {}
+
+        static Builder builder() {
+            return new Builder();
+        }
+    }
+
+    public static void render(RenderConfig config) throws IOException {
         HtmlFormatter formatter = new HtmlFormatter(config);
+
+        StringBuilder sb = new StringBuilder();
         formatter.header(sb);
 
         switch (config.layoutStrategy()) {
@@ -154,30 +174,6 @@ final class HtmlFormatter {
             return template;
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to read resource " + resourceName, e);
-        }
-    }
-
-    @Value.Immutable
-    interface RenderConfig {
-        Collection<Span> spans();
-
-        Path path();
-
-        String displayName();
-
-        LayoutStrategy layoutStrategy();
-
-        Set<String> problemSpanIds();
-
-        @Value.Derived
-        default TimeBounds bounds() {
-            return TimeBounds.fromSpans(spans());
-        }
-
-        class Builder extends ImmutableRenderConfig.Builder {}
-
-        static Builder builder() {
-            return new Builder();
         }
     }
 }
