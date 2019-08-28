@@ -99,8 +99,6 @@ final class SpanAnalyzer {
                 .root(rootSpan)
                 .collisions(collisions)
                 .bounds(bounds)
-                .orderedSpans(depthFirstTraversalOrderedByStartTime(spanGraph, rootSpan)
-                        .collect(ImmutableList.toImmutableList()))
                 .build();
     }
 
@@ -109,8 +107,14 @@ final class SpanAnalyzer {
         ImmutableGraph<Span> graph();
         Span root();
         Set<Span> collisions();
+
         TimeBounds bounds();
-        ImmutableList<Span> orderedSpans();
+
+        @Value.Lazy
+        default ImmutableList<Span> orderedSpans() {
+            return depthFirstTraversalOrderedByStartTime(graph(), root())
+                    .collect(ImmutableList.toImmutableList());
+        }
     }
 
     /** Synthesizes a root span which encapsulates all known spans. */

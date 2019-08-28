@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,6 +37,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.platform.commons.support.AnnotationSupport;
 
 final class TestTracingExtension implements BeforeEachCallback, AfterEachCallback {
 
@@ -53,13 +55,38 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     public void afterEach(ExtensionContext context) throws Exception {
         String name = testName(context);
         Tracer.unsubscribe(name);
-
         Path snapshotFile = Paths.get("src/test/resources").resolve(name);
+        Path outputPath = Paths.get("build/reports/tracing").resolve(name);
+        Files.createDirectories(outputPath);
+        Path actualPath = outputPath.resolve("actual.html");
+        Path expectedPath = outputPath.resolve("expected.html");
+
+        TestTracing annotation = AnnotationSupport.findAnnotation(context.getRequiredTestMethod(), TestTracing.class)
+                .orElseThrow(() -> new RuntimeException("Expected " + name + " to be annotated with @TestTracing"));
+
+        Collection<Span> actualSpans = subscriber.getAllSpans();
+
+        if (!annotation.snapshot()) {
+            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
+                    .spans(actualSpans)
+                    .path(actualPath)
+                    .displayName(name)
+                    .layoutStrategy(annotation.layout())
+                    .build());
+            System.out.println(actualPath.toAbsolutePath());
+            return;
+        }
 
         // match recorded traces against expected file (or create)
-        Collection<Span> actualSpans = subscriber.getAllSpans();
         if (!Files.exists(snapshotFile) || Boolean.valueOf(System.getProperty("recreate", "false"))) {
             Serialization.serialize(snapshotFile, actualSpans);
+            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
+                    .spans(actualSpans)
+                    .path(actualPath)
+                    .displayName(name)
+                    .layoutStrategy(annotation.layout())
+                    .build());
+            System.out.println(actualPath.toAbsolutePath());
             return;
         }
 
@@ -71,10 +98,6 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         Set<ComparisonFailure> failures = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
 
-        Path outputPath = Paths.get("build/reports/tracing").resolve(name);
-        Files.createDirectories(outputPath);
-
-        Path actualPath = outputPath.resolve("actual.html");
         HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(actualSpans)
                 .path(actualPath)
@@ -86,11 +109,10 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                                 ComparisonFailure.incompatibleStructure::expected))
                         .map(Span::getSpanId)
                         .collect(ImmutableSet.toImmutableSet()))
-                .layoutStrategy(HtmlFormatter.LayoutStrategy.SPLIT_BY_TRACE)
+                .layoutStrategy(annotation.layout())
                 .build());
 
 
-        Path expectedPath = outputPath.resolve("expected.html");
         HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(expectedSpans)
                 .path(expectedPath)
@@ -102,7 +124,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                                 ComparisonFailure.incompatibleStructure::actual))
                         .map(Span::getSpanId)
                         .collect(ImmutableSet.toImmutableSet()))
-                .layoutStrategy(HtmlFormatter.LayoutStrategy.SPLIT_BY_TRACE)
+                .layoutStrategy(annotation.layout())
                 .build());
 
         if (!failures.isEmpty()) {
