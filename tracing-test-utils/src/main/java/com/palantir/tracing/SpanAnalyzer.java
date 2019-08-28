@@ -207,13 +207,11 @@ final class SpanAnalyzer {
 
     /* Assumes list of spans to be ordered by startTimeMicros */
     private static boolean containsOverlappingSpans(List<Span> spans) {
-        if (!spans.isEmpty()) {
-            Span currentSpan = spans.get(0);
-            for (int i = 1; i < spans.size(); i++) {
-                Span nextSpan = spans.get(i);
-                if (nextSpan.getStartTimeMicroSeconds() < getEndTimeMicroSeconds(currentSpan)) {
-                    return true;
-                }
+        for (int i = 0; i < spans.size() - 1; i++) {
+            Span currentSpan = spans.get(i);
+            Span nextSpan = spans.get(i + 1);
+            if (nextSpan.getStartTimeMicroSeconds() < getEndTimeMicroSeconds(currentSpan)) {
+                return true;
             }
         }
         return false;
