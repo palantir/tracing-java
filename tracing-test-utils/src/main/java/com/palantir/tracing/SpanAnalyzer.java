@@ -17,6 +17,8 @@
 package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.ImmutableGraph;
@@ -57,9 +59,6 @@ final class SpanAnalyzer {
         // MutableGraph<Span> graph = immutable.buildAndFormat();
         spans.forEach(graph::addNode);
 
-        // it's possible there's an unclosed parent, so we can make up a fake root span just in case we need it later
-        Span fakeRootSpan = createFakeRootSpan(spans);
-
         Set<Span> collisions = new HashSet<>();
 
         Map<String, Span> spansBySpanId = spans.stream()
@@ -72,36 +71,34 @@ final class SpanAnalyzer {
                             return left;
                         }));
 
-        Span rootSpan = spansBySpanId.values().stream()
-                .filter(span -> !span.getParentSpanId().isPresent())
-                // TODO(dfox): there can be more than one valid root span
-                .findFirst()
-                .orElse(fakeRootSpan);
 
-        // set up edges:
-        for (Span span : spans) {
-            // the root node will have no parentSpanId
-            span.getParentSpanId().ifPresent(parentSpanId -> {
-                Optional<Span> parentSpan = Optional.ofNullable(spansBySpanId.get(parentSpanId));
+        TimeBounds bounds = TimeBounds.fromSpans(spans);
+        Span fakeRootSpan = createFakeRootSpan(bounds);
+        Set<Span> parentlessSpans = spansBySpanId.values().stream()
+                .filter(span -> span.getParentSpanId().isPresent())
+                .collect(ImmutableSet.toImmutableSet());
 
-                if (!parentSpan.isPresent()) {
-                    // people do crazy things with traces - they might have a trace already initialized which doesn't
-                    // get closed (and therefore emitted) by the time we need to render, so just hook it up to the fake
-                    graph.putEdge(span, fakeRootSpan);
-                    return;
-                }
-
-                graph.putEdge(span, parentSpan.get());
-            });
+        // We want to ensure that there is always a single root span to base our graph traversal off of
+        Span rootSpan;
+        if (parentlessSpans.size() != 1) {
+            rootSpan = fakeRootSpan;
+        } else {
+            rootSpan = Iterables.getOnlyElement(parentlessSpans);
         }
+
+        // people do crazy things with traces - they might have a trace already initialized which doesn't
+        // get closed (and therefore emitted) by the time we need to render, so just hook it up to the fake
+        spans.forEach(span -> graph.putEdge(
+                span,
+                span.getParentSpanId()
+                        .flatMap(parentSpanId -> Optional.ofNullable(spansBySpanId.get(parentSpanId)))
+                        .orElse(fakeRootSpan)));
 
         ImmutableGraph<Span> spanGraph = graph.build();
 
         ImmutableList<Span> orderedspans = depthFirstTraversalOrderedByStartTime(spanGraph, rootSpan)
-                .filter(span -> !span.equals(fakeRootSpan))
                 .collect(ImmutableList.toImmutableList());
 
-        TimeBounds bounds = TimeBounds.fromSpans(orderedspans);
         return new Result() {
 
             @Override
@@ -140,8 +137,7 @@ final class SpanAnalyzer {
     }
 
     /** Synthesizes a root span which encapsulates all known spans. */
-    private static Span createFakeRootSpan(Collection<Span> spans) {
-        TimeBounds bounds = TimeBounds.fromSpans(spans);
+    private static Span createFakeRootSpan(TimeBounds bounds) {
         return Span.builder()
                 .type(SpanType.LOCAL)
                 .startTimeMicroSeconds(bounds.startMicros())
