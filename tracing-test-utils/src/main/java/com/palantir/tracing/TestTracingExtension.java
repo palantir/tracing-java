@@ -28,7 +28,6 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -38,9 +37,12 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class TestTracingExtension implements BeforeEachCallback, AfterEachCallback {
 
+    private static final Logger log = LoggerFactory.getLogger(TestTracingExtension.class);
     private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
 
     @Override
@@ -73,7 +75,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                     .displayName(name)
                     .layoutStrategy(annotation.layout())
                     .build());
-            System.out.println(actualPath.toAbsolutePath());
+            log.info("Tracing report file://{}", actualPath.toAbsolutePath());
             return;
         }
 
@@ -86,7 +88,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                     .displayName(name)
                     .layoutStrategy(annotation.layout())
                     .build());
-            System.out.println(actualPath.toAbsolutePath());
+            log.info("Tracing report file://{}", actualPath.toAbsolutePath());
             return;
         }
 
@@ -133,8 +135,8 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                             "Traces did not match the expected file '%s'.\n"
                                     + "%s\n"
                                     + "Visually Compare:\n"
-                                    + " - expected: %s\n"
-                                    + " - actual:   %s\n"
+                                    + " - expected: file://%s\n"
+                                    + " - actual:   file://%s\n"
                                     + "Or re-run with -Drecreate=true to accept the new behaviour.",
                             snapshotFile,
                             failures.stream()
@@ -176,7 +178,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         }
 
         if (actualContainsOverlappingSpans && !compatibleOverlappingSpans(
-                expected, actual, sortedExpectedChildren, sortedActualChildren)){
+                expected, actual, sortedExpectedChildren, sortedActualChildren)) {
             return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
         }
 

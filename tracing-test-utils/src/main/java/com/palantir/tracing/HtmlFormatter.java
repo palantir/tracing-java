@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;

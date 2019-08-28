@@ -20,8 +20,11 @@ import java.nio.file.Path;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RenderTracingRule implements TestRule {
+    private static final Logger log = LoggerFactory.getLogger(RenderTracingRule.class);
     private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
 
     @Override
@@ -49,7 +52,7 @@ public final class RenderTracingRule implements TestRule {
                             .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
                             .build());
 
-                    System.out.println(path.toAbsolutePath());
+                    log.info("Tracing report file://{}", path.toAbsolutePath());
                 }
             }
         };
