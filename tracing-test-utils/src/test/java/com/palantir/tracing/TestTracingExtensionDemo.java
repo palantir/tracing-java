@@ -17,7 +17,6 @@
 package com.palantir.tracing;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -59,7 +58,7 @@ public final class TestTracingExtensionDemo {
     }
 
     @ParameterizedTest(name = "foo {index} bar {arguments}")
-    @ValueSource(ints = {1,2,3})
+    @ValueSource(ints = {1, 2, 3})
     @TestTracing(snapshot = true)
     void handles_trace_with_single_root_span(int ignored) throws InterruptedException {
         prod_code();
