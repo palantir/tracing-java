@@ -48,16 +48,14 @@ public final class DemoTestUtils {
 
     @Test
     @TestTracing
-    void prod_code_produces_expected_traces() throws InterruptedException {
-        try (CloseableTracer t = CloseableTracer.startSpan("irrelevant-setup-stuff")) {
-            Thread.sleep(100);
-        }
+    void handles_trace_with_multiple_root_spans() throws InterruptedException {
+        prod_code();
         prod_code();
     }
 
     @Test
     @TestTracing
-    void more_prod_code_produces_expected_traces(@TempDir Path unused) throws InterruptedException {
+    void handles_trace_with_single_root_span(@TempDir Path unused) throws InterruptedException {
         prod_code();
     }
 }

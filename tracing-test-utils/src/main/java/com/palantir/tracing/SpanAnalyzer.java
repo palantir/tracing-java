@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.immutables.value.Value;
 
 final class SpanAnalyzer {
 
@@ -55,12 +56,10 @@ final class SpanAnalyzer {
 
     // TODO(dfox): make sure we don't re-run this unnecessarily
     public static Result analyze(Collection<Span> spans) {
-        ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
-        // MutableGraph<Span> graph = immutable.buildAndFormat();
-        spans.forEach(graph::addNode);
+        TimeBounds bounds = TimeBounds.fromSpans(spans);
+        Span fakeRootSpan = createFakeRootSpan(bounds);
 
         Set<Span> collisions = new HashSet<>();
-
         Map<String, Span> spansBySpanId = spans.stream()
                 .collect(Collectors.toMap(
                         Span::getSpanId,
@@ -71,9 +70,6 @@ final class SpanAnalyzer {
                             return left;
                         }));
 
-
-        TimeBounds bounds = TimeBounds.fromSpans(spans);
-        Span fakeRootSpan = createFakeRootSpan(bounds);
         Set<Span> parentlessSpans = spansBySpanId.values().stream()
                 .filter(span -> span.getParentSpanId().isPresent())
                 .collect(ImmutableSet.toImmutableSet());
@@ -88,46 +84,27 @@ final class SpanAnalyzer {
 
         // people do crazy things with traces - they might have a trace already initialized which doesn't
         // get closed (and therefore emitted) by the time we need to render, so just hook it up to the fake
-        spans.forEach(span -> graph.putEdge(
-                span,
-                span.getParentSpanId()
-                        .flatMap(parentSpanId -> Optional.ofNullable(spansBySpanId.get(parentSpanId)))
-                        .orElse(fakeRootSpan)));
-
+        ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
+        spans.stream()
+                .filter(span -> !span.getSpanId().equals(rootSpan.getSpanId()))
+                .forEach(span -> graph.putEdge(
+                        span,
+                        span.getParentSpanId()
+                                .flatMap(parentSpanId -> Optional.ofNullable(spansBySpanId.get(parentSpanId)))
+                                .orElse(fakeRootSpan)));
         ImmutableGraph<Span> spanGraph = graph.build();
 
-        ImmutableList<Span> orderedspans = depthFirstTraversalOrderedByStartTime(spanGraph, rootSpan)
-                .collect(ImmutableList.toImmutableList());
-
-        return new Result() {
-
-            @Override
-            public ImmutableGraph<Span> graph() {
-                return spanGraph;
-            }
-
-            @Override
-            public Span root() {
-                return rootSpan;
-            }
-
-            @Override
-            public Set<Span> collisions() {
-                return collisions;
-            }
-
-            @Override
-            public TimeBounds bounds() {
-                return bounds;
-            }
-
-            @Override
-            public ImmutableList<Span> orderedSpans() {
-                return orderedspans;
-            }
-        };
+        return ImmutableResult.builder()
+                .graph(spanGraph)
+                .root(rootSpan)
+                .collisions(collisions)
+                .bounds(bounds)
+                .orderedSpans(depthFirstTraversalOrderedByStartTime(spanGraph, rootSpan)
+                        .collect(ImmutableList.toImmutableList()))
+                .build();
     }
 
+    @Value.Immutable
     interface Result {
         ImmutableGraph<Span> graph();
         Span root();

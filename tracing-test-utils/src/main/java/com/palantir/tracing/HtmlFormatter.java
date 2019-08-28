@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -169,7 +170,7 @@ final class HtmlFormatter {
         private Path path;
         private String displayName;
         private boolean chronological = true;
-        private ImmutableSet<String> problemSpanIds;
+        private Set<String> problemSpanIds;
 
         public Builder spans(Collection<Span> value) {
             this.spans = value;
@@ -191,7 +192,7 @@ final class HtmlFormatter {
             return this;
         }
 
-        public Builder problemSpanIds(ImmutableSet<String> value) {
+        public Builder problemSpanIds(Set<String> value) {
             this.problemSpanIds = value;
             return this;
         }
