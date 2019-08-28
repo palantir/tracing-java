@@ -162,7 +162,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     private static Path getOutputPath(String name) {
         String circleArtifactsDir = System.getenv("CIRCLE_ARTIFACTS");
         if (circleArtifactsDir == null) {
-           return Paths.get("build/reports/tracing").resolve(name);
+            return Paths.get("build/reports/tracing").resolve(name);
         }
 
         return Paths.get(circleArtifactsDir).resolve(name);
