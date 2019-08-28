@@ -43,4 +43,9 @@ public class RenderTracingRuleDemo {
             }
         }
     }
+
+    @Test
+    public void vacuous_test_should_be_fine() {
+        
+    }
 }
