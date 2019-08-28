@@ -17,13 +17,11 @@
 package com.palantir.tracing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Resources;
+import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -43,8 +41,6 @@ import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 final class HtmlFormatter {
-
-    private static final ObjectWriter writer = new ObjectMapper().registerModule(new Jdk8Module()).writer();
     private RenderConfig config;
 
     private HtmlFormatter(RenderConfig config) {
@@ -141,14 +137,12 @@ final class HtmlFormatter {
                 + "padding: 30px;"
                 + "overflow-x: scroll;"
                 + "margin-top: 100px;\">");
-        config.spans().stream().sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).forEach(s -> {
-            try {
-                sb.append('\n');
-                sb.append(writer.writeValueAsString(s));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException("Unable to JSON serialize span " + s, e);
-            }
-        });
+        config.spans().stream()
+                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
+                .forEach(s -> {
+                    sb.append('\n');
+                    sb.append(Serialization.toString(s));
+                });
         sb.append("\n</pre>");
     }
 

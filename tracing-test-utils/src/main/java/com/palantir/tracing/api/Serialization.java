@@ -16,6 +16,7 @@
 
 package com.palantir.tracing.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.palantir.conjure.java.serialization.ObjectMappers;
@@ -57,6 +58,14 @@ public final class Serialization {
                     throw new RuntimeException(e);
                 }
             });
+        }
+    }
+
+    public static String toString(Span span) {
+        try {
+            return mapper.writeValueAsString(span);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Unable to JSON serialize span " + span, e);
         }
     }
 }
