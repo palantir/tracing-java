@@ -16,8 +16,10 @@
 
 package com.palantir.tracing;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import com.spotify.dataenum.DataEnum;
@@ -25,6 +27,7 @@ import com.spotify.dataenum.dataenum_case;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -71,41 +74,41 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         Set<ComparisonFailure> failures = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
 
+        Path outputPath = Paths.get("build/reports/tracing").resolve(name);
+        Files.createDirectories(outputPath);
+
+        Path actualPath = outputPath.resolve("actual.html");
+        HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
+                .spans(actualSpans)
+                .path(actualPath)
+                .displayName("actual")
+                .problemSpanIds(failures.stream()
+                        .map(res -> res.map(
+                                ComparisonFailure.unequalOperation::expected,
+                                ComparisonFailure.unequalChildren::expected,
+                                ComparisonFailure.incompatibleStructure::expected))
+                        .map(Span::getSpanId)
+                        .collect(ImmutableSet.toImmutableSet()))
+                .layoutStrategy(HtmlFormatter.LayoutStrategy.SPLIT_BY_TRACE)
+                .build());
+
+
+        Path expectedPath = outputPath.resolve("expected.html");
+        HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
+                .spans(expectedSpans)
+                .path(expectedPath)
+                .displayName("expected")
+                .problemSpanIds(failures.stream()
+                        .map(res -> res.map(
+                                ComparisonFailure.unequalOperation::actual,
+                                ComparisonFailure.unequalChildren::actual,
+                                ComparisonFailure.incompatibleStructure::actual))
+                        .map(Span::getSpanId)
+                        .collect(ImmutableSet.toImmutableSet()))
+                .layoutStrategy(HtmlFormatter.LayoutStrategy.SPLIT_BY_TRACE)
+                .build());
+
         if (!failures.isEmpty()) {
-            Path outputPath = Paths.get("build/reports/tracing").resolve(name);
-            Files.createDirectories(outputPath);
-
-            Path actualPath = outputPath.resolve("actual.html");
-            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
-                    .spans(actualSpans)
-                    .path(actualPath)
-                    .displayName("actual")
-                    .problemSpanIds(failures.stream()
-                            .map(res -> res.map(
-                                    ComparisonFailure.unequalOperation::expected,
-                                    ComparisonFailure.unequalChildren::expected,
-                                    ComparisonFailure.incompatibleStructure::expected))
-                            .map(Span::getSpanId)
-                            .collect(ImmutableSet.toImmutableSet()))
-                    .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
-                    .build());
-
-            Path expectedPath = outputPath.resolve("expected.html");
-            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
-                    .spans(expectedSpans)
-                    .path(expectedPath)
-                    .displayName("expected")
-                    .problemSpanIds(failures.stream()
-                            .map(res -> res.map(
-                                    ComparisonFailure.unequalOperation::actual,
-                                    ComparisonFailure.unequalChildren::actual,
-                                    ComparisonFailure.incompatibleStructure::actual))
-                            .map(Span::getSpanId)
-                            .collect(ImmutableSet.toImmutableSet()))
-                    .layoutStrategy(HtmlFormatter.LayoutStrategy.CHRONOLOGICAL)
-                    .build());
-
-
             throw new AssertionError(
                     String.format(
                             "Traces did not match the expected file '%s'.\n"
@@ -154,7 +157,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         }
 
         if (actualContainsOverlappingSpans) {
-            // TODO(forozco): find a matching such that every concurrent span has an equivalent
+            return sudokuMatching(expected, actual, ex, ac, sortedExpectedChildren, sortedActualChildren);
         }
 
         return IntStream.range(0, sortedActualChildren.size())
@@ -164,6 +167,48 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                         sortedExpectedChildren.get(i),
                         sortedActualChildren.get(i)))
                 .flatMap(Function.identity());
+    }
+
+    private static Stream<ComparisonFailure> sudokuMatching(
+            SpanAnalyzer.Result expected,
+            SpanAnalyzer.Result actual,
+            Span exParent,
+            Span acParent,
+            List<Span> ex,
+            List<Span> ac) {
+        Boolean[][] compatibility = new Boolean[ex.size()][ac.size()];
+
+        for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
+            for (int acIndex = 0; acIndex < ac.size(); acIndex++) {
+                long numFailures = compareSpansRecursively(expected, actual, ex.get(exIndex), ac.get(acIndex)).count();
+                compatibility[exIndex][acIndex] = numFailures == 0;
+            }
+        }
+
+        // check rows first
+        for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
+            Boolean[] compatibilityRow = compatibility[exIndex];
+            boolean rowContainedAtLeastOneSuccess = Arrays.stream(compatibilityRow).anyMatch(Boolean::booleanValue);
+
+            if (!rowContainedAtLeastOneSuccess) {
+                return Stream.of(ComparisonFailure.unequalChildren(exParent, acParent, ex, ac));
+            }
+        }
+
+        // check columns
+        for (int acIndex = 0; acIndex < ac.size(); acIndex++) {
+            boolean atLeastOneCompatible = false;
+            for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
+                atLeastOneCompatible |= compatibility[exIndex][acIndex];
+            }
+
+            if (!atLeastOneCompatible) {
+                return Stream.of(ComparisonFailure.unequalChildren(exParent, acParent, ex, ac));
+            }
+        }
+
+
+        return Stream.empty(); // no errors, everything was compatible
     }
 
     private static String renderFailure(ComparisonFailure failure) {
