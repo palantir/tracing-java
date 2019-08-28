@@ -49,7 +49,7 @@ public final class DemoTestUtils {
     @Test
     @TestTracing
     void handles_trace_with_multiple_root_spans() throws InterruptedException {
-        prod_code();
+//        prod_code();
         prod_code();
     }
 

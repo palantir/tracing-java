@@ -20,13 +20,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
+import com.spotify.dataenum.DataEnum;
+import com.spotify.dataenum.dataenum_case;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -63,65 +67,87 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedSpans);
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
-        // TODO(dfox): no guarantee there is just one root span, so gotta explore everythnig (or make a fake root span)
-        ImmutableSet<String> problemSpanIds = compareSpansRecursively(expected, actual, expected.root(), actual.root())
+        Set<ComparisonFailure> failures = compareSpansRecursively(expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
 
-        Path actualPath = Paths.get("/Users/dfox/Downloads/actual.html");
+        Path actualPath = Paths.get("/Users/forozco/Downloads/actual.html");
         HtmlFormatter.builder()
                 .spans(actualSpans)
                 .path(actualPath)
                 .displayName("actual")
-                .problemSpanIds(problemSpanIds)
+                .problemSpanIds(failures.stream()
+                        .map(res -> res.map(
+                                ComparisonFailure.unequalOperation::expected,
+                                ComparisonFailure.unequalChildren::expected,
+                                ComparisonFailure.incompatibleStructure::expected))
+                        .map(Span::getSpanId)
+                        .collect(ImmutableSet.toImmutableSet()))
                 .buildAndFormat();
 
-        Path expectedPath = Paths.get("/Users/dfox/Downloads/expected.html");
+        Path expectedPath = Paths.get("/Users/forozco/Downloads/expected.html");
         HtmlFormatter.builder()
                 .spans(expectedSpans)
                 .path(expectedPath)
                 .displayName("expected")
-                .problemSpanIds(problemSpanIds)
+                .problemSpanIds(failures.stream()
+                        .map(res -> res.map(
+                                ComparisonFailure.unequalOperation::actual,
+                                ComparisonFailure.unequalChildren::actual,
+                                ComparisonFailure.incompatibleStructure::actual))
+                        .map(Span::getSpanId)
+                        .collect(ImmutableSet.toImmutableSet()))
                 .buildAndFormat();
 
-        if (!problemSpanIds.isEmpty()) {
+        if (!failures.isEmpty()) {
             throw new AssertionError(
                     String.format(
-                            "traces did not match the expected file '%s'.\n"
-                                    + "Compare:\n"
+                            "Traces did not match the expected file '%s'.\n"
+                                    + "%s\n"
+                                    + "Visually Compare:\n"
                                     + " - expected: %s\n"
                                     + " - actual:   %s\n"
                                     + "Or re-run with -Drecreate=true to accept the new behaviour.",
                             file,
+                            failures.stream()
+                                    .map(TestTracingExtension::renderFailure)
+                                    .collect(Collectors.joining("\n")),
                             expectedPath,
                             actualPath));
         }
     }
 
-    private static Stream<String> compareSpansRecursively(
+    private static Stream<ComparisonFailure> compareSpansRecursively(
             SpanAnalyzer.Result expected,
             SpanAnalyzer.Result actual,
             Span ex,
             Span ac) {
         if (!ex.getOperation().equals(ac.getOperation())) {
-            // TODO(dfox): explain to users that these needed span operations to be equal
-            return Stream.of(ex.getSpanId(), ac.getSpanId());
+            return Stream.of(ComparisonFailure.unequalOperation(ex, ac));
         }
         // other fields, type, params, metadata(???)
 
-        // TODO(dfox): when there are non-overlapping spans (aka no concurrency/async), we do care about order
-        // i.e. queue then run is different from run then queue.
-
         // ensure we have the same number of children, same child operation names in the same order
-        ImmutableList<Span> sortedExpectedChildren = SpanAnalyzer.children(expected.graph(), ex)
+        List<Span> sortedExpectedChildren = SpanAnalyzer.children(expected.graph(), ex)
                 .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
                 .collect(ImmutableList.toImmutableList());
-        ImmutableList<Span> sortedActualChildren = SpanAnalyzer.children(actual.graph(), ac)
+        List<Span> sortedActualChildren = SpanAnalyzer.children(actual.graph(), ac)
                 .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
                 .collect(ImmutableList.toImmutableList());
 
         if (sortedExpectedChildren.size() != sortedActualChildren.size()) {
             // just highlighting the parents for now.
-            return Stream.of(ex.getSpanId(), ac.getSpanId());
+            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
+        }
+
+        boolean expectedContainsOverlappingSpans = containsOverlappingSpans(sortedExpectedChildren);
+        boolean actualContainsOverlappingSpans = containsOverlappingSpans(sortedActualChildren);
+        if (expectedContainsOverlappingSpans ^ actualContainsOverlappingSpans) {
+            // Either Both or neither tree should have concurrent spans
+            return Stream.of(ComparisonFailure.incompatibleStructure(ex, ac));
+        }
+
+        if (actualContainsOverlappingSpans) {
+            // TODO(forozco): find a matching such that every concurrent span has an equivalent
         }
 
         return IntStream.range(0, sortedActualChildren.size())
@@ -133,7 +159,48 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
                 .flatMap(Function.identity());
     }
 
+    private static String renderFailure(ComparisonFailure failure) {
+        return failure.map(
+                (ComparisonFailure.unequalOperation t) -> String.format("Expected operation %s but received %s",
+                        t.expected().getOperation(), t.actual().getOperation()),
+                (ComparisonFailure.unequalChildren t) -> String.format(
+                        "Expected children with operations %s but received %s",
+                        t.expectedChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList()),
+                        t.actualChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList())),
+                (ComparisonFailure.incompatibleStructure t) -> String.format(
+                        "Expected children to structured similarly"));
+    }
+
+    /* Assumes list of spans to be ordered by startTimeMicros */
+    private static boolean containsOverlappingSpans(List<Span> spans) {
+        if (!spans.isEmpty()) {
+            Span currentSpan = spans.get(0);
+            for (int i = 1; i < spans.size(); i++) {
+                Span nextSpan = spans.get(i);
+                if (nextSpan.getStartTimeMicroSeconds() < getEndTimeMicroSeconds(currentSpan)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static long getEndTimeMicroSeconds(Span span) {
+        return span.getStartTimeMicroSeconds() + (span.getDurationNanoSeconds() * 1000);
+    }
+
     private static String testName(ExtensionContext context) {
         return context.getRequiredTestClass().getSimpleName() + "/" + context.getRequiredTestMethod().getName();
+    }
+
+    @SuppressWarnings("checkstyle:TypeName")
+    @DataEnum
+    interface ComparisonFailure_dataenum {
+        dataenum_case unequalOperation(Span expected, Span actual);
+
+        dataenum_case unequalChildren(
+                Span expected, Span actual, List<Span> expectedChildren, List<Span> actualChildren);
+
+        dataenum_case incompatibleStructure(Span expected, Span actual);
     }
 }
