@@ -20,12 +20,12 @@ import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import java.util.Collection;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 final class TestTracingSubscriber implements SpanObserver {
 
     // Spans can be emitted from different threads, so using a concurrent datastructure rather than an ArrayList.
-    private final Queue<Span> allSpans = new ArrayBlockingQueue<>(1000);
+    private final Queue<Span> allSpans = new ConcurrentLinkedQueue();
 
     @Override
     public void consume(Span span) {
