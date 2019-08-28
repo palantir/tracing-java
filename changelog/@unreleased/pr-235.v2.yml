@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Create new tracing-test-utils package which allows you to render traces and snapshot test them.
+  links:
+    - https://github.com/palantir/tracing-java/pull/235
