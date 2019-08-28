@@ -127,13 +127,8 @@ final class SpanAnalyzer {
         // other fields, type, params, metadata(???)
 
         // ensure we have the same number of children, same child operation names in the same order
-        List<Span> sortedExpectedChildren = children(expected.graph(), ex)
-                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
-                .collect(ImmutableList.toImmutableList());
-        List<Span> sortedActualChildren = children(actual.graph(), ac)
-                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
-                .collect(ImmutableList.toImmutableList());
-
+        List<Span> sortedExpectedChildren = sortedChildren(expected.graph(), ex);
+        List<Span> sortedActualChildren = sortedChildren(actual.graph(), ac);
         if (sortedExpectedChildren.size() != sortedActualChildren.size()) {
             // just highlighting the parents for now.
             return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
@@ -238,6 +233,12 @@ final class SpanAnalyzer {
             return depthFirstTraversalOrderedByStartTime(graph(), root())
                     .collect(ImmutableList.toImmutableList());
         }
+    }
+
+    private static List<Span> sortedChildren(ImmutableGraph<Span> graph, Span node) {
+        return children(graph, node)
+                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
+                .collect(ImmutableList.toImmutableList());
     }
 
     /** Synthesizes a root span which encapsulates all known spans. */
