@@ -138,7 +138,7 @@ final class HtmlFormatter {
                 .put("{{WIDTH}}", Float.toString(Utils.percent(
                         span.getDurationNanoSeconds(), config.bounds().durationNanos())))
                 .put("{{HUE}}", Long.toString(hue))
-                .put("{{TRACEID}}", span.getTraceId())
+                .put("{{SPANID}}", span.getSpanId())
                 .put("{{CLASS}}", config.problemSpanIds().contains(span.getSpanId()) ? "problem-span" : "")
                 .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
                 .put("{{FINISH}}", Utils.renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
