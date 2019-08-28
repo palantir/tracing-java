@@ -28,7 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Comparator;
@@ -112,13 +115,17 @@ final class HtmlFormatter {
         sb.append("</div>\n");
     }
 
-    @SuppressWarnings("JavaTimeDefaultTimeZone") // I actually want the system default time zone!
     private void header(StringBuilder sb) throws IOException {
+        OffsetDateTime startTime = Instant.ofEpochMilli(
+                TimeUnit.MILLISECONDS.convert(config.bounds().startMicros(), TimeUnit.MICROSECONDS))
+                .atOffset(ZoneOffset.UTC);
+        OffsetDateTime endTime = Instant.ofEpochMilli(
+                TimeUnit.MILLISECONDS.convert(config.bounds().endNanos(), TimeUnit.NANOSECONDS))
+                .atOffset(ZoneOffset.UTC);
         sb.append(template("header.html", ImmutableMap.<String, String>builder()
                 .put("{{DISPLAY_NAME}}", config.displayName())
-                .put("{{DATE}}",
-                        DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-                                .format(LocalDateTime.now(Clock.systemDefaultZone())))
+                .put("{{START_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(startTime))
+                .put("{{END_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(endTime))
                 .build()));
     }
 

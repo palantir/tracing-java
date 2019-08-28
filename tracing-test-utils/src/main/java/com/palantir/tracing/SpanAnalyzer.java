@@ -28,6 +28,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,7 +72,8 @@ final class SpanAnalyzer {
                             collisions.add(left);
                             collisions.add(right);
                             return left;
-                        }));
+                        },
+                        LinkedHashMap::new));
 
         Set<Span> parentlessSpans = spansBySpanId.values().stream()
                 .filter(span -> span.getParentSpanId().isPresent())
@@ -88,6 +90,7 @@ final class SpanAnalyzer {
         // people do crazy things with traces - they might have a trace already initialized which doesn't
         // get closed (and therefore emitted) by the time we need to render, so just hook it up to the fake
         ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
+        spans.forEach(graph::addNode);
         spans.stream()
                 .filter(span -> !span.getSpanId().equals(rootSpan.getSpanId()))
                 .forEach(span -> graph.putEdge(

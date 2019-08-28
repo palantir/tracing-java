@@ -16,6 +16,8 @@
 
 package com.palantir.tracing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.io.IOException;
@@ -25,22 +27,38 @@ import java.nio.file.Paths;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class HtmlFormatterTest {
 
-    @Test
-    void jalkjdhala(@TempDir Path path) throws IOException {
+    @TempDir
+    public Path path;
 
+    @ParameterizedTest
+    @EnumSource(LayoutStrategy.class)
+    void should_render_sensible_html(LayoutStrategy strategy) throws IOException {
         List<Span> spans = Serialization.deserialize(Paths.get("src/test/resources/log-receiver.txt"));
+        Path output = Paths.get(String.format("src/test/resources/log-receiver-%s.html", strategy));
 
-        Path file = Files.createTempFile("test", ".html");
-//        Path file = Paths.get("/Users/dfox/Downloads/file.html");
+        if (!Files.exists(output) || Boolean.valueOf(System.getProperty("recreate", "false"))) {
+            HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
+                    .spans(spans)
+                    .path(output)
+                    .displayName("log-receiver")
+                    .layoutStrategy(strategy)
+                    .build());
+            return;
+        }
 
+        Path file = Files.createTempFile("log-receiver", ".html");
         HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(spans)
                 .path(file)
-                .displayName("poop")
-                .layoutStrategy(LayoutStrategy.CHRONOLOGICAL)
+                .displayName("log-receiver")
+                .layoutStrategy(strategy)
                 .build());
+
+        assertThat(file).hasSameContentAs(output);
     }
 }
