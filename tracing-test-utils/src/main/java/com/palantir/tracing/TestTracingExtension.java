@@ -16,17 +16,24 @@
 
 package com.palantir.tracing;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -42,17 +49,20 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     @Override
     public void beforeEach(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe(testName(context), subscriber);
+        Tracer.subscribe(context.getUniqueId(), subscriber);
+
         // TODO(dfox): sample can be modified by other code, we should be try ensure that the trace is always sampled
         // for the lifetime of the test
         // TODO(dfox): clear existing tracing??
         // TODO(forozco): cleanup stale snapshots from outdated tests cases/classes
     }
 
+
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         String name = testName(context);
-        Tracer.unsubscribe(name);
+        Tracer.unsubscribe(context.getUniqueId());
+
         Path outputPath = getOutputPath(name);
         Path snapshotFile = Paths.get("src/test/resources/tracing").resolve(name + ".log");
         Files.createDirectories(outputPath);
@@ -156,7 +166,15 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
     }
 
     private static String testName(ExtensionContext context) {
-        return context.getRequiredTestClass().getSimpleName() + "/" + context.getRequiredTestMethod().getName();
+        Deque<String> segments = new ArrayDeque<>();
+        for (ExtensionContext foo = context; foo != null; foo = foo.getParent().orElse(null)) {
+            segments.push(foo.getDisplayName());
+        }
+
+        return segments.stream()
+                .filter(s -> !s.equals("JUnit Jupiter"))
+                .map(s -> s.replaceAll("\\(.*\\)$", ""))
+                .collect(Collectors.joining("/"));
     }
 
     private static Path getOutputPath(String name) {
