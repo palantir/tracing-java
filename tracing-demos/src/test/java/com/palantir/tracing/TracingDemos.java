@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -33,11 +34,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("FutureReturnValueIgnored")
 class TracingDemos {
 
     @Test
     @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
-    @SuppressWarnings("FutureReturnValueIgnored")
     void handles_async_spans() throws Exception {
         int numThreads = 2;
         int numTasks = 4;
@@ -67,25 +68,25 @@ class TracingDemos {
         int numThreads = 2;
         int numCallbacks = 10;
         ExecutorService executorService = Tracers.wrap(Executors.newFixedThreadPool(numThreads));
-        final SettableFuture<Object> objectSettableFuture = SettableFuture.create();
+        final SettableFuture<Object> future = SettableFuture.create();
         CountDownLatch latch = new CountDownLatch(numCallbacks);
 
         IntStream.range(0, numCallbacks).forEach(i ->
-                Futures.addCallback(objectSettableFuture, new FutureCallback<Object>() {
+                Futures.addCallback(future, new FutureCallback<Object>() {
                     @Override
                     public void onSuccess(@Nullable Object result) {
                         sleep(10, "success" + i);
                         latch.countDown();
                     }
                     @Override
-                    public void onFailure(Throwable t) {
+                    public void onFailure(Throwable throwable) {
                         Assertions.fail();
                     }
                 }, executorService));
 
         executorService.submit(() -> {
             try (CloseableTracer root = CloseableTracer.startSpan("root")) {
-                objectSettableFuture.set(null);
+                future.set(null);
             }
         });
 
@@ -93,14 +94,14 @@ class TracingDemos {
     }
 
     @Test
-    // Unable to snapshot since the output trace is unstable
-    @TestTracing(layout = LayoutStrategy.SPLIT_BY_TRACE)
+    @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
     void multi_producer_single_consumer() throws InterruptedException {
         int numProducers = 2;
         int numElem = 20;
         PriorityBlockingQueue<String> work = new PriorityBlockingQueue<>();
 
-        CountDownLatch latch = new CountDownLatch(numElem);
+        CountDownLatch submitLatch = new CountDownLatch(numElem);
+        CountDownLatch consumeLatch = new CountDownLatch(numElem);
         ExecutorService producerExecutorService = Tracers.wrap(Executors.newFixedThreadPool(numProducers));
         ExecutorService consumerExecutorService = Tracers.wrap(Executors.newFixedThreadPool(1));
 
@@ -109,19 +110,21 @@ class TracingDemos {
                 producerExecutorService.submit(() -> {
                     try (CloseableTracer closeableTracer = CloseableTracer.startSpan("submit-work" + i)) {
                         work.add("work" + i);
+                        submitLatch.countDown();
                     }
                 });
             });
+            assertThat(submitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
             consumerExecutorService.submit(() -> {
                 for (int i = 0; i < numElem; i++) {
                     String poll = work.take();
                     sleep(10, "processing" + poll);
-                    latch.countDown();
+                    consumeLatch.countDown();
                 }
                 return null;
             });
-            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(consumeLatch.await(10, TimeUnit.SECONDS)).isTrue();
         }
     }
 
@@ -159,18 +162,47 @@ class TracingDemos {
         MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS);
     }
 
-    private static void sleep(int i, String operation) {
+    @Test
+    @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
+    @SuppressWarnings("CheckReturnValue")
+    void transformed_future() throws InterruptedException {
+        SettableFuture<Object> future = SettableFuture.create();
+        ScheduledExecutorService executor = Tracers.wrap(Executors.newScheduledThreadPool(2));
+        CountDownLatch latch = new CountDownLatch(1);
+
+        FluentFuture.from(future)
+                .transform(result -> {
+                    sleep(100, "first");
+                    return result;
+                }, executor)
+                .transform(result -> {
+                    sleep(100, "second");
+                    latch.countDown();
+                    return result;
+                }, executor);
+
+        executor.submit(() -> {
+            try (CloseableTracer root = CloseableTracer.startSpan("root")) {
+                future.set(null);
+            }
+        });
+
+        assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    }
+
+    private static void sleep(int millis, String operation) {
         try (CloseableTracer t = CloseableTracer.startSpan(operation)) {
-            Thread.sleep(i);
+            Thread.sleep(millis);
         } catch (InterruptedException e) {
             throw new RuntimeException("dont care", e);
         }
     }
 
-    private static void sleep(int i) {
-        sleep(i, "sleep " + i);
+    private static void sleep(int millis) {
+        sleep(millis, "sleep " + millis);
     }
 
+    @SuppressWarnings("NestedTryDepth")
     private static void emit_nested_spans() {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
