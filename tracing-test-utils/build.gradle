@@ -1,0 +1,25 @@
+apply from: "${rootDir}/gradle/publish-jar.gradle"
+
+versionsLock {
+    testProject()
+}
+
+dependencies {
+    implementation project(":tracing")
+    compileOnly 'junit:junit'
+    compileOnly 'org.junit.jupiter:junit-jupiter-api'
+    implementation 'com.palantir.conjure.java.runtime:conjure-java-jackson-serialization'
+    implementation 'com.spotify.dataenum:dataenum'
+
+    annotationProcessor 'com.spotify.dataenum:dataenum-processor'
+    annotationProcessor "org.immutables:value"
+    compileOnly "org.immutables:value::annotations"
+
+    testImplementation "junit:junit"
+    testCompileOnly "org.immutables:value::annotations"
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine") {
+        because 'allows JUnit 3 and JUnit 4 tests to run'
+    }
+}
