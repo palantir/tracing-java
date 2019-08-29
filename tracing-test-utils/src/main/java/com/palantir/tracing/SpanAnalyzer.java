@@ -141,18 +141,21 @@ final class SpanAnalyzer {
             return Stream.of(ComparisonFailure.incompatibleStructure(ex, ac));
         }
 
-        if (actualContainsOverlappingSpans && !compatibleOverlappingSpans(
-                expected, actual, sortedExpectedChildren, sortedActualChildren)) {
-            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
+        if (!actualContainsOverlappingSpans) {
+            return IntStream.range(0, sortedActualChildren.size())
+                    .mapToObj(i -> compareSpansRecursively(
+                            expected,
+                            actual,
+                            sortedExpectedChildren.get(i),
+                            sortedActualChildren.get(i)))
+                    .flatMap(Function.identity());
         }
 
-        return IntStream.range(0, sortedActualChildren.size())
-                .mapToObj(i -> compareSpansRecursively(
-                        expected,
-                        actual,
-                        sortedExpectedChildren.get(i),
-                        sortedActualChildren.get(i)))
-                .flatMap(Function.identity());
+        if (!compatibleOverlappingSpans(expected, actual, sortedExpectedChildren, sortedActualChildren)) {
+            return Stream.of(ComparisonFailure.unequalChildren(
+                    ex, ac, sortedExpectedChildren, sortedActualChildren));
+        }
+        return Stream.empty();
     }
 
     /**
