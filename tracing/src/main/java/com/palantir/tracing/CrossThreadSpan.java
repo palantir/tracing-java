@@ -27,9 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.concurrent.ThreadSafe;
 
-/**
- * For low-level library code only.
- */
+/** For low-level library code only. */
 @ThreadSafe
 public final class CrossThreadSpan {
 
@@ -44,35 +42,26 @@ public final class CrossThreadSpan {
     }
 
     // TODO(dfox): move these static factories to Tracers.java ??
-    // intentionally not using AutoCloseable and '@MustBeClosed' because try-with-resources isn't convenient across
-    // threads
+    // TODO don't construct an OpenSpan if we don't need it
     @CheckReturnValue
     public static CrossThreadSpan startSpan(String operation) {
-        return startSpan(operation, SpanType.LOCAL);
-    }
+        Trace trace = Tracer.hasTraceId()
+                ? Tracer.getOrCreateCurrentTrace()
+                : Tracer.createTrace(Observability.UNDECIDED, Tracers.randomId());
 
-    @CheckReturnValue
-    public static CrossThreadSpan startSpan(String operation, SpanType spanType) {
-
-        Trace trace = Tracer.getOrCreateCurrentTrace();
-        // Trace trace = Tracer.hasTraceId()
-        //         ? Tracer.getOrCreateCurrentTrace()
-        //         : Tracer.createTrace(Observability.UNDECIDED, Tracers.randomId());
-
-        // TODO don't make this if we don't need it
         Optional<String> parentSpanId = trace.top().map(OpenSpan::getSpanId);
-        OpenSpan openSpan = OpenSpan.of(
+        OpenSpan openSpan1 = OpenSpan.of(
                 operation,
                 Tracers.randomId(),
-                spanType,
+                SpanType.LOCAL,
                 parentSpanId,
                 trace.getOriginatingSpanId());
 
-        return new CrossThreadSpan(trace.getTraceId(), trace.isObservable(), new AtomicReference<>(openSpan));
+        return new CrossThreadSpan(trace.getTraceId(), trace.isObservable(), new AtomicReference<>(openSpan1));
     }
 
     /** Destructive operation - once you call this, you can't use it anymore. */
-    public void complete() {
+    public void terminate() {
         OpenSpan openSpan1 = openSpan.getAndSet(null);
         Preconditions.checkState(openSpan1 != null, "CrossThreadSpan may only be completed once");
 
@@ -82,66 +71,48 @@ public final class CrossThreadSpan {
         Tracer.notifyObservers(span);
     }
 
-    /** Destructive operation - once you call this, you can't use it anymore. */
+    /** Destructive - the calling thread's threadlocal trace state won't be restored after this. */
     @MustBeClosed
-    public CloseableTracer completeAndStartSpan(String nextOperationName, SpanType spanType) {
-        complete();
-        return threadLocalSibling(nextOperationName, spanType);
-    }
-
-    @MustBeClosed
-    public CloseableTracer threadLocalSibling(String nextOperationName, SpanType spanType) {
+    public CloseableTracer threadLocalSibling(String nextOperationName) {
+        // TODO(dfox): gross - nowhere else lets you make siblings...
+        terminate();
         Tracer.clearCurrentTrace();
 
         // a fresh copy doesn't have any of the old spans
         Trace rehydratedTrace = Trace.of(observable, traceId);
         Tracer.setTrace(rehydratedTrace);
 
-        return CloseableTracer.startSpan(nextOperationName, spanType);
-    }
-
-    @MustBeClosed
-    public CloseableTracer threadLocalChild(String nextOperationName, SpanType spanType) {
-        Tracer.clearCurrentTrace();
-
-        Trace rehydratedTrace = Trace.of(observable, traceId);
-        // TODO(dfox): this is broken - we threadLocalSpans on a new threaed are not connected to the parent spanid
-        OpenSpan openSpan1 = openSpan.get();
-        Preconditions.checkState(openSpan1 != null, "Can't create threadLocalChild after complete has been called");
-        rehydratedTrace.push(openSpan1); // 🌶🌶🌶 someone could now call Tracer.fastCompleteSpan and emit this guy from
-        // multiple threads!!!
-        Tracer.setTrace(rehydratedTrace);
-
-        return CloseableTracer.startSpan(nextOperationName, spanType);
-    }
-
-    @CheckReturnValue
-    public CrossThreadSpan crossThreadChild(String operation, SpanType spanType) {
-        OpenSpan openSpan1 = openSpan.get();
-        Preconditions.checkState(openSpan1 != null, "Can't create crossThreadChild after complete has been called");
-
-        OpenSpan openSpan = OpenSpan.of(
-                operation,
-                Tracers.randomId(),
-                spanType,
-                Optional.of(openSpan1.getSpanId()),
-                openSpan1.getOriginatingSpanId());
-
-        return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(openSpan));
-    }
-
-    @MustBeClosed
-    public CloseableTracer completeAndCrossThread(String nextOperationName) {
-        return completeAndStartSpan(nextOperationName, SpanType.LOCAL);
+        return CloseableTracer.startSpan(nextOperationName, SpanType.LOCAL);
     }
 
     @CheckReturnValue
     public CrossThreadSpan crossThreadChild(String operation) {
-        return crossThreadChild(operation, SpanType.LOCAL);
+        OpenSpan openSpan1 = openSpan.get();
+        Preconditions.checkState(openSpan1 != null, "Can't create crossThreadChild after terminate has been called");
+
+        OpenSpan openSpan11 = OpenSpan.of(
+                operation,
+                Tracers.randomId(),
+                SpanType.LOCAL,
+                Optional.of(openSpan1.getSpanId()),
+                openSpan1.getOriginatingSpanId());
+
+        return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(openSpan11));
     }
 
+    /** This is also destructive because original trace state won't be restored afterwards. */
     @MustBeClosed
     public CloseableTracer threadLocalChild(String nextOperationName) {
-        return threadLocalChild(nextOperationName, SpanType.LOCAL);
+        Tracer.clearCurrentTrace();
+
+        OpenSpan openSpan1 = openSpan.get();
+        Preconditions.checkState(openSpan1 != null, "Can't create threadLocalChild after terminate has been called");
+
+        Trace rehydratedTrace = Trace.of(observable, traceId);
+        // 🌶🌶🌶 someone could now call Tracer.fastCompleteSpan and emit this guy from multiple threads!!!
+        rehydratedTrace.push(openSpan1);
+        Tracer.setTrace(rehydratedTrace);
+
+        return CloseableTracer.startSpan(nextOperationName, SpanType.LOCAL);
     }
 }

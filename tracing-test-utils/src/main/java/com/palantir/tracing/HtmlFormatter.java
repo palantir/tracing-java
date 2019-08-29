@@ -94,7 +94,7 @@ final class HtmlFormatter {
         Map<String, SpanAnalyzer.Result> analyzedByTraceId = SpanAnalyzer.analyzeByTraceId(config.spans());
         analyzedByTraceId.entrySet()
                 .stream()
-                .sorted(Comparator.comparingLong(e1 -> e1.getValue().bounds().startMicros()))
+                .sorted(Comparator.comparing(e -> e.getValue().bounds()))
                 .forEachOrdered(entry -> {
                     SpanAnalyzer.Result analysis = entry.getValue();
                     renderAllSpansForOneTraceId(entry.getKey(), analysis, sb);
