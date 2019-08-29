@@ -23,10 +23,10 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -53,7 +53,7 @@ class TracingDemos {
 
             CrossThreadSpan crossThread = CrossThreadSpan.startSpan("task-queue-time" + i);
             executorService.submit(() -> {
-                try (CloseableTracer t = crossThread.completeAndStartSpan("task" + i)) {
+                try (CloseableTracer t = crossThread.completeAndCrossThread("task" + i)) {
                     emit_nested_spans();
                     countDownLatch.countDown();
                 }
@@ -76,13 +76,13 @@ class TracingDemos {
 
         IntStream.range(0, numCallbacks).forEach(i -> {
 
-            Tracer.clearCurrentTrace();
+            Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
 
             CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
             Futures.addCallback(future, new FutureCallback<Object>() {
                 @Override
                 public void onSuccess(@Nullable Object result) {
-                    try (CloseableTracer t = span.completeAndStartSpan("success" + i)) {
+                    try (CloseableTracer t = span.completeAndCrossThread("success" + i)) {
                         Thread.sleep(10);
                         latch.countDown();
                     } catch (InterruptedException e) {
@@ -113,28 +113,42 @@ class TracingDemos {
     void multi_producer_single_consumer() throws InterruptedException {
         int numProducers = 2;
         int numElem = 20;
-        PriorityBlockingQueue<String> work = new PriorityBlockingQueue<>();
+        ArrayBlockingQueue<QueuedWork> work = new ArrayBlockingQueue<QueuedWork>(numElem);
 
         CountDownLatch submitLatch = new CountDownLatch(numElem);
         CountDownLatch consumeLatch = new CountDownLatch(numElem);
-        ExecutorService producerExecutorService = Tracers.wrap(Executors.newFixedThreadPool(numProducers));
-        ExecutorService consumerExecutorService = Tracers.wrap(Executors.newFixedThreadPool(1));
+        ExecutorService producerExecutorService = Executors.newFixedThreadPool(numProducers);
+        ExecutorService consumerExecutorService = Executors.newFixedThreadPool(1);
 
         try (CloseableTracer submit = CloseableTracer.startSpan("submit")) {
             IntStream.range(0, numElem).forEach(i -> {
+
+                Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
+
+                CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
                 producerExecutorService.submit(() -> {
-                    try (CloseableTracer closeableTracer = CloseableTracer.startSpan("submit-work" + i)) {
-                        work.add("work" + i);
-                        submitLatch.countDown();
-                    }
+                    work.add(new QueuedWork() {
+                        @Override
+                        public String name() {
+                            return "work" + i;
+                        }
+
+                        @Override
+                        public CrossThreadSpan span() {
+                            return span;
+                        }
+                    });
+                    submitLatch.countDown();
                 });
             });
             assertThat(submitLatch.await(10, TimeUnit.SECONDS)).isTrue();
 
             consumerExecutorService.submit(() -> {
                 for (int i = 0; i < numElem; i++) {
-                    String poll = work.take();
-                    sleep(10, "processing" + poll);
+                    QueuedWork queuedWork = work.take();
+                    try (CloseableTracer processing = queuedWork.span().completeAndCrossThread("consume" + queuedWork.name())) {
+                        Thread.sleep(10);
+                    }
                     consumeLatch.countDown();
                 }
                 return null;
@@ -144,35 +158,44 @@ class TracingDemos {
     }
 
     @Test
-    @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
+    @TestTracing(snapshot = true, layout = LayoutStrategy.CHRONOLOGICAL)
     void backoffs_on_a_scheduled_executor() throws InterruptedException {
         ScheduledExecutorService executor = Tracers.wrap(Executors.newScheduledThreadPool(2));
         CountDownLatch latch = new CountDownLatch(1);
 
-        try (CloseableTracer t = CloseableTracer.startSpan("some-request")) {
-            executor.execute(() -> {
-                // first attempt at a network call
-                sleep(100, "first attempt");
+        // THIS PATTERN IS GROSS, MAYBE DON"T NEED TO SUPPORT IT?
 
-                executor.schedule(() -> {
-                    // attempt number 2
-                    sleep(100, "second attempt");
+        CrossThreadSpan overall = CrossThreadSpan.startSpan("overall request");
+        executor.execute(() -> {
 
+            sleep(100, "first network call (will fail)");
+
+            CrossThreadSpan backoff1 = overall.crossThreadChild("backoff for 20ms");
+            executor.schedule(() -> {
+                try (CloseableTracer attempt2 = backoff1.completeAndCrossThread("secondAttempt")) {
+
+                    Thread.sleep(100);
+                    overall.complete();
+                    latch.countDown();
+
+                    CrossThreadSpan backoff2 = overall.crossThreadChild("2nd backoff for 40ms");
                     executor.schedule(() -> {
-                        // attempt number 3
-                        sleep(100, "final attempt");
+                        try (CloseableTracer finalAttempt = backoff2.completeAndCrossThread("final attempt")) {
+                            Thread.sleep(100);
 
-                        latch.countDown();
+                            overall.complete();
+                            latch.countDown();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        }
                     }, 100, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }, 20, TimeUnit.MILLISECONDS);
+        });
 
-                    sleep(200, "second tidying");
-                }, 100, TimeUnit.MILLISECONDS);
-
-                sleep(200, "first tidying");
-            });
-
-            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-        }
+        assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
 
         MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS);
     }
@@ -182,24 +205,42 @@ class TracingDemos {
     @SuppressWarnings("CheckReturnValue")
     void transformed_future() throws InterruptedException {
         SettableFuture<Object> future = SettableFuture.create();
-        ScheduledExecutorService executor = Tracers.wrap(Executors.newScheduledThreadPool(2));
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
         CountDownLatch latch = new CountDownLatch(1);
 
+        CrossThreadSpan foo = CrossThreadSpan.startSpan("foo");
         FluentFuture.from(future)
                 .transform(result -> {
-                    sleep(100, "first");
-                    return result;
+                    try (CloseableTracer t = foo.threadLocalChild("first transform")) {
+                        Thread.sleep(1000);
+                        return result;
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }, executor)
                 .transform(result -> {
-                    sleep(100, "second");
-                    latch.countDown();
-                    return result;
+                    try (CloseableTracer t = foo.threadLocalChild("second transform")) {
+                        Thread.sleep(1000);
+                        latch.countDown();
+                        return result;
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, executor)
+                .addCallback(new FutureCallback<Object>() {
+                    @Override
+                    public void onSuccess(@Nullable Object result) {
+                        foo.complete();
+                    }
+
+                    @Override
+                    public void onFailure(Throwable t) {
+                        foo.complete();
+                    }
                 }, executor);
 
         executor.submit(() -> {
-            try (CloseableTracer root = CloseableTracer.startSpan("root")) {
-                future.set(null);
-            }
+            future.set(null);
         });
 
         assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
@@ -231,5 +272,10 @@ class TracingDemos {
                 sleep(100);
             }
         }
+    }
+
+    interface QueuedWork {
+        String name();
+        CrossThreadSpan span();
     }
 }

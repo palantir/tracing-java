@@ -23,6 +23,7 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -59,11 +60,12 @@ public final class CrossThreadSpan {
         //         : Tracer.createTrace(Observability.UNDECIDED, Tracers.randomId());
 
         // TODO don't make this if we don't need it
+        Optional<String> parentSpanId = trace.top().map(OpenSpan::getSpanId);
         OpenSpan openSpan = OpenSpan.of(
                 operation,
                 Tracers.randomId(),
                 spanType,
-                trace.top().map(OpenSpan::getSpanId),
+                parentSpanId,
                 trace.getOriginatingSpanId());
 
         return new CrossThreadSpan(trace.getTraceId(), trace.isObservable(), new AtomicReference<>(openSpan));
@@ -84,9 +86,11 @@ public final class CrossThreadSpan {
     @MustBeClosed
     public CloseableTracer completeAndStartSpan(String nextOperationName, SpanType spanType) {
         complete();
+        return threadLocalSibling(nextOperationName, spanType);
+    }
 
-        // nuke the current thread locals - we may or may not be throwing away an existing trace with an
-        // unclosed OpenSpan.
+    @MustBeClosed
+    public CloseableTracer threadLocalSibling(String nextOperationName, SpanType spanType) {
         Tracer.clearCurrentTrace();
 
         // a fresh copy doesn't have any of the old spans
@@ -96,25 +100,48 @@ public final class CrossThreadSpan {
         return CloseableTracer.startSpan(nextOperationName, spanType);
     }
 
-    @CheckReturnValue
-    public CrossThreadSpan startChildSpan(String operation, SpanType spanType) {
+    @MustBeClosed
+    public CloseableTracer threadLocalChild(String nextOperationName, SpanType spanType) {
+        Tracer.clearCurrentTrace();
+
+        Trace rehydratedTrace = Trace.of(observable, traceId);
+        // TODO(dfox): this is broken - we threadLocalSpans on a new threaed are not connected to the parent spanid
         OpenSpan openSpan1 = openSpan.get();
-        Preconditions.checkState(openSpan1 != null, "Can't create startChildSpan after complete has been called");
+        Preconditions.checkState(openSpan1 != null, "Can't create threadLocalChild after complete has been called");
+        rehydratedTrace.push(openSpan1); // 🌶🌶🌶 someone could now call Tracer.fastCompleteSpan and emit this guy from
+        // multiple threads!!!
+        Tracer.setTrace(rehydratedTrace);
+
+        return CloseableTracer.startSpan(nextOperationName, spanType);
+    }
+
+    @CheckReturnValue
+    public CrossThreadSpan crossThreadChild(String operation, SpanType spanType) {
+        OpenSpan openSpan1 = openSpan.get();
+        Preconditions.checkState(openSpan1 != null, "Can't create crossThreadChild after complete has been called");
 
         OpenSpan openSpan = OpenSpan.of(
-                operation, Tracers.randomId(), spanType,
-                openSpan1.getParentSpanId(), openSpan1.getOriginatingSpanId());
+                operation,
+                Tracers.randomId(),
+                spanType,
+                Optional.of(openSpan1.getSpanId()),
+                openSpan1.getOriginatingSpanId());
 
         return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(openSpan));
     }
 
     @MustBeClosed
-    public CloseableTracer completeAndStartSpan(String nextOperationName) {
+    public CloseableTracer completeAndCrossThread(String nextOperationName) {
         return completeAndStartSpan(nextOperationName, SpanType.LOCAL);
     }
 
     @CheckReturnValue
-    public CrossThreadSpan startChildSpan(String operation) {
-        return startChildSpan(operation, SpanType.LOCAL);
+    public CrossThreadSpan crossThreadChild(String operation) {
+        return crossThreadChild(operation, SpanType.LOCAL);
+    }
+
+    @MustBeClosed
+    public CloseableTracer threadLocalChild(String nextOperationName) {
+        return threadLocalChild(nextOperationName, SpanType.LOCAL);
     }
 }
