@@ -224,7 +224,7 @@ public final class Tracer {
         return maybeSpan;
     }
 
-    private static void notifyObservers(Span span) {
+    static void notifyObservers(Span span) {
         compositeObserver.accept(span);
     }
 
@@ -236,7 +236,7 @@ public final class Tracer {
         return span;
     }
 
-    private static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {
+    static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {
         return Span.builder()
                 .traceId(traceId)
                 .spanId(openSpan.getSpanId())
@@ -378,7 +378,7 @@ public final class Tracer {
         return trace;
     }
 
-    private static void clearCurrentTrace() {
+    static void clearCurrentTrace() {
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
