@@ -33,7 +33,7 @@ import javax.annotation.concurrent.ThreadSafe;
 public final class CrossThreadSpan {
 
     private final String traceId;
-    private boolean observable;
+    private final boolean observable;
     private final AtomicReference<OpenSpan> openSpan;
 
     private CrossThreadSpan(String traceId, boolean observable, AtomicReference<OpenSpan> openSpan) {
@@ -75,25 +75,13 @@ public final class CrossThreadSpan {
         Tracer.notifyObservers(span);
     }
 
-    private OpenSpan consumeOpenSpan(String message) {
-        OpenSpan inProgress = openSpan.getAndSet(null);
-        Preconditions.checkState(inProgress != null, message);
-        return inProgress;
-    }
-
-    private OpenSpan accessOpenSpan(String message) {
-        OpenSpan inProgress = openSpan.get();
-        Preconditions.checkState(inProgress != null, message);
-        return inProgress;
-    }
-
     /**
      * Finish the cross-thread span and start a new (thread local span) with the given operation name.
      * NOTE: this is destructive, because any existing threadlocal tracing state is thrown away.
      */
     @MustBeClosed
     public CloseableTracer sibling(String nextOperationName) {
-        OpenSpan inProgress = consumeOpenSpan("Can't call sibling if span has already been closed");
+        OpenSpan inProgress = consumeOpenSpan("Can't call CrossThreadSpan#sibling if span has already been closed");
 
         Map<String, String> metadata = Collections.emptyMap();
         Span span = Tracer.toSpan(inProgress, metadata, traceId);
@@ -121,10 +109,17 @@ public final class CrossThreadSpan {
         return CloseableTracer.startSpan(nextOperationName, Optional.of(inProgress.getSpanId()), SpanType.LOCAL);
     }
 
+    /**
+     * Unusual method - returns a new {@link CrossThreadSpan} parented to this instance. Only necessary if you want
+     * to instrument something that begins on this thread and ends on another thread.  Otherwise, use
+     * {@link #sibling} or {@link #child}.
+     *
+     * This method does not touch any thread-local tracing state, so successive operations on this thread may have
+     * completely unrelated traceIds.
+     */
     @CheckReturnValue
     public CrossThreadSpan crossThreadSpan(String operation) {
-        OpenSpan parent = openSpan.get();
-        Preconditions.checkState(parent != null, "Can't create crossThreadSpan after terminate has been called");
+        OpenSpan parent = accessOpenSpan("Can't create crossThreadSpan after terminate has been called");
 
         OpenSpan child = OpenSpan.of(
                 operation,
@@ -134,5 +129,17 @@ public final class CrossThreadSpan {
                 parent.getOriginatingSpanId());
 
         return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(child));
+    }
+
+    private OpenSpan consumeOpenSpan(String failureMessage) {
+        OpenSpan inProgress = openSpan.getAndSet(null);
+        Preconditions.checkState(inProgress != null, failureMessage);
+        return inProgress;
+    }
+
+    private OpenSpan accessOpenSpan(String failureMessage) {
+        OpenSpan inProgress = openSpan.get();
+        Preconditions.checkState(inProgress != null, failureMessage);
+        return inProgress;
     }
 }
