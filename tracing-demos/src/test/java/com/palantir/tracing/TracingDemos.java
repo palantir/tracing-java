@@ -86,7 +86,7 @@ class TracingDemos {
                     @Override
                     public void onSuccess(@Nullable Object result) {
                         assertThat(Tracer.hasTraceId()).isFalse();
-                        try (CloseableTracer t = span.sibling("success" + i)) {
+                        try (CloseableTracer tracer = span.sibling("success" + i)) {
                             assertThat(Tracer.getTraceId()).isEqualTo(traceId);
                             Thread.sleep(10);
                             latch.countDown();

@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import com.google.errorprone.annotations.CheckReturnValue;
+import com.google.errorprone.annotations.CompileTimeConstant;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.OpenSpan;
@@ -131,13 +132,13 @@ public final class CrossThreadSpan {
         return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(child));
     }
 
-    private OpenSpan consumeOpenSpan(String failureMessage) {
+    private OpenSpan consumeOpenSpan(@CompileTimeConstant String failureMessage) {
         OpenSpan inProgress = openSpan.getAndSet(null);
         Preconditions.checkState(inProgress != null, failureMessage);
         return inProgress;
     }
 
-    private OpenSpan accessOpenSpan(String failureMessage) {
+    private OpenSpan accessOpenSpan(@CompileTimeConstant String failureMessage) {
         OpenSpan inProgress = openSpan.get();
         Preconditions.checkState(inProgress != null, failureMessage);
         return inProgress;
