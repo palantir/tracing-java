@@ -23,7 +23,6 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.concurrent.ThreadSafe;
 
@@ -52,30 +51,17 @@ public final class CrossThreadSpan {
 
     @CheckReturnValue
     public static CrossThreadSpan startSpan(String operation, SpanType spanType) {
-        // copy our current state is
-        String traceId = "TODO";
-        Optional<String> parentSpanId = Optional.of("TODO");
-        Optional<String> originatingSpanId = Optional.of("TODO");
+        Trace trace = Tracer.getOrCreateCurrentTrace();
 
-        OpenSpan openSpan = OpenSpan.of(operation, Tracers.randomId(), spanType, parentSpanId, originatingSpanId);
+        // TODO don't make this if we don't need it
+        OpenSpan openSpan = OpenSpan.of(
+                operation,
+                Tracers.randomId(),
+                spanType,
+                trace.top().map(OpenSpan::getSpanId),
+                trace.getOriginatingSpanId());
 
-        return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(openSpan));
-    }
-
-    /** Destructive operation - once you call this, you can't use it anymore. */
-    @MustBeClosed
-    public CloseableTracer completeAndStartSpan(String nextOperationName) {
-        complete();
-
-        // nuke the current thread locals - we may or may not be throwing away an existing trace with an
-        // unclosed OpenSpan.
-        Tracer.clearCurrentTrace();
-
-        // a fresh copy doesn't have any of the old spans
-        Trace rehydratedTrace = Trace.of(true, traceId);
-        Tracer.setTrace(rehydratedTrace);
-
-        return CloseableTracer.startSpan(nextOperationName);
+        return new CrossThreadSpan(trace.getTraceId(), trace.isObservable(), new AtomicReference<>(openSpan));
     }
 
     /** Destructive operation - once you call this, you can't use it anymore. */
@@ -86,14 +72,27 @@ public final class CrossThreadSpan {
         // end the span
         Span span = Tracer.toSpan(openSpan1, Collections.emptyMap(), traceId);
 
-        // emit stuff based on the portable thread state
         Tracer.notifyObservers(span);
+    }
+
+    /** Destructive operation - once you call this, you can't use it anymore. */
+    @MustBeClosed
+    public CloseableTracer completeAndStartSpan(String nextOperationName, SpanType spanType) {
+        complete();
+
+        // nuke the current thread locals - we may or may not be throwing away an existing trace with an
+        // unclosed OpenSpan.
+        Tracer.clearCurrentTrace();
+
+        // a fresh copy doesn't have any of the old spans
+        Trace rehydratedTrace = Trace.of(observable, traceId);
+        Tracer.setTrace(rehydratedTrace);
+
+        return CloseableTracer.startSpan(nextOperationName, spanType);
     }
 
     @CheckReturnValue
     public CrossThreadSpan startChildSpan(String operation, SpanType spanType) {
-        // copy our current state is
-
         OpenSpan openSpan1 = openSpan.get();
         Preconditions.checkState(openSpan1 != null, "Can't create startChildSpan after complete has been called");
 
@@ -102,5 +101,15 @@ public final class CrossThreadSpan {
                 openSpan1.getParentSpanId(), openSpan1.getOriginatingSpanId());
 
         return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(openSpan));
+    }
+
+    @MustBeClosed
+    public CloseableTracer completeAndStartSpan(String nextOperationName) {
+        return completeAndStartSpan(nextOperationName, SpanType.LOCAL);
+    }
+
+    @CheckReturnValue
+    public CrossThreadSpan startChildSpan(String operation) {
+        return startChildSpan(operation, SpanType.LOCAL);
     }
 }

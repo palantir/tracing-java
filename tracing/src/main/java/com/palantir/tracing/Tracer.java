@@ -369,7 +369,7 @@ public final class Tracer {
         }
     }
 
-    private static Trace getOrCreateCurrentTrace() {
+    static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
             trace = createTrace(Observability.UNDECIDED, Tracers.randomId());
