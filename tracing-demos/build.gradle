@@ -1,7 +1,6 @@
 dependencies {
     testImplementation project(":tracing")
     testImplementation project(":tracing-test-utils")
-    testCompileOnly "org.immutables:value::annotations"
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
