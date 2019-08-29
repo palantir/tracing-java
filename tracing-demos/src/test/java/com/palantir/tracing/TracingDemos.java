@@ -18,14 +18,19 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class TracingDemos {
@@ -45,7 +50,6 @@ class TracingDemos {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             IntStream.range(0, numTasks).forEach(i -> {
                 // DetachedSpan detachedSpan = DetachedSpan.start("task-queue-time" + i);
-
                 executorService.submit(() -> {
                     // detachedSpan.close();
                     emit_nested_spans();
@@ -58,16 +62,66 @@ class TracingDemos {
     }
 
     @Test
-    void async_future() {
+    @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
+    void async_future() throws InterruptedException {
         int numThreads = 2;
-        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
+        int numCallbacks = 10;
+        ExecutorService executorService = Tracers.wrap(Executors.newFixedThreadPool(numThreads));
         final SettableFuture<Object> objectSettableFuture = SettableFuture.create();
+        CountDownLatch latch = new CountDownLatch(numCallbacks);
 
-        try (CloseableTracer root = CloseableTracer.startSpan("root")) {
-            // DetachedSpan listener = DetachedSpan.start("listener");
-            // objectSettableFuture.addListener(() -> {
-            //
-            // }), executorService;
+        IntStream.range(0, numCallbacks).forEach(i ->
+                Futures.addCallback(objectSettableFuture, new FutureCallback<Object>() {
+                    @Override
+                    public void onSuccess(@Nullable Object result) {
+                        sleep(10, "success" + i);
+                        latch.countDown();
+                    }
+                    @Override
+                    public void onFailure(Throwable t) {
+                        Assertions.fail();
+                    }
+                }, executorService));
+
+        executorService.submit(() -> {
+            try (CloseableTracer root = CloseableTracer.startSpan("root")) {
+                objectSettableFuture.set(null);
+            }
+        });
+
+        assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    // Unable to snapshot since the output trace is unstable
+    @TestTracing(layout = LayoutStrategy.SPLIT_BY_TRACE)
+    void multi_producer_single_consumer() throws InterruptedException {
+        int numProducers = 2;
+        int numElem = 20;
+        PriorityBlockingQueue<String> work = new PriorityBlockingQueue<>();
+
+        CountDownLatch latch = new CountDownLatch(numElem);
+        ExecutorService producerExecutorService = Tracers.wrap(Executors.newFixedThreadPool(numProducers));
+        ExecutorService consumerExecutorService = Tracers.wrap(Executors.newFixedThreadPool(1));
+
+        try (CloseableTracer submit = CloseableTracer.startSpan("submit")) {
+            IntStream.range(0, numElem).forEach(i -> {
+                producerExecutorService.submit(() -> {
+                    try (CloseableTracer closeableTracer = CloseableTracer.startSpan("submit-work" + i)) {
+                        work.add("work" + i);
+                    }
+                });
+            });
+
+            consumerExecutorService.submit(() -> {
+                for (int i = 0; i < numElem; i++) {
+                    String poll = work.take();
+                    sleep(10, "processing" + poll);
+                    latch.countDown();
+                }
+                return null;
+            });
+            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
         }
     }
 
@@ -97,7 +151,6 @@ class TracingDemos {
                 }, 100, TimeUnit.MILLISECONDS);
 
                 sleep(200, "first tidying");
-
             });
 
             assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
