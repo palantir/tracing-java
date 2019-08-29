@@ -1,40 +1,40 @@
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":null,"spanId":"f6d587fb170063b6","operation":"task-queue-time0","startTimeMicroSeconds":1567104767142000,"durationNanoSeconds":2122303,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":null,"spanId":"8b8fc16f5765bc26","operation":"task-queue-time1","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":279301,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"ed94e939f396e8d5","spanId":"42949b7b5e4e6657","operation":"sleep 100","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":102537300,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"63cbadecb3aaaf17","spanId":"02e424e3c1bf19f4","operation":"sleep 100","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":102556844,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"e70ce1fa2c30c766","spanId":"1ff549458e06e443","operation":"sleep 90","startTimeMicroSeconds":1567104767247000,"durationNanoSeconds":93494797,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"0eadc4c425060eb4","spanId":"1fbde771e7033a9d","operation":"sleep 90","startTimeMicroSeconds":1567104767247000,"durationNanoSeconds":93497004,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"63cbadecb3aaaf17","spanId":"e70ce1fa2c30c766","operation":"nested","startTimeMicroSeconds":1567104767247000,"durationNanoSeconds":93541372,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"ed94e939f396e8d5","spanId":"0eadc4c425060eb4","operation":"nested","startTimeMicroSeconds":1567104767247000,"durationNanoSeconds":93548453,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"ed94e939f396e8d5","spanId":"51e9b0357c93e631","operation":"sleep 10","startTimeMicroSeconds":1567104767340000,"durationNanoSeconds":10174535,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"63cbadecb3aaaf17","spanId":"1782a4a4acf10336","operation":"sleep 10","startTimeMicroSeconds":1567104767340000,"durationNanoSeconds":10174621,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"af93a0cb4c972a04","spanId":"63cbadecb3aaaf17","operation":"first","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":206448103,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"fcf094bcaa29eb49","spanId":"ed94e939f396e8d5","operation":"first","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":206392849,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"575e464603ca9e8e","spanId":"4f0ea3f110d88a2e","operation":"sleep 100","startTimeMicroSeconds":1567104767351000,"durationNanoSeconds":103593898,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"5a5400754f2f42a5","spanId":"bd607f11148c3bd1","operation":"sleep 100","startTimeMicroSeconds":1567104767351000,"durationNanoSeconds":103597180,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"af93a0cb4c972a04","spanId":"575e464603ca9e8e","operation":"second","startTimeMicroSeconds":1567104767351000,"durationNanoSeconds":103649296,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"fcf094bcaa29eb49","spanId":"5a5400754f2f42a5","operation":"second","startTimeMicroSeconds":1567104767351000,"durationNanoSeconds":103657416,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":"9ab27c33022b96ae","spanId":"af93a0cb4c972a04","operation":"emit_nested_spans","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":310164465,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":"be05682e70586cae","spanId":"fcf094bcaa29eb49","operation":"emit_nested_spans","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":310109130,"metadata":{}}
-{"traceId":"b29e2bcf6eda4fbd","parentSpanId":null,"spanId":"9ab27c33022b96ae","operation":"task0","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":310244949,"metadata":{}}
-{"traceId":"43b08de88a252141","parentSpanId":null,"spanId":"be05682e70586cae","operation":"task1","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":310177625,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":null,"spanId":"e7c29bf370568866","operation":"task-queue-time2","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":310413600,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":null,"spanId":"bb35d59c819a3454","operation":"task-queue-time3","startTimeMicroSeconds":1567104767144000,"durationNanoSeconds":310310593,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"335bc92d8fa4452f","spanId":"0de020e6321f7af1","operation":"sleep 100","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":100472208,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"dfd4569122a058b3","spanId":"47dff4a5c43aefbc","operation":"sleep 100","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":100458146,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"3f567c82eb478029","spanId":"ddfdf363b008c73b","operation":"sleep 90","startTimeMicroSeconds":1567104767555000,"durationNanoSeconds":92330043,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"b1e394d9cdd6d11d","spanId":"6445017cb63c7ba9","operation":"sleep 90","startTimeMicroSeconds":1567104767555000,"durationNanoSeconds":92329180,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"335bc92d8fa4452f","spanId":"b1e394d9cdd6d11d","operation":"nested","startTimeMicroSeconds":1567104767555000,"durationNanoSeconds":92379456,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"dfd4569122a058b3","spanId":"3f567c82eb478029","operation":"nested","startTimeMicroSeconds":1567104767555000,"durationNanoSeconds":92380566,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"335bc92d8fa4452f","spanId":"2ac986646278d63d","operation":"sleep 10","startTimeMicroSeconds":1567104767647000,"durationNanoSeconds":10082845,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"dfd4569122a058b3","spanId":"2ea889caee8f7031","operation":"sleep 10","startTimeMicroSeconds":1567104767647000,"durationNanoSeconds":10073932,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"8489fc14d9c2b9f6","spanId":"335bc92d8fa4452f","operation":"first","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":203059829,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"0749f3567b2b5b39","spanId":"dfd4569122a058b3","operation":"first","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":203043842,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"89e043f292b5f454","spanId":"e53bb2ccb2aedaef","operation":"sleep 100","startTimeMicroSeconds":1567104767658000,"durationNanoSeconds":103057078,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"8e33335f3d117037","spanId":"834b16470948a1c8","operation":"sleep 100","startTimeMicroSeconds":1567104767658000,"durationNanoSeconds":103057078,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"0749f3567b2b5b39","spanId":"8e33335f3d117037","operation":"second","startTimeMicroSeconds":1567104767658000,"durationNanoSeconds":103104533,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"8489fc14d9c2b9f6","spanId":"89e043f292b5f454","operation":"second","startTimeMicroSeconds":1567104767658000,"durationNanoSeconds":103108671,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":"b69617f4dcd2c546","spanId":"8489fc14d9c2b9f6","operation":"emit_nested_spans","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":306210624,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":"f769ba780b1011f1","spanId":"0749f3567b2b5b39","operation":"emit_nested_spans","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":306195648,"metadata":{}}
-{"traceId":"b63d8b256d4cd7f7","parentSpanId":null,"spanId":"b69617f4dcd2c546","operation":"task3","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":306251302,"metadata":{}}
-{"traceId":"cc5ee247e07bd79d","parentSpanId":null,"spanId":"f769ba780b1011f1","operation":"task2","startTimeMicroSeconds":1567104767454000,"durationNanoSeconds":306236445,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":null,"spanId":"741bc2efc7368d95","operation":"task-queue-time0","startTimeMicroSeconds":1567107473613000,"durationNanoSeconds":2223790,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":null,"spanId":"c3ac3195968325b6","operation":"task-queue-time1","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":297891,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"86c49b325ef032b8","spanId":"86509de338f865df","operation":"sleep 100","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":101295112,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"6c9955ebb644db04","spanId":"40169d727828adc7","operation":"sleep 100","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":101220105,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"0081cd74234072fb","spanId":"11cdad0bd22fb5ff","operation":"sleep 90","startTimeMicroSeconds":1567107473717000,"durationNanoSeconds":91748296,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"2725668a7e18f4f8","spanId":"ebb4dad35d4981a9","operation":"sleep 90","startTimeMicroSeconds":1567107473717000,"durationNanoSeconds":91748088,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"86c49b325ef032b8","spanId":"0081cd74234072fb","operation":"nested","startTimeMicroSeconds":1567107473717000,"durationNanoSeconds":91793798,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"6c9955ebb644db04","spanId":"2725668a7e18f4f8","operation":"nested","startTimeMicroSeconds":1567107473717000,"durationNanoSeconds":91794737,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"6c9955ebb644db04","spanId":"495a5cd213083a90","operation":"sleep 10","startTimeMicroSeconds":1567107473808000,"durationNanoSeconds":10232560,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"1d0a963d1acc12cc","spanId":"6c9955ebb644db04","operation":"first","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":203386893,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"86c49b325ef032b8","spanId":"5b0debb43c9929d2","operation":"sleep 10","startTimeMicroSeconds":1567107473808000,"durationNanoSeconds":11120796,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"091c0ac6bc1c2bf1","spanId":"86c49b325ef032b8","operation":"first","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":204347403,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"ee89aca2514a1dce","spanId":"098e6118a976168e","operation":"sleep 100","startTimeMicroSeconds":1567107473819000,"durationNanoSeconds":104148790,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"66dcc97f50569219","spanId":"fa1b1d9d4ac5a656","operation":"sleep 100","startTimeMicroSeconds":1567107473820000,"durationNanoSeconds":103278313,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"1d0a963d1acc12cc","spanId":"ee89aca2514a1dce","operation":"second","startTimeMicroSeconds":1567107473819000,"durationNanoSeconds":104217831,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"091c0ac6bc1c2bf1","spanId":"66dcc97f50569219","operation":"second","startTimeMicroSeconds":1567107473820000,"durationNanoSeconds":103340080,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":"b13be1502a6ae939","spanId":"1d0a963d1acc12cc","operation":"emit_nested_spans","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":307666578,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":"1b0f6259b944841c","spanId":"091c0ac6bc1c2bf1","operation":"emit_nested_spans","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":307756518,"metadata":{}}
+{"traceId":"2bf56b84eb708715","parentSpanId":null,"spanId":"1b0f6259b944841c","operation":"task0","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":307876125,"metadata":{}}
+{"traceId":"c1aae21d838e19e6","parentSpanId":null,"spanId":"b13be1502a6ae939","operation":"task1","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":307753723,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":null,"spanId":"c9455e463f7b6d90","operation":"task-queue-time3","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":307862075,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":null,"spanId":"2c8b9d6d61abf34a","operation":"task-queue-time2","startTimeMicroSeconds":1567107473615000,"durationNanoSeconds":307956827,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"a6b2db7e2b5f6f9b","spanId":"8616fbf984185e13","operation":"sleep 100","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":100146690,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"862d6c9f40018ebe","spanId":"745d8a6a895e3a0a","operation":"sleep 100","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":100107954,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"36cff5f72ba31568","spanId":"7f5c15283c4bb38b","operation":"sleep 90","startTimeMicroSeconds":1567107474023000,"durationNanoSeconds":92223703,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"87ac64787268040f","spanId":"0abc251b9224c83a","operation":"sleep 90","startTimeMicroSeconds":1567107474023000,"durationNanoSeconds":92225602,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"a6b2db7e2b5f6f9b","spanId":"36cff5f72ba31568","operation":"nested","startTimeMicroSeconds":1567107474023000,"durationNanoSeconds":92290755,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"862d6c9f40018ebe","spanId":"87ac64787268040f","operation":"nested","startTimeMicroSeconds":1567107474023000,"durationNanoSeconds":92297943,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"862d6c9f40018ebe","spanId":"59579cbe2c1b53ff","operation":"sleep 10","startTimeMicroSeconds":1567107474116000,"durationNanoSeconds":10374601,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"a6b2db7e2b5f6f9b","spanId":"62e690541f5972af","operation":"sleep 10","startTimeMicroSeconds":1567107474116000,"durationNanoSeconds":10374586,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"a2a6d0ddc3dceab9","spanId":"a6b2db7e2b5f6f9b","operation":"first","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":202976314,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"88e311179740aefd","spanId":"862d6c9f40018ebe","operation":"first","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":202939713,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"7a373e987148f445","spanId":"f6524028fd6a291f","operation":"sleep 100","startTimeMicroSeconds":1567107474126000,"durationNanoSeconds":102714148,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"fb15c81fde993641","spanId":"05e7be85d0d669d4","operation":"sleep 100","startTimeMicroSeconds":1567107474126000,"durationNanoSeconds":102707064,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"a2a6d0ddc3dceab9","spanId":"7a373e987148f445","operation":"second","startTimeMicroSeconds":1567107474126000,"durationNanoSeconds":102767413,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"88e311179740aefd","spanId":"fb15c81fde993641","operation":"second","startTimeMicroSeconds":1567107474126000,"durationNanoSeconds":102758201,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":"816be5faa98bd7e8","spanId":"a2a6d0ddc3dceab9","operation":"emit_nested_spans","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":305794848,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":"bb758a12d1c584f2","spanId":"88e311179740aefd","operation":"emit_nested_spans","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":305786772,"metadata":{}}
+{"traceId":"d817080adaae6d61","parentSpanId":null,"spanId":"816be5faa98bd7e8","operation":"task3","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":305839963,"metadata":{}}
+{"traceId":"78a6371ad9850a67","parentSpanId":null,"spanId":"bb758a12d1c584f2","operation":"task2","startTimeMicroSeconds":1567107473923000,"durationNanoSeconds":305835040,"metadata":{}}

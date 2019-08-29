@@ -53,7 +53,7 @@ class TracingDemos {
 
             CrossThreadSpan crossThread = CrossThreadSpan.startSpan("task-queue-time" + i);
             executorService.submit(() -> {
-                try (CloseableTracer t = crossThread.threadLocalSibling("task" + i)) {
+                try (CloseableTracer t = crossThread.sibling("task" + i)) {
                     emit_nested_spans();
                     countDownLatch.countDown();
                 }
@@ -72,44 +72,46 @@ class TracingDemos {
         final SettableFuture<Object> future = SettableFuture.create();
         CountDownLatch latch = new CountDownLatch(numCallbacks);
 
-        // Tracer.startSpan()
-        assertThat(Tracer.hasTraceId()).isFalse();
+        try (CloseableTracer tracer = CloseableTracer.startSpan("I am a root span")) {
+            String traceId = Tracer.getTraceId();
+            // assertThat(Tracer.hasTraceId()).isFalse();
 
-        IntStream.range(0, numCallbacks).forEach(i -> {
+            IntStream.range(0, numCallbacks).forEach(i -> {
 
-            assertThat(Tracer.hasTraceId()).isFalse();
-            CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
-            assertThat(Tracer.hasTraceId()).isFalse();
+                // assertThat(Tracer.hasTraceId()).isFalse();
+                CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
+                // assertThat(Tracer.hasTraceId()).isFalse();
 
-            Futures.addCallback(future, new FutureCallback<Object>() {
-                @Override
-                public void onSuccess(@Nullable Object result) {
-                    assertThat(Tracer.hasTraceId()).isFalse();
-
-                    try (CloseableTracer t = span.threadLocalSibling("success" + i)) {
-                        Thread.sleep(10);
-                        latch.countDown();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException(e);
+                Futures.addCallback(future, new FutureCallback<Object>() {
+                    @Override
+                    public void onSuccess(@Nullable Object result) {
+                        assertThat(Tracer.hasTraceId()).isFalse();
+                        try (CloseableTracer t = span.sibling("success" + i)) {
+                            assertThat(Tracer.getTraceId()).isEqualTo(traceId);
+                            Thread.sleep(10);
+                            latch.countDown();
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException(e);
+                        }
                     }
-                }
 
-                @Override
-                public void onFailure(Throwable throwable) {
-                    Assertions.fail();
-                }
-            }, executorService);
-        });
-
-        assertThat(Tracer.hasTraceId()).isFalse();
-
-        try (CloseableTracer root = CloseableTracer.startSpan("bbb")) {
-            executorService.submit(() -> {
-                future.set(null);
+                    @Override
+                    public void onFailure(Throwable throwable) {
+                        Assertions.fail();
+                    }
+                }, executorService);
             });
-        }
 
+            // assertThat(Tracer.hasTraceId()).isFalse();
+
+            try (CloseableTracer root = CloseableTracer.startSpan("bbb")) {
+                executorService.submit(() -> {
+                    future.set(null);
+                });
+            }
+
+        }
         assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -151,7 +153,7 @@ class TracingDemos {
             consumerExecutorService.submit(() -> {
                 for (int i = 0; i < numElem; i++) {
                     QueuedWork queuedWork = work.take();
-                    try (CloseableTracer processing = queuedWork.span().threadLocalSibling("consume" + queuedWork.name())) {
+                    try (CloseableTracer processing = queuedWork.span().sibling("consume" + queuedWork.name())) {
                         Thread.sleep(10);
                     }
                     consumeLatch.countDown();
@@ -175,9 +177,9 @@ class TracingDemos {
 
             sleep(100, "first network call (will fail)");
 
-            CrossThreadSpan backoff1 = overall.crossThreadChild("backoff for 20ms");
+            CrossThreadSpan backoff1 = overall.crossThreadSpan("backoff for 20ms");
             executor.schedule(() -> {
-                try (CloseableTracer attempt2 = backoff1.threadLocalSibling("secondAttempt")) {
+                try (CloseableTracer attempt2 = backoff1.sibling("secondAttempt")) {
 
                     Thread.sleep(100);
                     overall.terminate();
@@ -205,7 +207,7 @@ class TracingDemos {
         CrossThreadSpan foo = CrossThreadSpan.startSpan("foo");
         FluentFuture.from(future)
                 .transform(result -> {
-                    try (CloseableTracer t = foo.threadLocalChild("first transform")) {
+                    try (CloseableTracer t = foo.child("first transform")) {
                         Thread.sleep(1000);
                         return result;
                     } catch (InterruptedException e) {
@@ -213,7 +215,7 @@ class TracingDemos {
                     }
                 }, executor)
                 .transform(result -> {
-                    try (CloseableTracer t = foo.threadLocalChild("second transform")) {
+                    try (CloseableTracer t = foo.child("second transform")) {
                         Thread.sleep(1000);
                         latch.countDown();
                         return result;

@@ -1,3 +1,3 @@
-{"traceId":"4fe130d36a5b0402","parentSpanId":"5848d51bb7023248","spanId":"6da6a86a83b0e037","operation":"first transform","startTimeMicroSeconds":1567104764537000,"durationNanoSeconds":1010068632,"metadata":{}}
-{"traceId":"4fe130d36a5b0402","parentSpanId":"5848d51bb7023248","spanId":"9968b2aa06934b69","operation":"second transform","startTimeMicroSeconds":1567104765552000,"durationNanoSeconds":1003764799,"metadata":{}}
-{"traceId":"4fe130d36a5b0402","parentSpanId":null,"spanId":"5848d51bb7023248","operation":"foo","startTimeMicroSeconds":1567104764474000,"durationNanoSeconds":2080916936,"metadata":{}}
+{"traceId":"a06693bc6df83fa2","parentSpanId":"ebd61a7b40526bbf","spanId":"6460752594f661cd","operation":"first transform","startTimeMicroSeconds":1567107470960000,"durationNanoSeconds":1008200415,"metadata":{}}
+{"traceId":"a06693bc6df83fa2","parentSpanId":"ebd61a7b40526bbf","spanId":"3fae4ee2cd74cb6e","operation":"second transform","startTimeMicroSeconds":1567107471973000,"durationNanoSeconds":1002588040,"metadata":{}}
+{"traceId":"a06693bc6df83fa2","parentSpanId":null,"spanId":"ebd61a7b40526bbf","operation":"foo","startTimeMicroSeconds":1567107470902000,"durationNanoSeconds":2072820670,"metadata":{}}

@@ -23,6 +23,7 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.concurrent.ThreadSafe;
@@ -41,8 +42,6 @@ public final class CrossThreadSpan {
         this.openSpan = openSpan;
     }
 
-    // TODO(dfox): move these static factories to Tracers.java ??
-    // TODO don't construct an OpenSpan if we don't need it
     @CheckReturnValue
     public static CrossThreadSpan startSpan(String operation) {
         Trace trace = Tracer.hasTraceId()
@@ -60,59 +59,80 @@ public final class CrossThreadSpan {
         return new CrossThreadSpan(trace.getTraceId(), trace.isObservable(), new AtomicReference<>(openSpan1));
     }
 
-    /** Destructive operation - once you call this, you can't use it anymore. */
+    /**
+     * Complete the span. This method does not change any thread-local state, so successive operations on this
+     * thread may have different traceIds. If you want to finish the span and continue work related to
+     * this traceId use {@link #sibling}, or if you want to continue work related to this traceId without completing
+     * the span, use {@link #child}.
+     */
     public void terminate() {
-        OpenSpan openSpan1 = openSpan.getAndSet(null);
-        Preconditions.checkState(openSpan1 != null, "CrossThreadSpan may only be completed once");
+        OpenSpan inProgress = consumeOpenSpan("CrossThreadSpan may only be terminated once");
 
-        // end the span
-        Span span = Tracer.toSpan(openSpan1, Collections.emptyMap(), traceId);
+        // end the OpenSpan
+        Map<String, String> metadata = Collections.emptyMap();
+        Span span = Tracer.toSpan(inProgress, metadata, traceId);
 
         Tracer.notifyObservers(span);
     }
 
-    /** Destructive - the calling thread's threadlocal trace state won't be restored after this. */
+    private OpenSpan consumeOpenSpan(String message) {
+        OpenSpan inProgress = openSpan.getAndSet(null);
+        Preconditions.checkState(inProgress != null, message);
+        return inProgress;
+    }
+
+    private OpenSpan accessOpenSpan(String message) {
+        OpenSpan inProgress = openSpan.get();
+        Preconditions.checkState(inProgress != null, message);
+        return inProgress;
+    }
+
+    /**
+     * Finish the cross-thread span and start a new (thread local span) with the given operation name.
+     * NOTE: this is destructive, because any existing threadlocal tracing state is thrown away.
+     */
     @MustBeClosed
-    public CloseableTracer threadLocalSibling(String nextOperationName) {
-        // TODO(dfox): gross - nowhere else lets you make siblings...
-        terminate();
+    public CloseableTracer sibling(String nextOperationName) {
+        OpenSpan inProgress = consumeOpenSpan("Can't call sibling if span has already been closed");
+
+        Map<String, String> metadata = Collections.emptyMap();
+        Span span = Tracer.toSpan(inProgress, metadata, traceId);
+        Tracer.notifyObservers(span);
+
+        // we throw away the existing thread local state and replace it with our view of the world
+        Tracer.clearCurrentTrace();
+        Tracer.setTrace(Trace.of(observable, traceId));
+
+        return CloseableTracer.startSpan(nextOperationName, inProgress.getParentSpanId(), SpanType.LOCAL);
+    }
+
+    /**
+     * Start a new span parented to this current in-progress CrossThreadSpan.
+     * NOTE: this is destructive, because any existing threadlocal tracing state is thrown away.
+     */
+    @MustBeClosed
+    public CloseableTracer child(String nextOperationName) {
         Tracer.clearCurrentTrace();
 
-        // a fresh copy doesn't have any of the old spans
-        Trace rehydratedTrace = Trace.of(observable, traceId);
-        Tracer.setTrace(rehydratedTrace);
+        OpenSpan inProgress = accessOpenSpan("Can't create child after terminate has been called");
 
-        return CloseableTracer.startSpan(nextOperationName, SpanType.LOCAL);
+        Tracer.setTrace(Trace.of(observable, traceId));
+
+        return CloseableTracer.startSpan(nextOperationName, Optional.of(inProgress.getSpanId()), SpanType.LOCAL);
     }
 
     @CheckReturnValue
-    public CrossThreadSpan crossThreadChild(String operation) {
-        OpenSpan openSpan1 = openSpan.get();
-        Preconditions.checkState(openSpan1 != null, "Can't create crossThreadChild after terminate has been called");
+    public CrossThreadSpan crossThreadSpan(String operation) {
+        OpenSpan parent = openSpan.get();
+        Preconditions.checkState(parent != null, "Can't create crossThreadSpan after terminate has been called");
 
-        OpenSpan openSpan11 = OpenSpan.of(
+        OpenSpan child = OpenSpan.of(
                 operation,
                 Tracers.randomId(),
                 SpanType.LOCAL,
-                Optional.of(openSpan1.getSpanId()),
-                openSpan1.getOriginatingSpanId());
+                Optional.of(parent.getSpanId()),
+                parent.getOriginatingSpanId());
 
-        return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(openSpan11));
-    }
-
-    /** This is also destructive because original trace state won't be restored afterwards. */
-    @MustBeClosed
-    public CloseableTracer threadLocalChild(String nextOperationName) {
-        Tracer.clearCurrentTrace();
-
-        OpenSpan openSpan1 = openSpan.get();
-        Preconditions.checkState(openSpan1 != null, "Can't create threadLocalChild after terminate has been called");
-
-        Trace rehydratedTrace = Trace.of(observable, traceId);
-        // 🌶🌶🌶 someone could now call Tracer.fastCompleteSpan and emit this guy from multiple threads!!!
-        rehydratedTrace.push(openSpan1);
-        Tracer.setTrace(rehydratedTrace);
-
-        return CloseableTracer.startSpan(nextOperationName, SpanType.LOCAL);
+        return new CrossThreadSpan(traceId, Tracer.isTraceObservable(), new AtomicReference<>(child));
     }
 }
