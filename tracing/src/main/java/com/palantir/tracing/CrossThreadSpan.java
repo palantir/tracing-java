@@ -42,6 +42,7 @@ public final class CrossThreadSpan {
         this.openSpan = openSpan;
     }
 
+    // TODO(dfox): move these static factories to Tracers.java ??
     // intentionally not using AutoCloseable and '@MustBeClosed' because try-with-resources isn't convenient across
     // threads
     @CheckReturnValue
@@ -51,7 +52,11 @@ public final class CrossThreadSpan {
 
     @CheckReturnValue
     public static CrossThreadSpan startSpan(String operation, SpanType spanType) {
+
         Trace trace = Tracer.getOrCreateCurrentTrace();
+        // Trace trace = Tracer.hasTraceId()
+        //         ? Tracer.getOrCreateCurrentTrace()
+        //         : Tracer.createTrace(Observability.UNDECIDED, Tracers.randomId());
 
         // TODO don't make this if we don't need it
         OpenSpan openSpan = OpenSpan.of(
