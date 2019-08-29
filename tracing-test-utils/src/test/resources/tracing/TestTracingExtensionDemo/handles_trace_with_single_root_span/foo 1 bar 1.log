@@ -1,6 +1,5 @@
-{"traceId":"e376b163733717ab","parentSpanId":null,"spanId":"7a4a35d3f91d4ef0","operation":"ignored","startTimeMicroSeconds":1567003613915517,"durationNanoSeconds":10171250,"metadata":{}}
-{"traceId":"e1dd39bfebc8b62c","parentSpanId":"a5517a9d66e6b9a0","spanId":"3e31fbd2066d2647","operation":"nested","startTimeMicroSeconds":1567003614046698,"durationNanoSeconds":92753796,"metadata":{}}
-{"traceId":"e1dd39bfebc8b62c","parentSpanId":"e13d0d832a0fca43","spanId":"a5517a9d66e6b9a0","operation":"first","startTimeMicroSeconds":1567003613943775,"durationNanoSeconds":205816212,"metadata":{}}
-{"traceId":"e1dd39bfebc8b62c","parentSpanId":"e13d0d832a0fca43","spanId":"310b9a801817ae49","operation":"second","startTimeMicroSeconds":1567003614149650,"durationNanoSeconds":100073963,"metadata":{}}
-{"traceId":"e1dd39bfebc8b62c","parentSpanId":"e13d0d832a0fca43","spanId":"c496eaae37e1deee","operation":"third","startTimeMicroSeconds":1567003614249803,"durationNanoSeconds":100229634,"metadata":{}}
-{"traceId":"e1dd39bfebc8b62c","parentSpanId":null,"spanId":"e13d0d832a0fca43","operation":"root","startTimeMicroSeconds":1567003613943759,"durationNanoSeconds":406350038,"metadata":{}}
+{"traceId":"fc66359b4cf2cc43","parentSpanId":"65752bf490a47a30","spanId":"55d0ab448795fc97","operation":"nested","startTimeMicroSeconds":1567076544357605,"durationNanoSeconds":93468089,"metadata":{}}
+{"traceId":"fc66359b4cf2cc43","parentSpanId":"07d4220dd5e520fc","spanId":"65752bf490a47a30","operation":"first","startTimeMicroSeconds":1567076544254098,"durationNanoSeconds":207848123,"metadata":{}}
+{"traceId":"fc66359b4cf2cc43","parentSpanId":"07d4220dd5e520fc","spanId":"f302db3ff71079d0","operation":"second","startTimeMicroSeconds":1567076544461999,"durationNanoSeconds":101253285,"metadata":{}}
+{"traceId":"fc66359b4cf2cc43","parentSpanId":"07d4220dd5e520fc","spanId":"bbbc8cbdf2646378","operation":"third","startTimeMicroSeconds":1567076544563361,"durationNanoSeconds":104430058,"metadata":{}}
+{"traceId":"fc66359b4cf2cc43","parentSpanId":null,"spanId":"07d4220dd5e520fc","operation":"root","startTimeMicroSeconds":1567076544254086,"durationNanoSeconds":413762617,"metadata":{}}
