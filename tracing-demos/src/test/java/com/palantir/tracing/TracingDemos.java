@@ -18,10 +18,12 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
@@ -46,12 +48,8 @@ class TracingDemos {
 
                 executorService.submit(() -> {
                     // detachedSpan.close();
-                    try {
-                        emit_nested_spans();
-                        countDownLatch.countDown();
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                    emit_nested_spans();
+                    countDownLatch.countDown();
                 });
             });
         }
@@ -67,23 +65,70 @@ class TracingDemos {
 
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             // DetachedSpan listener = DetachedSpan.start("listener");
-            objectSettableFuture.addListener(() -> {
-
-            }), executorService;
+            // objectSettableFuture.addListener(() -> {
+            //
+            // }), executorService;
         }
     }
 
-    private static void emit_nested_spans() throws InterruptedException {
+    @Test
+    @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
+    void backoffs_on_a_scheduled_executor() throws InterruptedException {
+        ScheduledExecutorService executor = Tracers.wrap(Executors.newScheduledThreadPool(2));
+        CountDownLatch latch = new CountDownLatch(1);
+
+        try (CloseableTracer t = CloseableTracer.startSpan("some-request")) {
+            executor.execute(() -> {
+                // first attempt at a network call
+                sleep(100, "first attempt");
+
+                executor.schedule(() -> {
+                    // attempt number 2
+                    sleep(100, "second attempt");
+
+                    executor.schedule(() -> {
+                        // attempt number 3
+                        sleep(100, "final attempt");
+
+                        latch.countDown();
+                    }, 100, TimeUnit.MILLISECONDS);
+
+                    sleep(200, "second tidying");
+                }, 100, TimeUnit.MILLISECONDS);
+
+                sleep(200, "first tidying");
+
+            });
+
+            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+        }
+
+        MoreExecutors.shutdownAndAwaitTermination(executor, 1, TimeUnit.SECONDS);
+    }
+
+    private static void sleep(int i, String operation) {
+        try (CloseableTracer t = CloseableTracer.startSpan(operation)) {
+            Thread.sleep(i);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("dont care", e);
+        }
+    }
+
+    private static void sleep(int i) {
+        sleep(i, "sleep " + i);
+    }
+
+    private static void emit_nested_spans() {
         try (CloseableTracer root = CloseableTracer.startSpan("root")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
-                Thread.sleep(100);
+                sleep(100);
                 try (CloseableTracer nested = CloseableTracer.startSpan("nested")) {
-                    Thread.sleep(90);
+                    sleep(90);
                 }
-                Thread.sleep(10);
+                sleep(10);
             }
             try (CloseableTracer second = CloseableTracer.startSpan("second")) {
-                Thread.sleep(100);
+                sleep(100);
             }
         }
     }
