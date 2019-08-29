@@ -29,20 +29,20 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class TestTracingExtension implements BeforeEachCallback, AfterEachCallback {
+final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     private static final Logger log = LoggerFactory.getLogger(TestTracingExtension.class);
     private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
 
     @Override
-    public void beforeEach(ExtensionContext context) {
+    public void beforeTestExecution(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.subscribe(context.getUniqueId(), subscriber);
 
@@ -54,7 +54,7 @@ final class TestTracingExtension implements BeforeEachCallback, AfterEachCallbac
 
 
     @Override
-    public void afterEach(ExtensionContext context) throws Exception {
+    public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);
         Tracer.unsubscribe(context.getUniqueId());
 
