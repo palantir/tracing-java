@@ -22,6 +22,7 @@ import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
+import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
@@ -33,7 +34,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -152,6 +155,139 @@ public final class Tracer {
      */
     public static void fastStartSpan(String operation) {
         fastStartSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state.
+     * This is an internal utility that should not be called directly outside of {@link DetachedSpan}.
+     */
+    static DetachedSpan detachInternal(String operation, SpanType type) {
+        Trace maybeCurrentTrace = currentTrace.get();
+        String traceId = maybeCurrentTrace != null
+                ? maybeCurrentTrace.getTraceId() : Tracers.randomId();
+        boolean sampled = maybeCurrentTrace != null
+                ? maybeCurrentTrace.isObservable() : sampler.sample();
+        return sampled
+                ? new SampledDetachedSpan(operation, type, traceId, getParentSpanId(maybeCurrentTrace))
+                : new UnsampledDetachedSpan(traceId);
+    }
+
+    private static Optional<String> getParentSpanId(@Nullable Trace trace) {
+        if (trace != null) {
+            Optional<OpenSpan> maybeOpenSpan = trace.top();
+            if (maybeOpenSpan.isPresent()) {
+                return Optional.of(maybeOpenSpan.get().getSpanId());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static final class SampledDetachedSpan implements DetachedSpan {
+
+        private final AtomicBoolean completed = new AtomicBoolean();
+        private final String traceId;
+        private final OpenSpan openSpan;
+
+        SampledDetachedSpan(
+                String operation, SpanType type, String traceId, Optional<String> parentSpanId) {
+            this.traceId = traceId;
+            this.openSpan = OpenSpan.builder()
+                    .parentSpanId(parentSpanId)
+                    .spanId(Tracers.randomId())
+                    .operation(operation)
+                    .type(type)
+                    .build();
+        }
+
+        @Override
+        public SpanToken attach(String operationName, SpanType type) {
+            warnIfCompleted("startSpanOnCurrentThread");
+            Trace maybeCurrentTrace = currentTrace.get();
+            setTrace(Trace.of(true, traceId));
+            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
+            return TraceRestoringSpanToken.of(maybeCurrentTrace);
+        }
+
+        @Override
+        public DetachedSpan detach(String operation, SpanType type) {
+            warnIfCompleted("startDetachedSpan");
+            return new SampledDetachedSpan(operation, type, traceId, Optional.of(openSpan.getSpanId()));
+        }
+
+        @Override
+        public void close() {
+            if (completed.compareAndSet(false, true)) {
+                Tracer.notifyObservers(toSpan(openSpan, Collections.emptyMap(), traceId));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "SampledDetachedSpan{completed=" + completed
+                    + ", traceId='" + traceId + '\'' + ", openSpan=" + openSpan + '}';
+        }
+
+        private void warnIfCompleted(String feature) {
+            if (completed.get()) {
+                log.warn("{} called after span {} completed",
+                        SafeArg.of("feature", feature),
+                        SafeArg.of("detachedSpan", this));
+            }
+        }
+    }
+
+    private static final class UnsampledDetachedSpan implements DetachedSpan {
+
+        private final String traceId;
+
+        UnsampledDetachedSpan(String traceId) {
+            this.traceId = traceId;
+        }
+
+        @Override
+        public SpanToken attach(String operationName, SpanType type) {
+            Trace maybeCurrentTrace = currentTrace.get();
+            setTrace(Trace.of(false, traceId));
+            Tracer.fastStartSpan(operationName, type);
+            return TraceRestoringSpanToken.of(maybeCurrentTrace);
+        }
+
+        @Override
+        public DetachedSpan detach(String operation, SpanType type) {
+            return this;
+        }
+
+        @Override
+        public void close() {
+            // nop
+        }
+
+        @Override
+        public String toString() {
+            return "UnsampledDetachedSpan{traceId='" + traceId + "'}";
+        }
+    }
+
+    private static final class TraceRestoringSpanToken implements SpanToken {
+
+        // Complete the current span.
+        private static final SpanToken DEFAULT_TOKEN = Tracer::fastCompleteSpan;
+
+        private final Trace original;
+
+        static SpanToken of(@Nullable Trace original) {
+            return original == null ? DEFAULT_TOKEN : new TraceRestoringSpanToken(original);
+        }
+
+        TraceRestoringSpanToken(Trace original) {
+            this.original = Preconditions.checkNotNull(original, "Expected an original trace instance");
+        }
+
+        @Override
+        public void close() {
+            DEFAULT_TOKEN.close();
+            Tracer.setTrace(original);
+        }
     }
 
     /** Discards the current span without emitting it. */
