@@ -20,16 +20,18 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
 import javax.annotation.CheckReturnValue;
 
-/**
- * Span operation which is not bound to thread state, and can measure operations which
- * themselves aren't bound to individual threads.
- */
+/** Span which is not bound to thread state, and can be completed on any other thread. */
 public interface DetachedSpan {
 
     /**
-     * Like {@link Tracer#startSpan(String, SpanType)}, but does not set or modify tracing thread state.
-     * Creates a detached child span using the callers current span as a parent, if it is present, otherwise
-     * creates a detached root span with a new traceId.
+     * Marks the beginning of a span, which you can {@link #complete} on any other thread. Further work on this
+     * originating thread will not automatically parented to this span (because it does not modify any thread local
+     * tracing state). If you don't need this cross-thread functionality, use {@link CloseableTracer}.
+     *
+     * On the destination thread, you can call {@link #completeAndStartChild} to mark the end of this
+     * {@link DetachedSpan} and continue tracing regular thread-local work. Alternatively, if you want to keep this
+     * DetachedSpan open, you can instrument 'sub tasks' using {@link #childSpan} or {@link #childDetachedSpan},
+     * but must remember to call {@link #complete} eventually.
      */
     @CheckReturnValue
     static DetachedSpan start(String operation, SpanType type) {

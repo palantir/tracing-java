@@ -42,6 +42,8 @@ public final class CloseableTracer implements AutoCloseable {
     /**
      * Opens a new span for this thread's call trace with the provided {@link SpanType},
      * labeled with the provided operation.
+     *
+     * If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
     public static CloseableTracer startSpan(String operation, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
