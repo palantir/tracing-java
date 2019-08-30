@@ -207,7 +207,7 @@ public final class Tracer {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId));
             Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringCloseableTracerTODO.of(maybeCurrentTrace);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
         }
 
         @Override
@@ -251,7 +251,7 @@ public final class Tracer {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId));
             Tracer.fastStartSpan(operationName, type);
-            return TraceRestoringCloseableTracerTODO.of(maybeCurrentTrace);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
         }
 
         @Override
@@ -270,7 +270,7 @@ public final class Tracer {
         }
     }
 
-    private static final class TraceRestoringCloseableTracerTODO implements CloseableSpan {
+    private static final class TraceRestoringCloseableSpan implements CloseableSpan {
 
         // Complete the current span.
         private static final CloseableSpan DEFAULT_TOKEN = Tracer::fastCompleteSpan;
@@ -278,10 +278,10 @@ public final class Tracer {
         private final Trace original;
 
         static CloseableSpan of(@Nullable Trace original) {
-            return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableTracerTODO(original);
+            return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableSpan(original);
         }
 
-        TraceRestoringCloseableTracerTODO(Trace original) {
+        TraceRestoringCloseableSpan(Trace original) {
             this.original = Preconditions.checkNotNull(original, "Expected an original trace instance");
         }
 
