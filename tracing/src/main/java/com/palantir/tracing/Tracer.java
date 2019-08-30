@@ -22,6 +22,7 @@ import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
+import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
@@ -200,22 +201,23 @@ public final class Tracer {
         }
 
         @Override
-        public SpanToken attach(String operationName, SpanType type) {
+        @MustBeClosed
+        public CloseableTracerTODO childSpan(String operationName, SpanType type) {
             warnIfCompleted("startSpanOnCurrentThread");
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId));
             Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringSpanToken.of(maybeCurrentTrace);
+            return TraceRestoringCloseableTracerTODO.of(maybeCurrentTrace);
         }
 
         @Override
-        public DetachedSpan detach(String operation, SpanType type) {
+        public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             warnIfCompleted("startDetachedSpan");
             return new SampledDetachedSpan(operation, type, traceId, Optional.of(openSpan.getSpanId()));
         }
 
         @Override
-        public void close() {
+        public void complete() {
             if (completed.compareAndSet(false, true)) {
                 Tracer.notifyObservers(toSpan(openSpan, Collections.emptyMap(), traceId));
             }
@@ -245,20 +247,20 @@ public final class Tracer {
         }
 
         @Override
-        public SpanToken attach(String operationName, SpanType type) {
+        public CloseableTracerTODO childSpan(String operationName, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId));
             Tracer.fastStartSpan(operationName, type);
-            return TraceRestoringSpanToken.of(maybeCurrentTrace);
+            return TraceRestoringCloseableTracerTODO.of(maybeCurrentTrace);
         }
 
         @Override
-        public DetachedSpan detach(String operation, SpanType type) {
+        public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             return this;
         }
 
         @Override
-        public void close() {
+        public void complete() {
             // nop
         }
 
@@ -268,18 +270,18 @@ public final class Tracer {
         }
     }
 
-    private static final class TraceRestoringSpanToken implements SpanToken {
+    private static final class TraceRestoringCloseableTracerTODO implements CloseableTracerTODO {
 
         // Complete the current span.
-        private static final SpanToken DEFAULT_TOKEN = Tracer::fastCompleteSpan;
+        private static final CloseableTracerTODO DEFAULT_TOKEN = Tracer::fastCompleteSpan;
 
         private final Trace original;
 
-        static SpanToken of(@Nullable Trace original) {
-            return original == null ? DEFAULT_TOKEN : new TraceRestoringSpanToken(original);
+        static CloseableTracerTODO of(@Nullable Trace original) {
+            return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableTracerTODO(original);
         }
 
-        TraceRestoringSpanToken(Trace original) {
+        TraceRestoringCloseableTracerTODO(Trace original) {
             this.original = Preconditions.checkNotNull(original, "Expected an original trace instance");
         }
 

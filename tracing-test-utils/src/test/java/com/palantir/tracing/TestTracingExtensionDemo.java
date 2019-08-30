@@ -92,7 +92,7 @@ public final class TestTracingExtensionDemo {
             DetachedSpan detachedSpan = DetachedSpan.start("task-queue-time" + i);
 
             executorService.submit(() -> {
-                detachedSpan.close();
+                detachedSpan.complete();
                 try {
                     prod_code();
                     countDownLatch.countDown();

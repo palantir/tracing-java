@@ -18,14 +18,13 @@ package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
-import java.io.Closeable;
 import javax.annotation.CheckReturnValue;
 
 /**
  * Span operation which is not bound to thread state, and can measure operations which
  * themselves aren't bound to individual threads.
  */
-public interface DetachedSpan extends Closeable {
+public interface DetachedSpan {
 
     /**
      * Like {@link Tracer#startSpan(String, SpanType)}, but does not set or modify tracing thread state.
@@ -51,34 +50,33 @@ public interface DetachedSpan extends Closeable {
      * as the parent instead of thread state.
      */
     @MustBeClosed
-    SpanToken attach(String operationName, SpanType type);
+    CloseableTracerTODO childSpan(String operationName, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead
      * of thread state.
      */
     @MustBeClosed
-    default SpanToken attach(String operationName) {
-        return attach(operationName, SpanType.LOCAL);
+    default CloseableTracerTODO childSpan(String operationName) {
+        return childSpan(operationName, SpanType.LOCAL);
     }
 
     /** Starts a child {@link DetachedSpan} using this instance as the parent. */
     @CheckReturnValue
-    DetachedSpan detach(String operation, SpanType type);
+    DetachedSpan childDetachedSpan(String operation, SpanType type);
 
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.
-     * Equivalent to {@link #attach(String, SpanType)} using {@link SpanType#LOCAL}.
+     * Equivalent to {@link #childSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
-    default DetachedSpan detach(String operation) {
-        return detach(operation, SpanType.LOCAL);
+    default DetachedSpan childDetachedSpan(String operation) {
+        return childDetachedSpan(operation, SpanType.LOCAL);
     }
 
     /**
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but
      * they must not throw either in order to avoid confusing failures.
      */
-    @Override
-    void close();
+    void complete();
 }

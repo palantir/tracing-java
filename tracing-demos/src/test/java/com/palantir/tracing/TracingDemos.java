@@ -51,9 +51,10 @@ class TracingDemos {
         IntStream.range(0, numTasks).forEach(i -> {
             Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
 
-            CrossThreadSpan crossThread = CrossThreadSpan.startSpan("task-queue-time" + i);
+            DetachedSpan crossThread = DetachedSpan.start("task-queue-time" + i);
             executorService.submit(() -> {
-                try (CloseableTracer t = crossThread.sibling("task" + i)) {
+                try (CloseableTracerTODO t = crossThread.childSpan("task" + i)) {
+                    crossThread.complete();
                     emit_nested_spans();
                     countDownLatch.countDown();
                 }
@@ -77,13 +78,14 @@ class TracingDemos {
 
             IntStream.range(0, numCallbacks).forEach(i -> {
 
-                CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
+                DetachedSpan span = DetachedSpan.start("callback-pending" + i + " (cross thread span)");
 
                 Futures.addCallback(future, new FutureCallback<Object>() {
                     @Override
                     public void onSuccess(@Nullable Object result) {
                         assertThat(Tracer.hasTraceId()).isFalse();
-                        try (CloseableTracer tracer = span.sibling("success" + i)) {
+                        try (CloseableTracerTODO tracer = span.childSpan("success" + i)) {
+                            span.complete();
                             assertThat(Tracer.getTraceId()).isEqualTo(traceId);
                             sleep(10);
                             latch.countDown();
@@ -124,7 +126,7 @@ class TracingDemos {
 
                 Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
 
-                CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
+                DetachedSpan span = DetachedSpan.start("callback-pending" + i + " (cross thread span)");
                 producerExecutorService.submit(() -> {
                     work.add(new QueuedWork() {
                         @Override
@@ -133,7 +135,7 @@ class TracingDemos {
                         }
 
                         @Override
-                        public CrossThreadSpan span() {
+                        public DetachedSpan span() {
                             return span;
                         }
                     });
@@ -145,7 +147,8 @@ class TracingDemos {
             consumerExecutorService.submit(() -> {
                 for (int i = 0; i < numElem; i++) {
                     QueuedWork queuedWork = work.take();
-                    try (CloseableTracer processing = queuedWork.span().sibling("consume" + queuedWork.name())) {
+                    try (CloseableTracerTODO processing = queuedWork.span().childSpan("consume" + queuedWork.name())) {
+                        queuedWork.span().complete();
                         Thread.sleep(10);
                     }
                     consumeLatch.countDown();
@@ -162,19 +165,20 @@ class TracingDemos {
         ScheduledExecutorService executor = Tracers.wrap(Executors.newScheduledThreadPool(2));
         CountDownLatch latch = new CountDownLatch(1);
 
-        CrossThreadSpan overall = CrossThreadSpan.startSpan("overall request");
+        DetachedSpan overall = DetachedSpan.start("overall request");
         executor.execute(() -> {
 
             try (CloseableTracer t = CloseableTracer.startSpan("first network call (pretending this fails)")) {
                 sleep(100);
             }
 
-            CrossThreadSpan backoff = overall.crossThreadSpan("backoff");
+            DetachedSpan backoff = overall.childDetachedSpan("backoff");
             executor.schedule(() -> {
-                try (CloseableTracer attempt2 = backoff.sibling("secondAttempt")) {
+                try (CloseableTracerTODO attempt2 = backoff.childSpan("secondAttempt")) {
+                    backoff.complete();
 
                     sleep(100);
-                    overall.terminate();
+                    overall.complete();
                     latch.countDown();
 
                 }
@@ -194,16 +198,16 @@ class TracingDemos {
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
         CountDownLatch latch = new CountDownLatch(1);
 
-        CrossThreadSpan foo = CrossThreadSpan.startSpan("foo");
+        DetachedSpan foo = DetachedSpan.start("foo");
         FluentFuture.from(future)
                 .transform(result -> {
-                    try (CloseableTracer t = foo.child("first transform")) {
+                    try (CloseableTracerTODO t = foo.childSpan("first transform")) {
                         sleep(1000);
                         return result;
                     }
                 }, executor)
                 .transform(result -> {
-                    try (CloseableTracer t = foo.child("second transform")) {
+                    try (CloseableTracerTODO t = foo.childSpan("second transform")) {
                         sleep(1000);
                         latch.countDown();
                         return result;
@@ -212,12 +216,12 @@ class TracingDemos {
                 .addCallback(new FutureCallback<Object>() {
                     @Override
                     public void onSuccess(@Nullable Object result) {
-                        foo.terminate();
+                        foo.complete();
                     }
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        foo.terminate();
+                        foo.complete();
                     }
                 }, executor);
 
@@ -261,6 +265,6 @@ class TracingDemos {
 
     interface QueuedWork {
         String name();
-        CrossThreadSpan span();
+        DetachedSpan span();
     }
 }
