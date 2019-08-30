@@ -145,7 +145,7 @@ class TracingDemos {
             consumerExecutorService.submit(() -> {
                 for (int i = 0; i < numElem; i++) {
                     QueuedWork queuedWork = work.take();
-                    try (CloseableSpan processing = queuedWork.span().completeAndStartChild("consume" + queuedWork.name())) {
+                    try (CloseableSpan span = queuedWork.span().completeAndStartChild("consume" + queuedWork.name())) {
                         Thread.sleep(10);
                     }
                     consumeLatch.countDown();

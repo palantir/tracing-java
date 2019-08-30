@@ -64,9 +64,9 @@ public interface DetachedSpan {
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker")
     default CloseableSpan completeAndStartChild(String operationName, SpanType type) {
-        CloseableSpan closeableTracerTODO = childSpan(operationName, type);
+        CloseableSpan child = childSpan(operationName, type);
         complete();
-        return closeableTracerTODO;
+        return child;
     }
 
     @MustBeClosed

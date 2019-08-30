@@ -20,6 +20,7 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.MustBeClosed;
@@ -362,7 +363,7 @@ public final class Tracer {
         return maybeSpan;
     }
 
-    static void notifyObservers(Span span) {
+    private static void notifyObservers(Span span) {
         compositeObserver.accept(span);
     }
 
@@ -374,7 +375,7 @@ public final class Tracer {
         return span;
     }
 
-    static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {
+    private static Span toSpan(OpenSpan openSpan, Map<String, String> metadata, String traceId) {
         return Span.builder()
                 .traceId(traceId)
                 .spanId(openSpan.getSpanId())
@@ -507,7 +508,7 @@ public final class Tracer {
         }
     }
 
-    static Trace getOrCreateCurrentTrace() {
+    private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
             trace = createTrace(Observability.UNDECIDED, Tracers.randomId());
@@ -516,6 +517,7 @@ public final class Tracer {
         return trace;
     }
 
+    @VisibleForTesting
     static void clearCurrentTrace() {
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
