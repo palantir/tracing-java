@@ -74,13 +74,10 @@ class TracingDemos {
 
         try (CloseableTracer tracer = CloseableTracer.startSpan("I am a root span")) {
             String traceId = Tracer.getTraceId();
-            // assertThat(Tracer.hasTraceId()).isFalse();
 
             IntStream.range(0, numCallbacks).forEach(i -> {
 
-                // assertThat(Tracer.hasTraceId()).isFalse();
                 CrossThreadSpan span = CrossThreadSpan.startSpan("callback-pending" + i + " (cross thread span)");
-                // assertThat(Tracer.hasTraceId()).isFalse();
 
                 Futures.addCallback(future, new FutureCallback<Object>() {
                     @Override
@@ -88,11 +85,8 @@ class TracingDemos {
                         assertThat(Tracer.hasTraceId()).isFalse();
                         try (CloseableTracer tracer = span.sibling("success" + i)) {
                             assertThat(Tracer.getTraceId()).isEqualTo(traceId);
-                            Thread.sleep(10);
+                            sleep(10);
                             latch.countDown();
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException(e);
                         }
                     }
 
@@ -102,8 +96,6 @@ class TracingDemos {
                     }
                 }, executorService);
             });
-
-            // assertThat(Tracer.hasTraceId()).isFalse();
 
             try (CloseableTracer root = CloseableTracer.startSpan("bbb")) {
                 executorService.submit(() -> {
@@ -170,23 +162,21 @@ class TracingDemos {
         ScheduledExecutorService executor = Tracers.wrap(Executors.newScheduledThreadPool(2));
         CountDownLatch latch = new CountDownLatch(1);
 
-        // THIS PATTERN IS GROSS, MAYBE DON"T NEED TO SUPPORT IT?
-
         CrossThreadSpan overall = CrossThreadSpan.startSpan("overall request");
         executor.execute(() -> {
 
-            sleep(100, "first network call (will fail)");
+            try (CloseableTracer t = CloseableTracer.startSpan("first network call (pretending this fails)")) {
+                sleep(100);
+            }
 
-            CrossThreadSpan backoff1 = overall.crossThreadSpan("backoff for 20ms");
+            CrossThreadSpan backoff = overall.crossThreadSpan("backoff");
             executor.schedule(() -> {
-                try (CloseableTracer attempt2 = backoff1.sibling("secondAttempt")) {
+                try (CloseableTracer attempt2 = backoff.sibling("secondAttempt")) {
 
-                    Thread.sleep(100);
+                    sleep(100);
                     overall.terminate();
                     latch.countDown();
 
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
                 }
             }, 20, TimeUnit.MILLISECONDS);
         });
@@ -208,19 +198,15 @@ class TracingDemos {
         FluentFuture.from(future)
                 .transform(result -> {
                     try (CloseableTracer t = foo.child("first transform")) {
-                        Thread.sleep(1000);
+                        sleep(1000);
                         return result;
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
                     }
                 }, executor)
                 .transform(result -> {
                     try (CloseableTracer t = foo.child("second transform")) {
-                        Thread.sleep(1000);
+                        sleep(1000);
                         latch.countDown();
                         return result;
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
                     }
                 }, executor)
                 .addCallback(new FutureCallback<Object>() {
@@ -242,30 +228,33 @@ class TracingDemos {
         assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     }
 
-    private static void sleep(int millis, String operation) {
-        try (CloseableTracer t = CloseableTracer.startSpan(operation)) {
+    private static void sleep(int millis) {
+        try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            throw new RuntimeException("dont care", e);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
         }
     }
 
-    private static void sleep(int millis) {
-        sleep(millis, "sleep " + millis);
+    private static void sleepSpan(int millis) {
+        try (CloseableTracer t = CloseableTracer.startSpan("sleep " + millis)) {
+            sleep(millis);
+        }
     }
 
     @SuppressWarnings("NestedTryDepth")
     private static void emit_nested_spans() {
         try (CloseableTracer root = CloseableTracer.startSpan("emit_nested_spans")) {
             try (CloseableTracer first = CloseableTracer.startSpan("first")) {
-                sleep(100);
+                sleepSpan(100);
                 try (CloseableTracer nested = CloseableTracer.startSpan("nested")) {
-                    sleep(90);
+                    sleepSpan(90);
                 }
-                sleep(10);
+                sleepSpan(10);
             }
             try (CloseableTracer second = CloseableTracer.startSpan("second")) {
-                sleep(100);
+                sleepSpan(100);
             }
         }
     }

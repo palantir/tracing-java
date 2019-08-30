@@ -1,3 +1,3 @@
-{"traceId":"3267285d3cfbe13d","parentSpanId":null,"spanId":"ee6a82e44aae587a","operation":"first network call (will fail)","startTimeMicroSeconds":1567107474290000,"durationNanoSeconds":101461231,"metadata":{}}
-{"traceId":"b1ad7624306b36d5","parentSpanId":"5c09b7d82bee3796","spanId":"1088a0c2aa19012e","operation":"backoff for 20ms","startTimeMicroSeconds":1567107474392000,"durationNanoSeconds":20907211,"metadata":{}}
-{"traceId":"b1ad7624306b36d5","parentSpanId":null,"spanId":"5c09b7d82bee3796","operation":"overall request","startTimeMicroSeconds":1567107474286000,"durationNanoSeconds":226500123,"metadata":{}}
+{"traceId":"eebf31dc7a596d0d","parentSpanId":null,"spanId":"035fef1e6aa60fea","operation":"first network call (pretending this fails)","startTimeMicroSeconds":1567164343792000,"durationNanoSeconds":100265104,"metadata":{}}
+{"traceId":"3afa1d5998abfb95","parentSpanId":"caceb069014e4b72","spanId":"4996c21741a9c22a","operation":"backoff","startTimeMicroSeconds":1567164343892000,"durationNanoSeconds":20952187,"metadata":{}}
+{"traceId":"3afa1d5998abfb95","parentSpanId":null,"spanId":"caceb069014e4b72","operation":"overall request","startTimeMicroSeconds":1567164343787000,"durationNanoSeconds":226787348,"metadata":{}}
