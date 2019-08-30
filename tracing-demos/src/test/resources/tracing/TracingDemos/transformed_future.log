@@ -1,3 +1,3 @@
-{"traceId":"696f08a7fdf18e0b","parentSpanId":"43d2023f678df2b0","spanId":"0e9505216efdc9f7","operation":"first transform","startTimeMicroSeconds":1567164340439000,"durationNanoSeconds":1009327380,"metadata":{}}
-{"traceId":"696f08a7fdf18e0b","parentSpanId":"43d2023f678df2b0","spanId":"2d884149650c8c8b","operation":"second transform","startTimeMicroSeconds":1567164341455000,"durationNanoSeconds":1003090219,"metadata":{}}
-{"traceId":"696f08a7fdf18e0b","parentSpanId":null,"spanId":"43d2023f678df2b0","operation":"foo","startTimeMicroSeconds":1567164340373000,"durationNanoSeconds":2084075392,"metadata":{}}
+{"traceId":"329f397ec3b7a0fe","parentSpanId":"9d83788a8b0f4ad7","spanId":"5ac0ec0a87e2435f","operation":"first transform","startTimeMicroSeconds":1567179152222200,"durationNanoSeconds":1013520284,"metadata":{}}
+{"traceId":"329f397ec3b7a0fe","parentSpanId":"9d83788a8b0f4ad7","spanId":"e5e9381fe8b0fa02","operation":"second transform","startTimeMicroSeconds":1567179153239438,"durationNanoSeconds":1002827662,"metadata":{}}
+{"traceId":"329f397ec3b7a0fe","parentSpanId":null,"spanId":"9d83788a8b0f4ad7","operation":"foo","startTimeMicroSeconds":1567179152163922,"durationNanoSeconds":2077780920,"metadata":{}}

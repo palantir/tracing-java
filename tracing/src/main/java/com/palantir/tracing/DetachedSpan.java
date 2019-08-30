@@ -50,15 +50,27 @@ public interface DetachedSpan {
      * as the parent instead of thread state.
      */
     @MustBeClosed
-    CloseableTracerTODO childSpan(String operationName, SpanType type);
+    CloseableSpan childSpan(String operationName, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead
      * of thread state.
      */
     @MustBeClosed
-    default CloseableTracerTODO childSpan(String operationName) {
+    default CloseableSpan childSpan(String operationName) {
         return childSpan(operationName, SpanType.LOCAL);
+    }
+
+    @MustBeClosed
+    default CloseableSpan completeAndStartChild(String operationName, SpanType type) {
+        CloseableSpan closeableTracerTODO = childSpan(operationName, type);
+        complete();
+        return closeableTracerTODO;
+    }
+
+    @MustBeClosed
+    default CloseableSpan completeAndStartChild(String operationName) {
+        return completeAndStartChild(operationName, SpanType.LOCAL);
     }
 
     /** Starts a child {@link DetachedSpan} using this instance as the parent. */

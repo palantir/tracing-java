@@ -202,7 +202,7 @@ public final class Tracer {
 
         @Override
         @MustBeClosed
-        public CloseableTracerTODO childSpan(String operationName, SpanType type) {
+        public CloseableSpan childSpan(String operationName, SpanType type) {
             warnIfCompleted("startSpanOnCurrentThread");
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId));
@@ -247,7 +247,7 @@ public final class Tracer {
         }
 
         @Override
-        public CloseableTracerTODO childSpan(String operationName, SpanType type) {
+        public CloseableSpan childSpan(String operationName, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId));
             Tracer.fastStartSpan(operationName, type);
@@ -270,14 +270,14 @@ public final class Tracer {
         }
     }
 
-    private static final class TraceRestoringCloseableTracerTODO implements CloseableTracerTODO {
+    private static final class TraceRestoringCloseableTracerTODO implements CloseableSpan {
 
         // Complete the current span.
-        private static final CloseableTracerTODO DEFAULT_TOKEN = Tracer::fastCompleteSpan;
+        private static final CloseableSpan DEFAULT_TOKEN = Tracer::fastCompleteSpan;
 
         private final Trace original;
 
-        static CloseableTracerTODO of(@Nullable Trace original) {
+        static CloseableSpan of(@Nullable Trace original) {
             return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableTracerTODO(original);
         }
 

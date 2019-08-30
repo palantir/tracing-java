@@ -53,8 +53,7 @@ class TracingDemos {
 
             DetachedSpan crossThread = DetachedSpan.start("task-queue-time" + i);
             executorService.submit(() -> {
-                try (CloseableTracerTODO t = crossThread.childSpan("task" + i)) {
-                    crossThread.complete();
+                try (CloseableSpan t = crossThread.completeAndStartChild("task" + i)) {
                     emit_nested_spans();
                     countDownLatch.countDown();
                 }
@@ -84,8 +83,7 @@ class TracingDemos {
                     @Override
                     public void onSuccess(@Nullable Object result) {
                         assertThat(Tracer.hasTraceId()).isFalse();
-                        try (CloseableTracerTODO tracer = span.childSpan("success" + i)) {
-                            span.complete();
+                        try (CloseableSpan tracer = span.completeAndStartChild("success" + i)) {
                             assertThat(Tracer.getTraceId()).isEqualTo(traceId);
                             sleep(10);
                             latch.countDown();
@@ -147,8 +145,7 @@ class TracingDemos {
             consumerExecutorService.submit(() -> {
                 for (int i = 0; i < numElem; i++) {
                     QueuedWork queuedWork = work.take();
-                    try (CloseableTracerTODO processing = queuedWork.span().childSpan("consume" + queuedWork.name())) {
-                        queuedWork.span().complete();
+                    try (CloseableSpan processing = queuedWork.span().completeAndStartChild("consume" + queuedWork.name())) {
                         Thread.sleep(10);
                     }
                     consumeLatch.countDown();
@@ -174,9 +171,7 @@ class TracingDemos {
 
             DetachedSpan backoff = overall.childDetachedSpan("backoff");
             executor.schedule(() -> {
-                try (CloseableTracerTODO attempt2 = backoff.childSpan("secondAttempt")) {
-                    backoff.complete();
-
+                try (CloseableSpan attempt2 = backoff.completeAndStartChild("secondAttempt")) {
                     sleep(100);
                     overall.complete();
                     latch.countDown();
@@ -201,13 +196,13 @@ class TracingDemos {
         DetachedSpan foo = DetachedSpan.start("foo");
         FluentFuture.from(future)
                 .transform(result -> {
-                    try (CloseableTracerTODO t = foo.childSpan("first transform")) {
+                    try (CloseableSpan t = foo.childSpan("first transform")) {
                         sleep(1000);
                         return result;
                     }
                 }, executor)
                 .transform(result -> {
-                    try (CloseableTracerTODO t = foo.childSpan("second transform")) {
+                    try (CloseableSpan t = foo.childSpan("second transform")) {
                         sleep(1000);
                         latch.countDown();
                         return result;

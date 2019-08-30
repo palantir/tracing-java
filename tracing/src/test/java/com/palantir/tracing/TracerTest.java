@@ -382,7 +382,7 @@ public final class TracerTest {
         DetachedSpan detached = DetachedSpan.start(operation1);
         try {
             assertThat(Tracer.hasTraceId()).isFalse();
-            try (CloseableTracerTODO ignored = detached.childSpan(operation2)) {
+            try (CloseableSpan ignored = detached.childSpan(operation2)) {
                 assertThat(Tracer.hasTraceId()).isTrue();
             }
             verify(observer1).consume(spanCaptor.capture());
@@ -401,7 +401,7 @@ public final class TracerTest {
         DetachedSpan detached = DetachedSpan.start("detached");
         Tracer.fastStartSpan("standard");
         String standardTraceId = Tracer.getTraceId();
-        try (CloseableTracerTODO ignored = detached.childSpan("operation")) {
+        try (CloseableSpan ignored = detached.childSpan("operation")) {
             assertThat(Tracer.getTraceId())
                     .describedAs("The detached span should have a different trace")
                     .isNotEqualTo(standardTraceId);
@@ -442,7 +442,7 @@ public final class TracerTest {
         Tracer.fastStartSpan("standard");
         DetachedSpan detached = DetachedSpan.start("detached");
         String standardTraceId = Tracer.getTraceId();
-        try (CloseableTracerTODO ignored = detached.childSpan("operation")) {
+        try (CloseableSpan ignored = detached.childSpan("operation")) {
             assertThat(Tracer.getTraceId()).isEqualTo(standardTraceId);
         }
         assertThat(Tracer.getTraceId()).isEqualTo(standardTraceId);
