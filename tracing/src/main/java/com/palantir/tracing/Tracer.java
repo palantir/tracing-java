@@ -69,7 +69,7 @@ public final class Tracer {
     /**
      * Creates a new trace, but does not set it as the current trace.
      */
-    static Trace createTrace(Observability observability, String traceId) {
+    private static Trace createTrace(Observability observability, String traceId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
         return Trace.of(observable, traceId);
