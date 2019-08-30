@@ -230,7 +230,7 @@ class TracingDemos {
                     }
 
                     @Override
-                    public void onFailure(Throwable t) {
+                    public void onFailure(Throwable throwable) {
                         foo.terminate();
                     }
                 }, executor);
