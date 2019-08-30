@@ -1,6 +1,0 @@
-type: improvement
-improvement:
-  description: A new `CrossThreadSpan` class allows measuring operations that begin
-    on one thread and end on another.
-  links:
-  - https://github.com/palantir/tracing-java/pull/247
