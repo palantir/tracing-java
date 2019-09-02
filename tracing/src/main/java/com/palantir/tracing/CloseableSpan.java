@@ -21,10 +21,10 @@ import java.io.Closeable;
 /**
  * Closeable marker around a tracing span operation. This object should be used in a try/with block.
  */
-public interface SpanToken extends Closeable {
+public interface CloseableSpan extends Closeable {
 
     /**
-     * Completes the Span marked by this {@link SpanToken}.
+     * Completes the Span marked by this {@link CloseableSpan}.
      * <p>
      * {@link #close} must be invoked on the same thread which started this span.
      */

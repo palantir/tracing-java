@@ -18,9 +18,15 @@ package com.palantir.tracing;
 
 import com.palantir.tracing.api.Span;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 
-interface TimeBounds {
+interface TimeBounds extends Comparable<TimeBounds> {
+
+    Comparator<TimeBounds> COMPARATOR = Comparator
+            .comparingLong(TimeBounds::startMicros)
+            .thenComparing(TimeBounds::endNanos);
+
     long startMicros();
     long endNanos();
     default long startNanos() {
@@ -44,6 +50,11 @@ interface TimeBounds {
                 .max()
                 .getAsLong();
         return new TimeBounds() {
+            @Override
+            public int compareTo(TimeBounds other) {
+                return COMPARATOR.compare(this, other);
+            }
+
             @Override
             public long startMicros() {
                 return earliestStartMicros;

@@ -92,8 +92,7 @@ public final class TestTracingExtensionDemo {
             DetachedSpan detachedSpan = DetachedSpan.start("task-queue-time" + i);
 
             executorService.submit(() -> {
-                detachedSpan.close();
-                try {
+                try (CloseableSpan closeableSpan = detachedSpan.completeAndStartChild("do-work-" + i)) {
                     prod_code();
                     countDownLatch.countDown();
                 } catch (InterruptedException e) {

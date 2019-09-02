@@ -18,19 +18,20 @@ package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
-import java.io.Closeable;
 import javax.annotation.CheckReturnValue;
 
-/**
- * Span operation which is not bound to thread state, and can measure operations which
- * themselves aren't bound to individual threads.
- */
-public interface DetachedSpan extends Closeable {
+/** Span which is not bound to thread state, and can be completed on any other thread. */
+public interface DetachedSpan {
 
     /**
-     * Like {@link Tracer#startSpan(String, SpanType)}, but does not set or modify tracing thread state.
-     * Creates a detached child span using the callers current span as a parent, if it is present, otherwise
-     * creates a detached root span with a new traceId.
+     * Marks the beginning of a span, which you can {@link #complete} on any other thread. Further work on this
+     * originating thread will not automatically parented to this span (because it does not modify any thread local
+     * tracing state). If you don't need this cross-thread functionality, use {@link CloseableTracer}.
+     *
+     * On the destination thread, you can call {@link #completeAndStartChild} to mark the end of this
+     * {@link DetachedSpan} and continue tracing regular thread-local work. Alternatively, if you want to keep this
+     * DetachedSpan open, you can instrument 'sub tasks' using {@link #childSpan} or {@link #childDetachedSpan},
+     * but must remember to call {@link #complete} eventually.
      */
     @CheckReturnValue
     static DetachedSpan start(String operation, SpanType type) {
@@ -51,34 +52,46 @@ public interface DetachedSpan extends Closeable {
      * as the parent instead of thread state.
      */
     @MustBeClosed
-    SpanToken attach(String operationName, SpanType type);
+    CloseableSpan childSpan(String operationName, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead
      * of thread state.
      */
     @MustBeClosed
-    default SpanToken attach(String operationName) {
-        return attach(operationName, SpanType.LOCAL);
+    default CloseableSpan childSpan(String operationName) {
+        return childSpan(operationName, SpanType.LOCAL);
+    }
+
+    @MustBeClosed
+    @SuppressWarnings("MustBeClosedChecker")
+    default CloseableSpan completeAndStartChild(String operationName, SpanType type) {
+        CloseableSpan child = childSpan(operationName, type);
+        complete();
+        return child;
+    }
+
+    @MustBeClosed
+    default CloseableSpan completeAndStartChild(String operationName) {
+        return completeAndStartChild(operationName, SpanType.LOCAL);
     }
 
     /** Starts a child {@link DetachedSpan} using this instance as the parent. */
     @CheckReturnValue
-    DetachedSpan detach(String operation, SpanType type);
+    DetachedSpan childDetachedSpan(String operation, SpanType type);
 
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.
-     * Equivalent to {@link #attach(String, SpanType)} using {@link SpanType#LOCAL}.
+     * Equivalent to {@link #childSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
-    default DetachedSpan detach(String operation) {
-        return detach(operation, SpanType.LOCAL);
+    default DetachedSpan childDetachedSpan(String operation) {
+        return childDetachedSpan(operation, SpanType.LOCAL);
     }
 
     /**
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but
      * they must not throw either in order to avoid confusing failures.
      */
-    @Override
-    void close();
+    void complete();
 }
