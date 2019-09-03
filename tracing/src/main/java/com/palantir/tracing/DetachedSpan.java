@@ -34,17 +34,18 @@ public interface DetachedSpan {
      * but must remember to call {@link #complete} eventually.
      */
     @CheckReturnValue
-    static DetachedSpan start(String operation, SpanType type) {
-        return Tracer.detachInternal(operation, type);
+    static DetachedSpan start(String operation) {
+        return start(operation, SpanType.LOCAL);
     }
 
     /**
-     * Opens a new {@link SpanType#LOCAL LOCAL} detached span for this thread's call trace,
-     * labeled with the provided operation.
+     * Marks the beginning of a span, which you can {@link #complete} on any other thread.
+     *
+     * @see DetachedSpan#start(String)
      */
     @CheckReturnValue
-    static DetachedSpan start(String operation) {
-        return start(operation, SpanType.LOCAL);
+    static DetachedSpan start(String operation, SpanType type) {
+        return Tracer.detachInternal(operation, type);
     }
 
     /**
@@ -82,7 +83,7 @@ public interface DetachedSpan {
 
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.
-     * Equivalent to {@link #childSpan(String, SpanType)} using {@link SpanType#LOCAL}.
+     * Equivalent to {@link #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
     default DetachedSpan childDetachedSpan(String operation) {
