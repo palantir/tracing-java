@@ -16,13 +16,6 @@
 
 package com.palantir.tracing;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -75,4 +68,6 @@ public final class TestTracingExtensionDemo {
     void vacuous() {
         // no spans here - nothing should break
     }
+
+    // TODO(forozco): Add test demonstrating async support
 }
