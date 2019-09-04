@@ -28,6 +28,7 @@ import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
+import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -87,6 +88,32 @@ public final class Tracer {
         }
 
         throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
+    }
+
+    static TraceMetadata getTraceMetadata() {
+        Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
+
+        if (isTraceObservable()) {
+            OpenSpan openSpan = trace.top()
+                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
+            return TraceMetadata.builder()
+                    .spanId(openSpan.getSpanId())
+                    .parentSpanId(openSpan.getParentSpanId())
+                    .originatingSpanId(trace.getOriginatingSpanId())
+                    .traceId(trace.getTraceId())
+                    .build();
+        } else {
+            // In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId
+            // stack, so we just make one up (just in time). This matches the behaviour of Tracer#startSpan.
+
+            // 🌶🌶🌶 this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
+            return TraceMetadata.builder()
+                    .spanId(Tracers.randomId())
+                    .parentSpanId(Optional.of(Tracers.randomId()))
+                    .originatingSpanId(trace.getOriginatingSpanId())
+                    .traceId(trace.getTraceId())
+                    .build();
+        }
     }
 
     /**
