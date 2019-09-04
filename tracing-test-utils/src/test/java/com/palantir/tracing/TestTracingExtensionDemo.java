@@ -75,32 +75,4 @@ public final class TestTracingExtensionDemo {
     void vacuous() {
         // no spans here - nothing should break
     }
-
-    @Test
-    @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
-    @SuppressWarnings("FutureReturnValueIgnored")
-    void handles_async_spans() throws Exception {
-        int numThreads = 2;
-        int numTasks = 4;
-        int taskDurationMillis = 1000;
-        int expectedDurationMillis = numTasks * taskDurationMillis / numThreads;
-
-        ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-        CountDownLatch countDownLatch = new CountDownLatch(numTasks);
-
-        IntStream.range(0, numTasks).forEach(i -> {
-            DetachedSpan detachedSpan = DetachedSpan.start("task-queue-time" + i);
-
-            executorService.submit(() -> {
-                try (CloseableSpan closeableSpan = detachedSpan.completeAndStartChild("do-work-" + i)) {
-                    prod_code();
-                    countDownLatch.countDown();
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-        });
-
-        assertThat(countDownLatch.await(expectedDurationMillis + 1000, TimeUnit.MILLISECONDS)).isTrue();
-    }
 }
