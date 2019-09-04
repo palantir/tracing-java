@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import com.google.common.annotations.Beta;
 import java.util.Optional;
 
 /**
@@ -38,9 +37,9 @@ import java.util.Optional;
  * </code>
  * </pre>
  *
- * This api is experimental and subject to change.
+ * @deprecated prefer {@link DetachedSpan#start}, which gives you much more granular control.
  */
-@Beta
+@Deprecated
 public final class AsyncTracer {
 
     private static final String DEFAULT_OPERATION = "async";
