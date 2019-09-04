@@ -16,25 +16,27 @@
 
 package com.palantir.tracing;
 
+import com.google.common.annotations.Beta;
 import java.util.Optional;
 import org.immutables.value.Value;
 
 /** Ids necessary to write headers onto network requests. */
+@Beta
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
 interface TraceMetadata {
 
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#TRACE_ID}. */
-    String traceId();
+    String getTraceId();
 
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID}. */
-    String spanId();
+    String getSpanId();
 
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#PARENT_SPAN_ID}. */
-    Optional<String> parentSpanId();
+    Optional<String> getParentSpanId();
 
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#ORIGINATING_SPAN_ID}. */
-    Optional<String> originatingSpanId();
+    Optional<String> getOriginatingSpanId();
 
     static Builder builder() {
         return new Builder();

@@ -20,6 +20,7 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
+import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
@@ -90,6 +91,7 @@ public final class Tracer {
         throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
     }
 
+    @Beta
     static TraceMetadata getTraceMetadata() {
         Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
 
