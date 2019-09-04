@@ -1,5 +1,5 @@
 // temporarily disabling publishing on this so we can iterate further on the API before we commit to something
- apply from: "${rootDir}/gradle/publish-jar.gradle"
+// apply from: "${rootDir}/gradle/publish-jar.gradle"
 
 versionsLock {
     testProject()
