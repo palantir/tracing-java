@@ -28,6 +28,7 @@ import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
+import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -87,6 +88,32 @@ public final class Tracer {
         }
 
         throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
+    }
+
+    static TraceMetadata getTraceMetadata() {
+        Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
+
+        if (trace.isObservable()) {
+            OpenSpan openSpan = trace.top()
+                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
+            return TraceMetadata.builder()
+                    .spanId(openSpan.getSpanId())
+                    .parentSpanId(openSpan.getParentSpanId())
+                    .originatingSpanId(trace.getOriginatingSpanId())
+                    .traceId(trace.getTraceId())
+                    .build();
+        } else {
+            // In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId
+            // stack, so we just make one up (just in time). This matches the behaviour of Tracer#startSpan.
+
+            // n.b. this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
+            return TraceMetadata.builder()
+                    .spanId(Tracers.randomId())
+                    .parentSpanId(Optional.empty())
+                    .originatingSpanId(trace.getOriginatingSpanId())
+                    .traceId(trace.getTraceId())
+                    .build();
+        }
     }
 
     /**
@@ -207,8 +234,8 @@ public final class Tracer {
             warnIfCompleted("startSpanOnCurrentThread");
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId));
-            OpenSpan newSpan = Tracer.startSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringCloseableSpan.of(maybeCurrentTrace, newSpan);
+            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
         }
 
         @Override
@@ -251,8 +278,8 @@ public final class Tracer {
         public CloseableSpan childSpan(String operationName, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId));
-            OpenSpan newSpan = Tracer.startSpan(operationName, type);
-            return TraceRestoringCloseableSpan.of(maybeCurrentTrace, newSpan);
+            Tracer.fastStartSpan(operationName, type);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
         }
 
         @Override
@@ -273,40 +300,23 @@ public final class Tracer {
 
     private static final class TraceRestoringCloseableSpan implements CloseableSpan {
 
-        @Nullable
-        private final Trace traceToRestore;
-        private final OpenSpan newSpan;
+        // Complete the current span.
+        private static final CloseableSpan DEFAULT_TOKEN = Tracer::fastCompleteSpan;
 
-        TraceRestoringCloseableSpan(@Nullable Trace traceToRestore, OpenSpan newSpan) {
-            this.traceToRestore = traceToRestore;
-            this.newSpan = Preconditions.checkNotNull(newSpan, "OpenSpan");
+        private final Trace original;
+
+        static CloseableSpan of(@Nullable Trace original) {
+            return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableSpan(original);
         }
 
-        public static CloseableSpan of(@Nullable Trace traceToRestore, OpenSpan newSpan) {
-            return new TraceRestoringCloseableSpan(traceToRestore, newSpan);
+        TraceRestoringCloseableSpan(Trace original) {
+            this.original = Preconditions.checkNotNull(original, "Expected an original trace instance");
         }
 
         @Override
         public void close() {
-            Tracer.fastCompleteSpan();
-            if (traceToRestore != null) {
-                Tracer.setTrace(traceToRestore);
-            }
-        }
-
-        @Override
-        public String getSpanId() {
-            return newSpan.getSpanId();
-        }
-
-        @Override
-        public Optional<String> getParentSpanId() {
-            return newSpan.getParentSpanId();
-        }
-
-        @Override
-        public Optional<String> getOriginatingSpanId() {
-            return newSpan.getOriginatingSpanId();
+            DEFAULT_TOKEN.close();
+            Tracer.setTrace(original);
         }
     }
 
