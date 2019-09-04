@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import java.io.Closeable;
+import java.util.Optional;
 
 /**
  * Closeable marker around a tracing span operation. This object should be used in a try/with block.
@@ -30,4 +31,10 @@ public interface CloseableSpan extends Closeable {
      */
     @Override
     void close();
+
+    String getSpanId();
+
+    Optional<String> getParentSpanId();
+
+    Optional<String> getOriginatingSpanId();
 }

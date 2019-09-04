@@ -207,8 +207,8 @@ public final class Tracer {
             warnIfCompleted("startSpanOnCurrentThread");
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId));
-            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
+            OpenSpan newSpan = Tracer.startSpan(operationName, openSpan.getSpanId(), type);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace, newSpan);
         }
 
         @Override
@@ -251,8 +251,8 @@ public final class Tracer {
         public CloseableSpan childSpan(String operationName, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId));
-            Tracer.fastStartSpan(operationName, type);
-            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
+            OpenSpan newSpan = Tracer.startSpan(operationName, type);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace, newSpan);
         }
 
         @Override
@@ -273,23 +273,40 @@ public final class Tracer {
 
     private static final class TraceRestoringCloseableSpan implements CloseableSpan {
 
-        // Complete the current span.
-        private static final CloseableSpan DEFAULT_TOKEN = Tracer::fastCompleteSpan;
+        @Nullable
+        private final Trace traceToRestore;
+        private final OpenSpan newSpan;
 
-        private final Trace original;
-
-        static CloseableSpan of(@Nullable Trace original) {
-            return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableSpan(original);
+        TraceRestoringCloseableSpan(@Nullable Trace traceToRestore, OpenSpan newSpan) {
+            this.traceToRestore = traceToRestore;
+            this.newSpan = Preconditions.checkNotNull(newSpan, "OpenSpan");
         }
 
-        TraceRestoringCloseableSpan(Trace original) {
-            this.original = Preconditions.checkNotNull(original, "Expected an original trace instance");
+        public static CloseableSpan of(@Nullable Trace traceToRestore, OpenSpan newSpan) {
+            return new TraceRestoringCloseableSpan(traceToRestore, newSpan);
         }
 
         @Override
         public void close() {
-            DEFAULT_TOKEN.close();
-            Tracer.setTrace(original);
+            Tracer.fastCompleteSpan();
+            if (traceToRestore != null) {
+                Tracer.setTrace(traceToRestore);
+            }
+        }
+
+        @Override
+        public String getSpanId() {
+            return newSpan.getSpanId();
+        }
+
+        @Override
+        public Optional<String> getParentSpanId() {
+            return newSpan.getParentSpanId();
+        }
+
+        @Override
+        public Optional<String> getOriginatingSpanId() {
+            return newSpan.getOriginatingSpanId();
         }
     }
 
