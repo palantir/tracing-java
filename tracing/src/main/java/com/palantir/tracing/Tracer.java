@@ -93,7 +93,7 @@ public final class Tracer {
     static TraceMetadata getTraceMetadata() {
         Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
 
-        if (isTraceObservable()) {
+        if (trace.isObservable()) {
             OpenSpan openSpan = trace.top()
                     .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
             return TraceMetadata.builder()
