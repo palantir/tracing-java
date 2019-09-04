@@ -24,9 +24,6 @@ class SpanAnalyzerTest {
         SpanAnalyzer.Result result1 = SpanAnalyzer.analyze(spans1);
         SpanAnalyzer.Result result2 = SpanAnalyzer.analyze(spans2);
 
-        System.out.println(result1.root());
-        System.out.println(result2.root());
-
         Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(
                 result1, result2, result1.root(), result2.root()).collect(ImmutableSet.toImmutableSet());
         assertThat(failures).isEmpty();
