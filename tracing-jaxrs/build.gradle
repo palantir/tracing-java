@@ -22,11 +22,11 @@ dependencies {
     compile project(":tracing")
     compile "javax.ws.rs:javax.ws.rs-api"
 
-    testCompile "ch.qos.logback:logback-classic"
-    testCompile "junit:junit"
-    testCompile "org.assertj:assertj-core"
-    testCompile "org.jmock:jmock"
-    testCompile "org.mockito:mockito-core"
+    testImplementation "ch.qos.logback:logback-classic"
+    testImplementation "junit:junit"
+    testImplementation "org.assertj:assertj-core"
+    testImplementation "org.jmock:jmock"
+    testImplementation "org.mockito:mockito-core"
 
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
