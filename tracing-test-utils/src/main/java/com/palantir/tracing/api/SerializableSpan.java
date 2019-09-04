@@ -29,7 +29,10 @@ abstract class SerializableSpan {
     public abstract String getTraceId();
     public abstract Optional<String> getParentSpanId();
     public abstract String getSpanId();
-    // public abstract SpanType type();
+    @Value.Default
+    public SpanType getType() {
+        return SpanType.LOCAL;
+    }
     public abstract String getOperation();
     public abstract long getStartTimeMicroSeconds();
     public abstract long getDurationNanoSeconds();
@@ -40,11 +43,24 @@ abstract class SerializableSpan {
                 .traceId(getTraceId())
                 .parentSpanId(getParentSpanId())
                 .spanId(getSpanId())
-                .type(SpanType.LOCAL) // TODO(dfox): wire this up properly later
+                .type(getType())
                 .operation(getOperation())
                 .startTimeMicroSeconds(getStartTimeMicroSeconds())
                 .durationNanoSeconds(getDurationNanoSeconds())
                 .metadata(getMetadata())
+                .build();
+    }
+
+    public static SerializableSpan fromSpan(Span span) {
+        return ImmutableSerializableSpan.builder()
+                .traceId(span.getTraceId())
+                .parentSpanId(span.getParentSpanId())
+                .spanId(span.getSpanId())
+                .type(span.type())
+                .operation(span.getOperation())
+                .startTimeMicroSeconds(span.getStartTimeMicroSeconds())
+                .durationNanoSeconds(span.getDurationNanoSeconds())
+                .metadata(span.getMetadata())
                 .build();
     }
 }

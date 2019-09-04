@@ -51,7 +51,7 @@ public final class Serialization {
         try (OutputStream outputStream = Files.newOutputStream(file)) {
             allSpans.forEach(span -> {
                 try {
-                    byte[] bytes = mapper.writeValueAsBytes(span);
+                    byte[] bytes = mapper.writeValueAsBytes(SerializableSpan.fromSpan(span));
                     outputStream.write(bytes);
                     outputStream.write('\n');
                 } catch (IOException e) {
