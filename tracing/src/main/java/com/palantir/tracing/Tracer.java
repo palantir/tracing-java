@@ -109,7 +109,7 @@ public final class Tracer {
             // 🌶🌶🌶 this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
             return TraceMetadata.builder()
                     .spanId(Tracers.randomId())
-                    .parentSpanId(Optional.of(Tracers.randomId()))
+                    .parentSpanId(Optional.empty())
                     .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
                     .build();
