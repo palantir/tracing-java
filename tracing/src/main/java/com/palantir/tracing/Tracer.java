@@ -212,6 +212,16 @@ public final class Tracer {
         }
 
         @Override
+        @MustBeClosed
+        public CloseableSpanWithMetadata childSpanWithMetadata(String operationName, SpanType type) {
+            warnIfCompleted("startSpanOnCurrentThread");
+            Trace maybeCurrentTrace = currentTrace.get();
+            setTrace(Trace.of(true, traceId));
+            OpenSpan newSpan = Tracer.startSpan(operationName, this.openSpan.getSpanId(), type);
+            return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, newSpan);
+        }
+
+        @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             warnIfCompleted("startDetachedSpan");
             return new SampledDetachedSpan(operation, type, traceId, Optional.of(openSpan.getSpanId()));
@@ -256,6 +266,14 @@ public final class Tracer {
         }
 
         @Override
+        public CloseableSpanWithMetadata childSpanWithMetadata(String operationName, SpanType type) {
+            Trace maybeCurrentTrace = currentTrace.get();
+            setTrace(Trace.of(false, traceId));
+            OpenSpan newSpan = Tracer.startSpan(operationName, type);
+            return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, newSpan);
+        }
+
+        @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             return this;
         }
@@ -290,6 +308,44 @@ public final class Tracer {
         public void close() {
             DEFAULT_TOKEN.close();
             Tracer.setTrace(original);
+        }
+    }
+
+    private static final class TraceRestoringCloseableSpanWithMetadata implements CloseableSpanWithMetadata {
+        @Nullable
+        private final Trace traceToRestore;
+        private final OpenSpan newSpan;
+
+        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace traceToRestore, OpenSpan newSpan) {
+            this.traceToRestore = traceToRestore;
+            this.newSpan = Preconditions.checkNotNull(newSpan, "OpenSpan");
+        }
+
+        public static CloseableSpanWithMetadata of(@Nullable Trace traceToRestore, OpenSpan newSpan) {
+            return new TraceRestoringCloseableSpanWithMetadata(traceToRestore, newSpan);
+        }
+
+        @Override
+        public void close() {
+            Tracer.fastCompleteSpan();
+            if (traceToRestore != null) {
+                Tracer.setTrace(traceToRestore);
+            }
+        }
+
+        @Override
+        public String getSpanId() {
+            return newSpan.getSpanId();
+        }
+
+        @Override
+        public Optional<String> getParentSpanId() {
+            return newSpan.getParentSpanId();
+        }
+
+        @Override
+        public Optional<String> getOriginatingSpanId() {
+            return newSpan.getOriginatingSpanId();
         }
     }
 

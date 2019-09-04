@@ -64,6 +64,15 @@ public interface DetachedSpan {
         return childSpan(operationName, SpanType.LOCAL);
     }
 
+    /**
+     * Starts a span which can be introspected to access all the necessary information to write 'X-B3-*' headers
+     * to a network request (including spanId, parentSpanId, originatingSpanId).
+     *
+     * This method is less performant than {@link #childSpan}.
+     */
+    @MustBeClosed
+    CloseableSpanWithMetadata childSpanWithMetadata(String operationName, SpanType type);
+
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker")
     default CloseableSpan completeAndStartChild(String operationName, SpanType type) {
