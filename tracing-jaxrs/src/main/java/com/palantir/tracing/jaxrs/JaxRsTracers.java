@@ -47,7 +47,7 @@ public final class JaxRsTracers {
         public void write(OutputStream output) throws IOException, WebApplicationException {
             deferredTracer.withTrace(() -> {
                 delegate.write(output);
-                return null;
+                return true;
             });
         }
     }
