@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add Supplier<String> operation name APIs for lazy operation name evaluation
+  links:
+  - https://github.com/palantir/tracing-java/pull/262
