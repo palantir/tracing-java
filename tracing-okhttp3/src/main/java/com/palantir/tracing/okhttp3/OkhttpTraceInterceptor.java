@@ -25,7 +25,11 @@ import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
 
-/** An OkHttp interceptor that adds Zipkin-style trace/span/parent-span headers to the HTTP request. */
+/**
+ * An OkHttp interceptor that adds Zipkin-style trace/span/parent-span headers to the HTTP request.
+ * @deprecated prefer {@link com.palantir.tracing.OkhttpTraceInterceptor2}
+ */
+@Deprecated
 public enum OkhttpTraceInterceptor implements Interceptor {
     INSTANCE;
 

@@ -1,9 +1,4 @@
-{"traceId":"0875499283a0b645","parentSpanId":"f57bff76dda9bccd","spanId":"1f9685688afb892b","operation":"first attempt","startTimeMicroSeconds":1567081023561883,"durationNanoSeconds":107114618,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"f57bff76dda9bccd","spanId":"d28d4828a150e70b","operation":"first tidying","startTimeMicroSeconds":1567081023676041,"durationNanoSeconds":200386672,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"8fddcb256eeeb15a","spanId":"f57bff76dda9bccd","operation":"DeferredTracer(unnamed operation)","startTimeMicroSeconds":1567081023561824,"durationNanoSeconds":314967929,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"df0540811612a1b2","spanId":"4ad94d822f100358","operation":"second attempt","startTimeMicroSeconds":1567081023777701,"durationNanoSeconds":100733508,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"f65d492c10c83ecd","spanId":"2bbf7eb3b51093e2","operation":"final attempt","startTimeMicroSeconds":1567081023983056,"durationNanoSeconds":100766995,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"df0540811612a1b2","spanId":"beadbcad1c24eebe","operation":"second tidying","startTimeMicroSeconds":1567081023879549,"durationNanoSeconds":204268808,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"f57bff76dda9bccd","spanId":"df0540811612a1b2","operation":"DeferredTracer(unnamed operation)","startTimeMicroSeconds":1567081023777644,"durationNanoSeconds":306243186,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":"df0540811612a1b2","spanId":"f65d492c10c83ecd","operation":"DeferredTracer(unnamed operation)","startTimeMicroSeconds":1567081023983012,"durationNanoSeconds":100901662,"metadata":{}}
-{"traceId":"0875499283a0b645","parentSpanId":null,"spanId":"8fddcb256eeeb15a","operation":"some-request","startTimeMicroSeconds":1567081023513315,"durationNanoSeconds":635798768,"metadata":{}}
+{"traceId":"a9b1288b1a50a32f","parentSpanId":null,"spanId":"aea1bfae41893b23","operation":"first network call (pretending this fails)","startTimeMicroSeconds":1567179155258813,"durationNanoSeconds":103760661,"metadata":{}}
+{"traceId":"b8e058ed67897372","parentSpanId":"50fe3e94c84af5ee","spanId":"e3cd9eda596108d2","operation":"backoff","startTimeMicroSeconds":1567179155362656,"durationNanoSeconds":24989226,"metadata":{}}
+{"traceId":"b8e058ed67897372","parentSpanId":null,"spanId":"50fe3e94c84af5ee","operation":"overall request","startTimeMicroSeconds":1567179155255200,"durationNanoSeconds":236451599,"metadata":{}}
+{"traceId":"b8e058ed67897372","parentSpanId":"e3cd9eda596108d2","spanId":"4f7b471a24b311cb","operation":"secondAttempt","startTimeMicroSeconds":1567179155387639,"durationNanoSeconds":104106473,"metadata":{}}

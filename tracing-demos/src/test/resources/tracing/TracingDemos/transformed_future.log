@@ -1,5 +1,3 @@
-{"traceId":"a6640e2cda24d499","parentSpanId":null,"spanId":"4d5de768dffc371a","operation":"root","startTimeMicroSeconds":1567085335148594,"durationNanoSeconds":7302262,"metadata":{}}
-{"traceId":"a6640e2cda24d499","parentSpanId":"aa42b81f0b669f45","spanId":"584c485e1abe0e8d","operation":"first","startTimeMicroSeconds":1567085335152009,"durationNanoSeconds":100990393,"metadata":{}}
-{"traceId":"a6640e2cda24d499","parentSpanId":"4d5de768dffc371a","spanId":"aa42b81f0b669f45","operation":"DeferredTracer(unnamed operation)","startTimeMicroSeconds":1567085335151043,"durationNanoSeconds":102154732,"metadata":{}}
-{"traceId":"a6640e2cda24d499","parentSpanId":"f1c617aeb0e16805","spanId":"5a47668355b72dd5","operation":"second","startTimeMicroSeconds":1567085335253301,"durationNanoSeconds":100526216,"metadata":{}}
-{"traceId":"a6640e2cda24d499","parentSpanId":"aa42b81f0b669f45","spanId":"f1c617aeb0e16805","operation":"DeferredTracer(unnamed operation)","startTimeMicroSeconds":1567085335253276,"durationNanoSeconds":100633142,"metadata":{}}
+{"traceId":"329f397ec3b7a0fe","parentSpanId":"9d83788a8b0f4ad7","spanId":"5ac0ec0a87e2435f","operation":"first transform","startTimeMicroSeconds":1567179152222200,"durationNanoSeconds":1013520284,"metadata":{}}
+{"traceId":"329f397ec3b7a0fe","parentSpanId":"9d83788a8b0f4ad7","spanId":"e5e9381fe8b0fa02","operation":"second transform","startTimeMicroSeconds":1567179153239438,"durationNanoSeconds":1002827662,"metadata":{}}
+{"traceId":"329f397ec3b7a0fe","parentSpanId":null,"spanId":"9d83788a8b0f4ad7","operation":"foo","startTimeMicroSeconds":1567179152163922,"durationNanoSeconds":2077780920,"metadata":{}}

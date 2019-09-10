@@ -53,6 +53,7 @@ public final class DeferredTracer implements Serializable {
     @Nullable
     private final String traceId;
     private final boolean isObservable;
+    @Nullable
     private final String operation;
     @Nullable
     private final String parentSpanId;
@@ -97,6 +98,7 @@ public final class DeferredTracer implements Serializable {
      * Runs the given callable with the current trace at
      * the time of construction of this {@link DeferredTracer}.
      */
+    @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
         if (traceId == null) {
             return inner.call();
