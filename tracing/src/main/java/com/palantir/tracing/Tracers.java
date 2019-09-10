@@ -375,7 +375,7 @@ public final class Tracers {
         public void run() {
             deferredTracer.withTrace(() -> {
                 delegate.run();
-                return null;
+                return true;
             });
         }
     }
