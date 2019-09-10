@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import com.palantir.tracing.api.SpanType;
+import java.util.function.Supplier;
 
 /**
  * Wraps the {@link Tracer} methods in a closeable resource to enable the usage of the try-with-resources pattern.
@@ -40,12 +41,30 @@ public final class CloseableTracer implements AutoCloseable {
     }
 
     /**
+     * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     */
+    public static CloseableTracer startSpan(Supplier<String> operation) {
+        return startSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
      * Opens a new span for this thread's call trace with the provided {@link SpanType},
      * labeled with the provided operation.
      *
      * If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
     public static CloseableTracer startSpan(String operation, SpanType spanType) {
+        Tracer.fastStartSpan(operation, spanType);
+        return INSTANCE;
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType},
+     * labeled with the provided operation.
+     *
+     * If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
+     */
+    public static CloseableTracer startSpan(Supplier<String> operation, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
         return INSTANCE;
     }

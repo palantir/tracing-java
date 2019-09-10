@@ -271,6 +271,16 @@ public final class TracerTest {
     }
 
     @Test
+    public void testFastCompleteSpan_supplier() {
+        Tracer.subscribe("1", observer1);
+        String operation = "operation";
+        Tracer.fastStartSpan(() -> operation);
+        Tracer.fastCompleteSpan();
+        verify(observer1).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
+    }
+
+    @Test
     public void testFastCompleteSpanWithMetadata() {
         Tracer.subscribe("1", observer1);
         Map<String, String> metadata = ImmutableMap.of("key", "value");

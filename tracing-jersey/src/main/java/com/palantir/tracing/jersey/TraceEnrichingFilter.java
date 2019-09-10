@@ -25,6 +25,7 @@ import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Supplier;
 import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -55,12 +56,10 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     // Handles incoming request
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        String path = Optional.ofNullable(uriInfo)
+        Supplier<String> operation = () -> "Jersey: " + requestContext.getMethod() + " " + Optional.ofNullable(uriInfo)
                 .map(ExtendedUriInfo::getMatchedModelResource)
                 .map(Resource::getPath)
                 .orElse("(unknown)");
-
-        String operation = "Jersey: " + requestContext.getMethod() + " " + path;
         // The following strings are all nullable
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);

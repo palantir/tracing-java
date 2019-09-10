@@ -29,6 +29,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -115,6 +116,16 @@ public abstract class Trace {
      */
     abstract void fastStartSpan(String operation, SpanType type);
 
+    /**
+     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    abstract void fastStartSpan(Supplier<String> operation, String parentSpanId, SpanType type);
+
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    abstract void fastStartSpan(Supplier<String> operation, SpanType type);
+
     protected abstract void push(OpenSpan span);
 
     abstract Optional<OpenSpan> top();
@@ -168,6 +179,16 @@ public abstract class Trace {
         @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
         void fastStartSpan(String operation, SpanType type) {
             startSpan(operation, type);
+        }
+
+        @Override
+        void fastStartSpan(Supplier<String> operation, String parentSpanId, SpanType type) {
+            fastStartSpan(operation.get(), parentSpanId, type);
+        }
+
+        @Override
+        void fastStartSpan(Supplier<String> operation, SpanType type) {
+            fastStartSpan(operation.get(), type);
         }
 
         @Override
@@ -239,6 +260,16 @@ public abstract class Trace {
 
         @Override
         void fastStartSpan(String operation, SpanType type) {
+            numberOfSpans++;
+        }
+
+        @Override
+        void fastStartSpan(Supplier<String> operation, String parentSpanId, SpanType type) {
+            numberOfSpans++;
+        }
+
+        @Override
+        void fastStartSpan(Supplier<String> operation, SpanType type) {
             numberOfSpans++;
         }
 

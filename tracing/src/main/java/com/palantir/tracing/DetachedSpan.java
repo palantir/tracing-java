@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
+import java.util.function.Supplier;
 import javax.annotation.CheckReturnValue;
 
 /** Span which is not bound to thread state, and can be completed on any other thread. */
@@ -38,6 +39,12 @@ public interface DetachedSpan {
         return start(operation, SpanType.LOCAL);
     }
 
+    /** Equivalent to {@link #start(String)} with a lazy supplier for the operation name. */
+    @CheckReturnValue
+    static DetachedSpan start(Supplier<String> operation) {
+        return start(operation, SpanType.LOCAL);
+    }
+
     /**
      * Marks the beginning of a span, which you can {@link #complete} on any other thread.
      *
@@ -48,12 +55,25 @@ public interface DetachedSpan {
         return Tracer.detachInternal(operation, type);
     }
 
+    /** Equivalent to {@link #start(String, SpanType)} with a lazy supplier for the operation name. */
+    @CheckReturnValue
+    static DetachedSpan start(Supplier<String> operation, SpanType type) {
+        return Tracer.detachInternal(operation, type);
+    }
+
     /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan}
      * as the parent instead of thread state.
      */
     @MustBeClosed
     CloseableSpan childSpan(String operationName, SpanType type);
+
+    /**
+     * Equivalent to {@link Tracer#fastStartSpan(Supplier, SpanType)}, but using this {@link DetachedSpan}
+     * as the parent instead of thread state.
+     */
+    @MustBeClosed
+    CloseableSpan childSpan(Supplier<String> operationName, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead
@@ -73,7 +93,20 @@ public interface DetachedSpan {
     }
 
     @MustBeClosed
+    @SuppressWarnings("MustBeClosedChecker")
+    default CloseableSpan completeAndStartChild(Supplier<String> operationName, SpanType type) {
+        CloseableSpan child = childSpan(operationName, type);
+        complete();
+        return child;
+    }
+
+    @MustBeClosed
     default CloseableSpan completeAndStartChild(String operationName) {
+        return completeAndStartChild(operationName, SpanType.LOCAL);
+    }
+
+    @MustBeClosed
+    default CloseableSpan completeAndStartChild(Supplier<String> operationName) {
         return completeAndStartChild(operationName, SpanType.LOCAL);
     }
 
@@ -81,12 +114,25 @@ public interface DetachedSpan {
     @CheckReturnValue
     DetachedSpan childDetachedSpan(String operation, SpanType type);
 
+    /** Starts a child {@link DetachedSpan} using this instance as the parent. */
+    @CheckReturnValue
+    DetachedSpan childDetachedSpan(Supplier<String> operation, SpanType type);
+
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.
      * Equivalent to {@link #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
     default DetachedSpan childDetachedSpan(String operation) {
+        return childDetachedSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
+     * Starts a child {@link DetachedSpan} using this instance as the parent.
+     * Equivalent to {@link #childDetachedSpan(Supplier, SpanType)} using {@link SpanType#LOCAL}.
+     */
+    @CheckReturnValue
+    default DetachedSpan childDetachedSpan(Supplier<String> operation) {
         return childDetachedSpan(operation, SpanType.LOCAL);
     }
 

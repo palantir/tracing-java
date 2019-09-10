@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,6 +190,27 @@ public final class Tracer {
     }
 
     /**
+     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(Supplier<String> operation, String parentSpanId, SpanType type) {
+        getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
+    }
+
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(Supplier<String> operation, SpanType type) {
+        getOrCreateCurrentTrace().fastStartSpan(operation, type);
+    }
+
+    /**
+     * Like {@link #startSpan(String)}, but does not return an {@link OpenSpan}.
+     */
+    public static void fastStartSpan(Supplier<String> operation) {
+        fastStartSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
      * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state.
      * This is an internal utility that should not be called directly outside of {@link DetachedSpan}.
      */
@@ -200,6 +222,17 @@ public final class Tracer {
                 ? maybeCurrentTrace.isObservable() : sampler.sample();
         return sampled
                 ? new SampledDetachedSpan(operation, type, traceId, getParentSpanId(maybeCurrentTrace))
+                : new UnsampledDetachedSpan(traceId);
+    }
+
+    static DetachedSpan detachInternal(Supplier<String> operation, SpanType type) {
+        Trace maybeCurrentTrace = currentTrace.get();
+        String traceId = maybeCurrentTrace != null
+                ? maybeCurrentTrace.getTraceId() : Tracers.randomId();
+        boolean sampled = maybeCurrentTrace != null
+                ? maybeCurrentTrace.isObservable() : sampler.sample();
+        return sampled
+                ? new SampledDetachedSpan(operation.get(), type, traceId, getParentSpanId(maybeCurrentTrace))
                 : new UnsampledDetachedSpan(traceId);
     }
 
@@ -241,9 +274,20 @@ public final class Tracer {
         }
 
         @Override
+        @MustBeClosed
+        public CloseableSpan childSpan(Supplier<String> operationName, SpanType type) {
+            return childSpan(operationName.get(), type);
+        }
+
+        @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             warnIfCompleted("startDetachedSpan");
             return new SampledDetachedSpan(operation, type, traceId, Optional.of(openSpan.getSpanId()));
+        }
+
+        @Override
+        public DetachedSpan childDetachedSpan(Supplier<String> operation, SpanType type) {
+            return childDetachedSpan(operation.get(), type);
         }
 
         @Override
@@ -285,7 +329,20 @@ public final class Tracer {
         }
 
         @Override
+        public CloseableSpan childSpan(Supplier<String> operationName, SpanType type) {
+            Trace maybeCurrentTrace = currentTrace.get();
+            setTrace(Trace.of(false, traceId));
+            Tracer.fastStartSpan(operationName, type);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
+        }
+
+        @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
+            return this;
+        }
+
+        @Override
+        public DetachedSpan childDetachedSpan(Supplier<String> operation, SpanType type) {
             return this;
         }
 
