@@ -22,9 +22,9 @@ dependencies {
 
     implementation project(':tracing-api')
 
-    testCompile "junit:junit"
-    testCompile "org.assertj:assertj-core"
-    testCompile "org.mockito:mockito-core"
+    testImplementation "junit:junit"
+    testImplementation "org.assertj:assertj-core"
+    testImplementation "org.mockito:mockito-core"
 
     compileOnly "org.immutables:value::annotations"
     testCompileOnly "org.immutables:value::annotations"
