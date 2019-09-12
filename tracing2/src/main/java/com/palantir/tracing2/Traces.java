@@ -16,9 +16,11 @@
 
 package com.palantir.tracing2;
 
-public interface Trace {
-    /** Adds a new span to this Trace and returns the span. */
-    Span rootSpan(String opName);
+public final class Traces {
+    private Traces() {}
 
-    String getTraceId();
+    /** Returns an empty trace. */
+    public static Trace create(String traceId, boolean isObservable) {
+        return new DefaultTrace(traceId, isObservable);
+    }
 }

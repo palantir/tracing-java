@@ -25,6 +25,10 @@ public final class Spans {
     private static final ThreadLocal<Span> currentSpan = new ThreadLocal<>();
     private static final List<Consumer<CompletedSpan>> consumers = Lists.newCopyOnWriteArrayList();
 
+    public static void clearAllConsumers() {
+        consumers.clear();
+    }
+
     public static void register(Consumer<CompletedSpan> consumer) {
         consumers.add(consumer);
     }
@@ -41,10 +45,6 @@ public final class Spans {
         for (Consumer<CompletedSpan> consumer : consumers) {
             consumer.accept(span);
         }
-    }
-
-    public static String newId() {
-        return "foo";
     }
 
     static void setThreadSpan(Span span) {

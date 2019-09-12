@@ -3,5 +3,12 @@ apply from: "${rootDir}/gradle/publish-jar.gradle"
 dependencies {
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
+
     testCompileOnly "org.immutables:value::annotations"
+    testImplementation "ch.qos.logback:logback-classic"
+    testImplementation "com.palantir.safe-logging:preconditions-assertj"
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.jmock:jmock"
+    testImplementation "org.mockito:mockito-core"
 }

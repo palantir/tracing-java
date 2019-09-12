@@ -16,7 +16,11 @@
 
 package com.palantir.tracing2;
 
-/** A meaningless span that does functionally nothing with no allocations. */
+/**
+ * A no-overhead, no-op, no-allocation {@link Span} implementation used to make unobserved traces effectively free.
+ * <p>
+ * See {@link DefaultSpan} for a a real {@link Span} implementation.
+ */
 final class EmptySpan implements Span {
     static final EmptySpan INSTANCE = new EmptySpan();
 
