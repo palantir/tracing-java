@@ -119,6 +119,7 @@ final class DefaultSpan implements Span {
         return create(trace, Optional.of(this), op);
     }
 
+    @Override
     public String spanId() {
         return spanId;
     }
@@ -126,7 +127,7 @@ final class DefaultSpan implements Span {
     @Override
     public void close() {
         Spans.notify(ImmutableCompletedSpan.builder()
-                .traceId(trace.getTraceId())
+                .traceId(trace.traceId())
                 .parentId(parent.map(Span::spanId))
                 .spanId(spanId)
                 .opName(opName)

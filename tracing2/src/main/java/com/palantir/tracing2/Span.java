@@ -18,7 +18,11 @@ package com.palantir.tracing2;
 
 public interface Span extends AutoCloseable {
     String spanId();
+
     Span sibling(String opName);
+
     Span child(String opName);
+
+    @Override
     void close();
 }

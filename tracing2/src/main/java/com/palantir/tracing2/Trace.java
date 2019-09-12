@@ -20,5 +20,5 @@ public interface Trace {
     /** Adds a new span to this Trace and returns the span. */
     Span rootSpan(String opName);
 
-    String getTraceId();
+    String traceId();
 }

@@ -25,7 +25,7 @@ final class DefaultTrace implements Trace {
 
     DefaultTrace(String traceId, boolean isObservable) {
         spanFactory = isObservable
-                ? (parent, opName) -> new DefaultSpan(this, parent, opName)
+                ? (parent, opName) -> DefaultSpan.create(this, parent, opName)
                 : (parent, opName) -> EmptySpan.INSTANCE;
         this.traceId = traceId;
     }
@@ -35,7 +35,8 @@ final class DefaultTrace implements Trace {
         return spanFactory.apply(Optional.empty(), opName);
     }
 
-    public String getTraceId() {
+    @Override
+    public String traceId() {
         return traceId;
     }
 }

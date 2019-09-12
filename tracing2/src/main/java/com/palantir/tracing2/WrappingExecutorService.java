@@ -15,7 +15,8 @@
  */
 package com.palantir.tracing2;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+
+import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ForwardingExecutorService;
