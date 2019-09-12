@@ -53,9 +53,7 @@ public final class TracingErgonomicsTests {
             // no-op
         }
         assertThat(spans).hasSize(1);
-        assertThat(spans.get(0).opName()).isEqualTo("root1");
-        assertThat(spans.get(0).parentId()).isEmpty();
-        assertThat(spans.get(0).traceId()).isEqualTo(traceId);
+        assertRootSpan(spans.get(0), traceId, "root1");
 
         spans.clear();
 
@@ -64,9 +62,7 @@ public final class TracingErgonomicsTests {
             // no-op
         }
         assertThat(spans).hasSize(1);
-        assertThat(spans.get(0).opName()).isEqualTo("root2");
-        assertThat(spans.get(0).parentId()).isEmpty();
-        assertThat(spans.get(0).traceId()).isEqualTo(traceId);
+        assertRootSpan(spans.get(0), traceId, "root2");
     }
 
     @Test
@@ -83,12 +79,8 @@ public final class TracingErgonomicsTests {
             }
         }
         assertThat(spans).hasSize(2);
-        assertThat(spans.get(1).opName()).isEqualTo("root");
-        assertThat(spans.get(1).parentId()).isEmpty();
-        assertThat(spans.get(1).traceId()).isEqualTo(traceId);
-        assertThat(spans.get(0).opName()).isEqualTo("child");
-        assertThat(spans.get(0).parentId()).contains(spans.get(1).spanId());
-        assertThat(spans.get(0).traceId()).isEqualTo(traceId);
+        assertRootSpan(spans.get(1), traceId, "root");
+        assertSpan(spans.get(0), traceId, spans.get(1).spanId(), "child");
     }
 
     @Test
@@ -109,12 +101,8 @@ public final class TracingErgonomicsTests {
             thread.join();
         }
         assertThat(spans).hasSize(2);
-        assertThat(spans.get(1).opName()).isEqualTo("root");
-        assertThat(spans.get(1).parentId()).isEmpty();
-        assertThat(spans.get(1).traceId()).isEqualTo(traceId);
-        assertThat(spans.get(0).opName()).isEqualTo("child-in-new-thread");
-        assertThat(spans.get(0).parentId()).contains(spans.get(1).spanId());
-        assertThat(spans.get(0).traceId()).isEqualTo(traceId);
+        assertRootSpan(spans.get(1), traceId, "root");
+        assertSpan(spans.get(0), traceId, spans.get(1).spanId(), "child-in-new-thread");
     }
 
     @Test
@@ -136,14 +124,20 @@ public final class TracingErgonomicsTests {
             thread.join();
         }
         assertThat(spans).hasSize(3);
-        assertThat(spans.get(2).opName()).isEqualTo("root");
-        assertThat(spans.get(2).parentId()).isEmpty();
-        assertThat(spans.get(2).traceId()).isEqualTo(traceId);
-        assertThat(spans.get(0).opName()).isEqualTo("child");
-        assertThat(spans.get(0).parentId()).contains(spans.get(2).spanId());
-        assertThat(spans.get(0).traceId()).isEqualTo(traceId);
-        assertThat(spans.get(1).opName()).isEqualTo("sibling-in-new-thread");
-        assertThat(spans.get(1).parentId()).contains(spans.get(2).spanId());
-        assertThat(spans.get(1).traceId()).isEqualTo(traceId);
+        assertRootSpan(spans.get(2), traceId, "root");
+        assertSpan(spans.get(0), traceId, spans.get(2).spanId(), "child");
+        assertSpan(spans.get(1), traceId, spans.get(2).spanId(), "sibling-in-new-thread");
+    }
+
+    private static void assertSpan(CompletedSpan span, String traceId, String parentSpanId, String opName) {
+        assertThat(span.traceId()).isEqualTo(traceId);
+        assertThat(span.parentId()).contains(parentSpanId);
+        assertThat(span.opName()).isEqualTo(opName);
+    }
+
+    private static void assertRootSpan(CompletedSpan span, String traceId, String opName) {
+        assertThat(span.traceId()).isEqualTo(traceId);
+        assertThat(span.parentId()).isEmpty();
+        assertThat(span.opName()).isEqualTo(opName);
     }
 }
