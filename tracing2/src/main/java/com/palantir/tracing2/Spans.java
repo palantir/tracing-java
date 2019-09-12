@@ -55,13 +55,5 @@ public final class Spans {
         return Optional.ofNullable(currentSpan.get());
     }
 
-    static void attach(Optional<Span> span) {
-        span.ifPresent(currentSpan::set);
-    }
-
-    static void remove() {
-        currentSpan.remove();
-    }
-
     private Spans() {}
 }
