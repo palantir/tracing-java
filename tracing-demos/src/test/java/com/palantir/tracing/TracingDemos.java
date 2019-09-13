@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -81,7 +80,7 @@ class TracingDemos {
 
                 Futures.addCallback(future, new FutureCallback<Object>() {
                     @Override
-                    public void onSuccess(@Nullable Object result) {
+                    public void onSuccess(Object unused) {
                         assertThat(Tracer.hasTraceId()).isFalse();
                         try (CloseableSpan tracer = span.completeAndStartChild("success" + i)) {
                             assertThat(Tracer.getTraceId()).isEqualTo(traceId);
@@ -91,7 +90,7 @@ class TracingDemos {
                     }
 
                     @Override
-                    public void onFailure(Throwable throwable) {
+                    public void onFailure(Throwable unused) {
                         Assertions.fail();
                     }
                 }, executorService);
@@ -210,12 +209,12 @@ class TracingDemos {
                 }, executor)
                 .addCallback(new FutureCallback<Object>() {
                     @Override
-                    public void onSuccess(@Nullable Object result) {
+                    public void onSuccess(Object unused) {
                         foo.complete();
                     }
 
                     @Override
-                    public void onFailure(Throwable throwable) {
+                    public void onFailure(Throwable unused) {
                         foo.complete();
                     }
                 }, executor);
