@@ -285,7 +285,7 @@ public final class Tracer {
         }
 
         @Override
-        public DetachedSpan childDetachedSpan(String operation, SpanType type) {
+        public DetachedSpan childDetachedSpan(String unusedOperation, SpanType unusedType) {
             return this;
         }
 
