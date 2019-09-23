@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
+import com.palantir.tracing2.Spans;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,12 +40,14 @@ import org.slf4j.LoggerFactory;
 final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     private static final Logger log = LoggerFactory.getLogger(TestTracingExtension.class);
-    private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
+    // private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
+    private TestTracing2Subscriber subscriber = new TestTracing2Subscriber();
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe(context.getUniqueId(), subscriber);
+        // Tracer.subscribe(context.getUniqueId(), subscriber);
+        Spans.register(subscriber);
 
         // TODO(dfox): sample can be modified by other code, we should be try ensure that the trace is always sampled
         // for the lifetime of the test

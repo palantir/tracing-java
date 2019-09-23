@@ -7,6 +7,7 @@ versionsLock {
 
 dependencies {
     implementation project(":tracing")
+    implementation project(":tracing2")
     compileOnly 'junit:junit'
     compileOnly 'org.junit.jupiter:junit-jupiter-api'
     implementation 'com.palantir.conjure.java.runtime:conjure-java-jackson-serialization'
