@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2018 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2019 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-apply from: "${rootDir}/gradle/publish-jar.gradle"
-apply plugin: 'com.palantir.revapi'
+package com.palantir.tracing;
 
-dependencies {
-    compile project(":tracing")
-    compile "com.squareup.okhttp3:okhttp"
+import java.io.Closeable;
 
-    implementation project(':tracing-api')
+/**
+ * Closeable marker around a tracing span operation. This object should be used in a try/with block.
+ */
+public interface CloseableSpan extends Closeable {
 
-    testImplementation "junit:junit"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.mockito:mockito-core"
-
-    compileOnly "org.immutables:value::annotations"
-    testCompileOnly "org.immutables:value::annotations"
+    /**
+     * Completes the Span marked by this {@link CloseableSpan}.
+     * <p>
+     * {@link #close} must be invoked on the same thread which started this span.
+     */
+    @Override
+    void close();
 }

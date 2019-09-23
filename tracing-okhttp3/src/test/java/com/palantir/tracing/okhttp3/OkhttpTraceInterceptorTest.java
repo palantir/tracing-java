@@ -43,6 +43,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("deprecation")
 public final class OkhttpTraceInterceptorTest {
 
     @Mock private Interceptor.Chain chain;

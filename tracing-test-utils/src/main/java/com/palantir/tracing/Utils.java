@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 final class Utils {
@@ -53,12 +54,14 @@ final class Utils {
 
     private Utils() {}
 
-    public static Path createBuildDirectoryOutputFile(Class<?> clazz, String methodName) {
+    public static Path createOutputFile(Class<?> clazz, String methodName) {
+        Path base = Paths.get(Optional.ofNullable(System.getenv("CIRCLE_ARTIFACTS")).orElse("build"));
+        Path dir = base.resolve("tracing").resolve(clazz.getSimpleName());
         try {
-            Path dir = Files.createDirectories(Paths.get("build/tracing").resolve(clazz.getSimpleName()));
+            Files.createDirectories(dir);
             return dir.resolve(methodName + ".html");
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unable to create directory " + dir, e);
         }
     }
 }

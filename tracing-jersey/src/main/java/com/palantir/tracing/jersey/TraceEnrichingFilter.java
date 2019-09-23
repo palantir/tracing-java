@@ -49,6 +49,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
+    @SuppressWarnings("NullAway") // instantiated using by Jersey using reflection
     private ExtendedUriInfo uriInfo;
 
     // Handles incoming request

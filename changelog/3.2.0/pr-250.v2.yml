@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: 'tracing-test-utils: Fix ordering bugs in SpanAnalyser, and correctly
+    serde span type.'
+  links:
+  - https://github.com/palantir/tracing-java/pull/250

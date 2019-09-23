@@ -15,6 +15,7 @@
  */
 
 apply from: "${rootDir}/gradle/publish-jar.gradle"
+apply plugin: 'com.palantir.revapi'
 
 dependencies {
     compile project(":tracing-api")
@@ -32,13 +33,13 @@ dependencies {
     implementation 'com.google.code.findbugs:jsr305'
     implementation 'com.google.errorprone:error_prone_annotations'
 
-    testCompile "ch.qos.logback:logback-classic"
-    testCompile "com.palantir.safe-logging:preconditions-assertj"
-    testCompile "junit:junit"
-    testCompile "org.assertj:assertj-core"
-    testCompile "org.jmock:jmock"
-    testCompile "org.mockito:mockito-core"
-    testCompile "io.zipkin.java:zipkin"
+    testImplementation "ch.qos.logback:logback-classic"
+    testImplementation "com.palantir.safe-logging:preconditions-assertj"
+    testImplementation "junit:junit"
+    testImplementation "org.assertj:assertj-core"
+    testImplementation "org.jmock:jmock"
+    testImplementation "org.mockito:mockito-core"
+    testImplementation "io.zipkin.java:zipkin"
 
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
