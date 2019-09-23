@@ -25,12 +25,12 @@ final class EmptySpan implements Span {
     static final EmptySpan INSTANCE = new EmptySpan();
 
     @Override
-    public Span sibling(String opName) {
+    public Span sibling(String _opName) {
         return INSTANCE;
     }
 
     @Override
-    public Span child(String opName) {
+    public Span child(String _opName) {
         return INSTANCE;
     }
 
