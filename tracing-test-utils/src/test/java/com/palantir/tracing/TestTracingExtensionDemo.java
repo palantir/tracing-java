@@ -67,7 +67,7 @@ public final class TestTracingExtensionDemo {
     @ParameterizedTest(name = "foo {index} bar {arguments}")
     @ValueSource(ints = {1, 2, 3})
     @TestTracing(snapshot = true)
-    void handles_trace_with_single_root_span(int unused) throws InterruptedException {
+    void handles_trace_with_single_root_span(int _value) throws InterruptedException {
         prod_code();
     }
 

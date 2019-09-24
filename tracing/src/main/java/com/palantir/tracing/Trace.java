@@ -233,12 +233,12 @@ public abstract class Trace {
         }
 
         @Override
-        void fastStartSpan(String unusedOperation, String parentSpanId, SpanType unusedType) {
+        void fastStartSpan(String _operation, String parentSpanId, SpanType _type) {
             startSpan(Optional.of(parentSpanId));
         }
 
         @Override
-        void fastStartSpan(String unusedOperation, SpanType unusedType) {
+        void fastStartSpan(String _operation, SpanType _type) {
             numberOfSpans++;
         }
 

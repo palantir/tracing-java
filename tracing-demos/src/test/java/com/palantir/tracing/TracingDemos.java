@@ -80,7 +80,7 @@ class TracingDemos {
 
                 Futures.addCallback(future, new FutureCallback<Object>() {
                     @Override
-                    public void onSuccess(Object unused) {
+                    public void onSuccess(Object _value) {
                         assertThat(Tracer.hasTraceId()).isFalse();
                         try (CloseableSpan tracer = span.completeAndStartChild("success" + i)) {
                             assertThat(Tracer.getTraceId()).isEqualTo(traceId);
@@ -90,7 +90,7 @@ class TracingDemos {
                     }
 
                     @Override
-                    public void onFailure(Throwable unused) {
+                    public void onFailure(Throwable _throwable) {
                         Assertions.fail();
                     }
                 }, executorService);
@@ -209,12 +209,12 @@ class TracingDemos {
                 }, executor)
                 .addCallback(new FutureCallback<Object>() {
                     @Override
-                    public void onSuccess(Object unused) {
+                    public void onSuccess(Object _value) {
                         foo.complete();
                     }
 
                     @Override
-                    public void onFailure(Throwable unused) {
+                    public void onFailure(Throwable _throwable) {
                         foo.complete();
                     }
                 }, executor);
