@@ -203,7 +203,7 @@ public final class TracerTest {
         } finally {
             Tracer.fastCompleteSpan();
         }
-        assertThat(Tracer.completeSpan().isPresent()).isFalse();
+        assertThat(Tracer.completeSpan()).isNotPresent();
     }
 
     @Test
@@ -340,7 +340,7 @@ public final class TracerTest {
         } finally {
             Tracer.unsubscribe("traceIds");
         }
-        assertThat(traceIds.size()).isEqualTo(2);
+        assertThat(traceIds).hasSize(2);
     }
 
     @Test
