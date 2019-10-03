@@ -242,7 +242,7 @@ public final class TraceEnrichingFilterTest {
 
     public static class TracingTestServer extends Application<Configuration> {
         @Override
-        public final void run(Configuration unused, final Environment env) throws Exception {
+        public final void run(Configuration _value, final Environment env) throws Exception {
             env.jersey().register(new TraceEnrichingFilter());
             env.jersey().register(new TracingTestResource());
         }

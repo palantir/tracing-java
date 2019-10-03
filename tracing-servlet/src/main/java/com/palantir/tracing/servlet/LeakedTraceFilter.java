@@ -42,7 +42,7 @@ public final class LeakedTraceFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(LeakedTraceFilter.class);
 
     @Override
-    public void init(FilterConfig unused) {
+    public void init(FilterConfig _value) {
         // nop
     }
 

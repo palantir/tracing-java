@@ -107,7 +107,7 @@ public class TracingBenchmark {
         };
     }
 
-    public static void main(String[] unused) throws Exception {
+    public static void main(String[] _args) throws Exception {
         Options opt = new OptionsBuilder()
                 .include(TracingBenchmark.class.getSimpleName())
                 .addProfiler(GCProfiler.class)

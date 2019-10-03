@@ -64,7 +64,7 @@ public abstract class AsyncSpanObserver implements SpanObserver {
 
             Futures.addCallback(future, new FutureCallback<Span>() {
                 @Override
-                public void onSuccess(Span unused) {
+                public void onSuccess(Span _value) {
                     numInflights.decrementAndGet();
                 }
 

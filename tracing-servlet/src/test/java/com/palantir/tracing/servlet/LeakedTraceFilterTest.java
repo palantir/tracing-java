@@ -93,10 +93,10 @@ public class LeakedTraceFilterTest {
 
     public static class TracingTestServer extends Application<Configuration> {
         @Override
-        public final void run(Configuration unusedConfig, final Environment env) {
+        public final void run(Configuration _config, final Environment env) {
             env.servlets().addFilter("previousRequestLeaked", new Filter() {
                 @Override
-                public void init(FilterConfig unused) { }
+                public void init(FilterConfig _value) { }
 
                 @Override
                 public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -115,7 +115,7 @@ public class LeakedTraceFilterTest {
             // Register a filter to help us orchestrate test cases
             env.servlets().addFilter("testFilter", new Filter() {
                 @Override
-                public void init(FilterConfig unused) {}
+                public void init(FilterConfig _value) {}
 
                 @Override
                 public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -139,7 +139,7 @@ public class LeakedTraceFilterTest {
 
             env.servlets().addServlet("alwaysLeaks", new HttpServlet() {
                 @Override
-                protected void service(HttpServletRequest unused, HttpServletResponse resp) {
+                protected void service(HttpServletRequest _value, HttpServletResponse resp) {
                     Tracer.fastStartSpan("leaky");
                     resp.addHeader("Leaky-Invoked", "true");
                 }
@@ -147,7 +147,7 @@ public class LeakedTraceFilterTest {
 
             env.servlets().addServlet("reportingServlet", new HttpServlet() {
                 @Override
-                protected void service(HttpServletRequest unused, HttpServletResponse resp) {
+                protected void service(HttpServletRequest _value, HttpServletResponse resp) {
                     resp.addHeader("Servlet-Has-Trace", Boolean.toString(Tracer.hasTraceId()));
                 }
             }).addMapping("/standard", "/previous-request-leaked");
