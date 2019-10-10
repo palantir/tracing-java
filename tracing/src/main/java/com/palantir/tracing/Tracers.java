@@ -77,6 +77,11 @@ public final class Tracers {
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrap(callable);
             }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return wrap(command);
+            }
         };
     }
 
@@ -89,6 +94,11 @@ public final class Tracers {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrap(operation, callable);
+            }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return wrap(operation, command);
             }
         };
     }
@@ -105,6 +115,11 @@ public final class Tracers {
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrap(callable);
             }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return wrap(command);
+            }
         };
     }
 
@@ -118,6 +133,11 @@ public final class Tracers {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrap(operation, callable);
+            }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return wrap(operation, command);
             }
         };
     }
@@ -177,6 +197,11 @@ public final class Tracers {
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrapWithNewTrace(operation, callable);
             }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return wrapWithNewTrace(operation, command);
+            }
         };
     }
 
@@ -203,6 +228,11 @@ public final class Tracers {
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrapWithNewTrace(operation, callable);
+            }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return wrapWithNewTrace(operation, command);
             }
         };
     }
@@ -353,7 +383,9 @@ public final class Tracers {
 
         @Override
         public V call() throws Exception {
-            return this.deferredTracer.withTrace(delegate::call);
+            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+                return delegate.call();
+            }
         }
     }
 
@@ -373,10 +405,9 @@ public final class Tracers {
 
         @Override
         public void run() {
-            deferredTracer.withTrace(() -> {
+            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
                 delegate.run();
-                return true;
-            });
+            }
         }
     }
 
