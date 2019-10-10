@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Tracing aware executors wrap Runnables and Callables more cleanly
+  links:
+  - https://github.com/palantir/tracing-java/pull/310
