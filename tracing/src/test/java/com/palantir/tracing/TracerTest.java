@@ -18,7 +18,6 @@ package com.palantir.tracing;
 
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -251,13 +250,13 @@ public final class TracerTest {
                 "key2", "value2");
         Tracer.fastStartSpan("operation");
         Optional<Span> maybeSpan = Tracer.completeSpan(metadata);
-        assertTrue(maybeSpan.isPresent());
+        assertThat(maybeSpan.isPresent()).isTrue();
         assertThat(maybeSpan.get().getMetadata()).isEqualTo(metadata);
     }
 
     @Test
     public void testCompleteSpanWithoutMetadataHasNoMetadata() {
-        assertTrue(startAndCompleteSpan().getMetadata().isEmpty());
+        assertThat(startAndCompleteSpan().getMetadata().isEmpty()).isTrue();
     }
 
     @Test
