@@ -20,14 +20,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.tracing.api.OpenSpan;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -559,6 +562,57 @@ public final class TracersTest {
         assertThat(Tracers.longToPaddedHex(42)).isEqualTo("000000000000002a");
         assertThat(Tracers.longToPaddedHex(-42)).isEqualTo("ffffffffffffffd6");
         assertThat(Tracers.longToPaddedHex(123456789L)).isEqualTo("00000000075bcd15");
+    }
+
+    /**
+     * n.b. When this test fails it may be fair to update the expected values if the new frames make sense, this
+     * should not necessarily be a blocker, but a function to ensure we consider the consequences of future changes.
+     * Keep in mind that Tracing is used heavily and will appear in stack traces for a lot of exceptions, where we
+     * want to maintain high signal for quick debugging.
+     */
+    @Test
+    public void testExecutorStackDepth_callable() throws InterruptedException, ExecutionException {
+        Callable<StackTraceElement[]> stackTraceCallable = () -> new Exception().getStackTrace();
+        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService tracedExecutor = Tracers.wrap(executor);
+        try {
+            Future<StackTraceElement[]> raw = executor.submit(stackTraceCallable);
+            Future<StackTraceElement[]> traced = tracedExecutor.submit(stackTraceCallable);
+            assertThat(traced.get())
+                    .describedAs("Tracing should only add one additional stack frame")
+                    .hasSize(raw.get().length + 1);
+        } finally {
+            assertThat(MoreExecutors.shutdownAndAwaitTermination(executor, 3, TimeUnit.SECONDS))
+                    .describedAs("Executor failed to shut down")
+                    .isTrue();
+        }
+    }
+
+    /**
+     * n.b. When this test fails it may be fair to update the expected values if the new frames make sense, this
+     * should not necessarily be a blocker, but a function to ensure we consider the consequences of future changes.
+     * Keep in mind that Tracing is used heavily and will appear in stack traces for a lot of exceptions, where we
+     * want to maintain high signal for quick debugging.
+     */
+    @Test
+    public void testExecutorStackDepth_runnable() {
+        // Specifically testing runnables which don't return a value like callable.
+        AtomicReference<StackTraceElement[]> rawStackTrace = new AtomicReference<>();
+        AtomicReference<StackTraceElement[]> tracedStackTrace = new AtomicReference<>();
+        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService tracedExecutor = Tracers.wrap(executor);
+        try {
+            executor.execute(() -> rawStackTrace.set(new Exception().getStackTrace()));
+            tracedExecutor.execute(() -> tracedStackTrace.set(new Exception().getStackTrace()));
+
+        } finally {
+            assertThat(MoreExecutors.shutdownAndAwaitTermination(executor, 3, TimeUnit.SECONDS))
+                    .describedAs("Executor failed to shut down")
+                    .isTrue();
+        }
+        assertThat(tracedStackTrace.get())
+                .describedAs("Tracing should only add one additional stack frame")
+                .hasSize(rawStackTrace.get().length + 1);
     }
 
     private static Callable<Void> newTraceExpectingCallable(String expectedOperation) {
