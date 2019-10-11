@@ -202,7 +202,7 @@ public final class TracerTest {
         } finally {
             Tracer.fastCompleteSpan();
         }
-        assertThat(Tracer.completeSpan().isPresent()).isFalse();
+        assertThat(Tracer.completeSpan()).isNotPresent();
     }
 
     @Test
@@ -250,13 +250,13 @@ public final class TracerTest {
                 "key2", "value2");
         Tracer.fastStartSpan("operation");
         Optional<Span> maybeSpan = Tracer.completeSpan(metadata);
-        assertThat(maybeSpan.isPresent()).isTrue();
+        assertThat(maybeSpan).isPresent();
         assertThat(maybeSpan.get().getMetadata()).isEqualTo(metadata);
     }
 
     @Test
     public void testCompleteSpanWithoutMetadataHasNoMetadata() {
-        assertThat(startAndCompleteSpan().getMetadata().isEmpty()).isTrue();
+        assertThat(startAndCompleteSpan().getMetadata()).isEmpty();
     }
 
     @Test
@@ -339,7 +339,7 @@ public final class TracerTest {
         } finally {
             Tracer.unsubscribe("traceIds");
         }
-        assertThat(traceIds.size()).isEqualTo(2);
+        assertThat(traceIds).hasSize(2);
     }
 
     @Test

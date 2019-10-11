@@ -51,7 +51,7 @@ class TracingDemos {
             Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
 
             DetachedSpan crossThread = DetachedSpan.start("task-queue-time" + i);
-            executorService.submit(() -> {
+            executorService.execute(() -> {
                 try (CloseableSpan t = crossThread.completeAndStartChild("task" + i)) {
                     emit_nested_spans();
                     countDownLatch.countDown();
@@ -97,7 +97,7 @@ class TracingDemos {
             });
 
             try (CloseableTracer root = CloseableTracer.startSpan("bbb")) {
-                executorService.submit(() -> {
+                executorService.execute(() -> {
                     future.set(null);
                 });
             }
@@ -124,7 +124,7 @@ class TracingDemos {
                 Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
 
                 DetachedSpan span = DetachedSpan.start("callback-pending" + i + " (cross thread span)");
-                producerExecutorService.submit(() -> {
+                producerExecutorService.execute(() -> {
                     work.add(new QueuedWork() {
                         @Override
                         public String name() {
@@ -219,7 +219,7 @@ class TracingDemos {
                     }
                 }, executor);
 
-        executor.submit(() -> {
+        executor.execute(() -> {
             future.set(null);
         });
 

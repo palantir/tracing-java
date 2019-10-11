@@ -91,7 +91,7 @@ public final class TestTracingExtensionDemo {
         IntStream.range(0, numTasks).forEach(i -> {
             DetachedSpan detachedSpan = DetachedSpan.start("task-queue-time" + i);
 
-            executorService.submit(() -> {
+            executorService.execute(() -> {
                 try (CloseableSpan closeableSpan = detachedSpan.completeAndStartChild("do-work-" + i)) {
                     prod_code();
                     countDownLatch.countDown();
