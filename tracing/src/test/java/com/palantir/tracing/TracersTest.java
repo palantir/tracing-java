@@ -657,7 +657,7 @@ public final class TracersTest {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
             OpenSpan span = trace.remove(trace.size() - 1);
-            assertThat(trace).hasSize(0);
+            assertThat(trace).isEmpty();
 
             assertThat(traceId).isEqualTo(outsideTraceId);
             assertThat(span.getOperation()).isEqualTo(operation);
@@ -673,7 +673,7 @@ public final class TracersTest {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
             OpenSpan span = trace.remove(trace.size() - 1);
-            assertThat(trace).hasSize(0);
+            assertThat(trace).isEmpty();
 
             assertThat(traceId).isEqualTo(outsideTraceId);
             assertThat(span.getOperation()).isEqualTo(operation);
