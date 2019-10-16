@@ -47,15 +47,11 @@ import org.slf4j.MDC;
 @RunWith(MockitoJUnitRunner.class)
 public class TracedOperationHandlerTest {
 
-    @Captor
-    private ArgumentCaptor<Span> spanCaptor;
+    @Captor private ArgumentCaptor<Span> spanCaptor;
 
-    @Mock
-    private SpanObserver observer;
-    @Mock
-    private TraceSampler traceSampler;
-    @Mock
-    private HttpHandler delegate;
+    @Mock private SpanObserver observer;
+    @Mock private TraceSampler traceSampler;
+    @Mock private HttpHandler delegate;
     private HttpServerExchange exchange = HttpServerExchanges.createStub();
     private String traceId;
 

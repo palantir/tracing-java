@@ -27,15 +27,22 @@ import org.immutables.value.Value;
 abstract class SerializableSpan {
 
     public abstract String getTraceId();
+
     public abstract Optional<String> getParentSpanId();
+
     public abstract String getSpanId();
+
     @Value.Default
     public SpanType getType() {
         return SpanType.LOCAL;
     }
+
     public abstract String getOperation();
+
     public abstract long getStartTimeMicroSeconds();
+
     public abstract long getDurationNanoSeconds();
+
     public abstract Map<String, String> getMetadata();
 
     public Span asSpan() {

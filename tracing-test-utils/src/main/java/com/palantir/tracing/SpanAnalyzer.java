@@ -46,8 +46,8 @@ final class SpanAnalyzer {
     private SpanAnalyzer() {}
 
     private static Stream<Span> depthFirstTraversalOrderedByStartTime(ImmutableGraph<Span> graph, Span parentSpan) {
-        Stream<Span> children = children(graph, parentSpan)
-                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
+        Stream<Span> children =
+                children(graph, parentSpan).flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
         return Stream.concat(Stream.of(parentSpan), children);
     }
@@ -65,16 +65,15 @@ final class SpanAnalyzer {
         Span fakeRootSpan = createFakeRootSpan(bounds);
 
         Set<Span> collisions = new HashSet<>();
-        Map<String, Span> spansBySpanId = spans.stream()
-                .collect(Collectors.toMap(
-                        Span::getSpanId,
-                        Function.identity(),
-                        (left, right) -> {
-                            collisions.add(left);
-                            collisions.add(right);
-                            return left;
-                        },
-                        LinkedHashMap::new));
+        Map<String, Span> spansBySpanId = spans.stream().collect(Collectors.toMap(
+                Span::getSpanId,
+                Function.identity(),
+                (left, right) -> {
+                    collisions.add(left);
+                    collisions.add(right);
+                    return left;
+                },
+                LinkedHashMap::new));
 
         Set<Span> parentlessSpans = spansBySpanId.values().stream()
                 .filter(span -> span.getParentSpanId().isPresent())
@@ -92,35 +91,23 @@ final class SpanAnalyzer {
         // get closed (and therefore emitted) by the time we need to render, so just hook it up to the fake
         ImmutableGraph.Builder<Span> graph = GraphBuilder.directed().immutable();
         spans.forEach(graph::addNode);
-        spans.stream()
-                .filter(span -> !span.getSpanId().equals(rootSpan.getSpanId()))
-                .forEach(span -> graph.putEdge(
-                        span,
-                        span.getParentSpanId()
-                                .flatMap(parentSpanId -> Optional.ofNullable(spansBySpanId.get(parentSpanId)))
-                                .orElse(fakeRootSpan)));
+        spans.stream().filter(span -> !span.getSpanId().equals(rootSpan.getSpanId())).forEach(span -> graph.putEdge(
+                span,
+                span.getParentSpanId()
+                        .flatMap(parentSpanId -> Optional.ofNullable(spansBySpanId.get(parentSpanId)))
+                        .orElse(fakeRootSpan)));
         ImmutableGraph<Span> spanGraph = graph.build();
 
-        return ImmutableResult.builder()
-                .graph(spanGraph)
-                .root(rootSpan)
-                .collisions(collisions)
-                .bounds(bounds)
-                .build();
+        return ImmutableResult.builder().graph(spanGraph).root(rootSpan).collisions(collisions).bounds(bounds).build();
     }
 
     public static Map<String, Result> analyzeByTraceId(Collection<Span> spans) {
-        Map<String, List<Span>> spansByTraceId = spans.stream()
-                .collect(Collectors.groupingBy(Span::getTraceId));
+        Map<String, List<Span>> spansByTraceId = spans.stream().collect(Collectors.groupingBy(Span::getTraceId));
 
         return Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
     }
 
-    static Stream<ComparisonFailure> compareSpansRecursively(
-            Result expected,
-            Result actual,
-            Span ex,
-            Span ac) {
+    static Stream<ComparisonFailure> compareSpansRecursively(Result expected, Result actual, Span ex, Span ac) {
         if (!ex.getOperation().equals(ac.getOperation())) {
             return Stream.of(ComparisonFailure.unequalOperation(ex, ac));
         }
@@ -144,29 +131,24 @@ final class SpanAnalyzer {
         if (!actualContainsOverlappingSpans) {
             return IntStream.range(0, sortedActualChildren.size())
                     .mapToObj(i -> compareSpansRecursively(
-                            expected,
-                            actual,
-                            sortedExpectedChildren.get(i),
-                            sortedActualChildren.get(i)))
+                            expected, actual, sortedExpectedChildren.get(i), sortedActualChildren.get(i)))
                     .flatMap(Function.identity());
         }
 
         if (!compatibleOverlappingSpans(expected, actual, sortedExpectedChildren, sortedActualChildren)) {
-            return Stream.of(ComparisonFailure.unequalChildren(
-                    ex, ac, sortedExpectedChildren, sortedActualChildren));
+            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
         }
         return Stream.empty();
     }
 
     /**
-     * When async spans are involved, there can be many overlapping children with the same operation name.
-     * We exhaustively check each possible pair, and require that each span in the 'expected' list lines up with
-     * something and each span in the 'actual' list also lines up with something.
+     * When async spans are involved, there can be many overlapping children with the same operation name. We
+     * exhaustively check each possible pair, and require that each span in the 'expected' list lines up with something
+     * and each span in the 'actual' list also lines up with something.
      *
-     * It's OK for some spans to be compatible with more than one span (as subtrees could be identical).
+     * <p>It's OK for some spans to be compatible with more than one span (as subtrees could be identical).
      */
-    private static boolean compatibleOverlappingSpans(
-            Result expected, Result actual, List<Span> ex, List<Span> ac) {
+    private static boolean compatibleOverlappingSpans(Result expected, Result actual, List<Span> ex, List<Span> ac) {
         boolean[][] compatibility = new boolean[ex.size()][ac.size()];
 
         for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
@@ -226,22 +208,22 @@ final class SpanAnalyzer {
     @Value.Immutable
     interface Result {
         ImmutableGraph<Span> graph();
+
         Span root();
+
         Set<Span> collisions();
 
         TimeBounds bounds();
 
         @Value.Lazy
         default ImmutableList<Span> orderedSpans() {
-            return depthFirstTraversalOrderedByStartTime(graph(), root())
-                    .collect(ImmutableList.toImmutableList());
+            return depthFirstTraversalOrderedByStartTime(graph(), root()).collect(ImmutableList.toImmutableList());
         }
     }
 
     private static List<Span> sortedChildren(ImmutableGraph<Span> graph, Span node) {
-        return children(graph, node)
-                .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))
-                .collect(ImmutableList.toImmutableList());
+        return children(graph, node).sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds)).collect(
+                ImmutableList.toImmutableList());
     }
 
     /** Synthesizes a root span which encapsulates all known spans. */
