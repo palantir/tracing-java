@@ -49,6 +49,15 @@ public interface DetachedSpan {
     }
 
     /**
+     * Converts the current in-progress thread-local span into a {@link DetachedSpan}, which can be used to more easily
+     * instrument async operations. This {@link DetachedSpan} will need to be manually closed.
+     */
+    @CheckReturnValue
+    static DetachedSpan detachThreadLocalSpan() {
+        return Tracer.detachThreadLocalSpan();
+    }
+
+    /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan}
      * as the parent instead of thread state.
      */

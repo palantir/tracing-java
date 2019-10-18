@@ -188,6 +188,26 @@ public final class Tracer {
         fastStartSpan(operation, SpanType.LOCAL);
     }
 
+    static DetachedSpan detachThreadLocalSpan() {
+        Trace trace = Preconditions.checkNotNull(
+                currentTrace.get(),
+                "detachThreadLocalSpan requires an in-progress trace with a thread-local span");
+
+        // pop current thread-local span, so that it won't be used as parent for subsequent spans
+        Optional<OpenSpan> span = trace.pop();
+
+        // to maintain the invariant that thread local traces always have at least one span in progress we make up a
+        // span to leave on this thread
+        if (trace.isEmpty()) {
+            String spanLeftBehind = trace.isObservable() ? span.get().getOperation() + " (left behind)" : "";
+            trace.fastStartSpan(spanLeftBehind, SpanType.LOCAL);
+        }
+
+        return trace.isObservable()
+            ? new SampledDetachedSpan(trace.getTraceId(), span.get())
+            : new UnsampledDetachedSpan(trace.getTraceId());
+    }
+
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state.
      * This is an internal utility that should not be called directly outside of {@link DetachedSpan}.
@@ -219,8 +239,7 @@ public final class Tracer {
         private final String traceId;
         private final OpenSpan openSpan;
 
-        SampledDetachedSpan(
-                String operation, SpanType type, String traceId, Optional<String> parentSpanId) {
+        SampledDetachedSpan(String operation, SpanType type, String traceId, Optional<String> parentSpanId) {
             this.traceId = traceId;
             this.openSpan = OpenSpan.builder()
                     .parentSpanId(parentSpanId)
@@ -228,6 +247,11 @@ public final class Tracer {
                     .operation(operation)
                     .type(type)
                     .build();
+        }
+
+        SampledDetachedSpan(String traceId, OpenSpan existingOpenSpan) {
+            this.traceId = traceId;
+            this.openSpan = existingOpenSpan;
         }
 
         @Override
