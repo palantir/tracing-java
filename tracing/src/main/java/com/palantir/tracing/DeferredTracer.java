@@ -26,8 +26,9 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
- * Utility class for capturing the current trace at time of construction, and then
- * running callables at some later time with that captured trace.
+ * Utility class for capturing the current trace at time of construction, and then running callables at some later time
+ * with that captured trace.
+ *
  * <pre>
  * <code>
  * DeferredTracer deferredTracer = new DeferredTracer();
@@ -53,13 +54,10 @@ public final class DeferredTracer implements Serializable {
 
     private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
 
-    @Nullable
-    private final String traceId;
+    @Nullable private final String traceId;
     private final boolean isObservable;
-    @Nullable
-    private final String operation;
-    @Nullable
-    private final String parentSpanId;
+    @Nullable private final String operation;
+    @Nullable private final String parentSpanId;
 
     /**
      * Deprecated.
@@ -97,10 +95,7 @@ public final class DeferredTracer implements Serializable {
         }
     }
 
-    /**
-     * Runs the given callable with the current trace at
-     * the time of construction of this {@link DeferredTracer}.
-     */
+    /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
         try (CloseableTrace ignored = withTrace()) {
             return inner.call();
@@ -123,8 +118,7 @@ public final class DeferredTracer implements Serializable {
             Tracer.fastStartSpan(operation);
         }
 
-        return originalTrace.map(CLOSEABLE_TRACE_FUNCTION)
-                .orElse(DefaultCloseableTrace.INSTANCE);
+        return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
     }
 
     private enum NopCloseableTrace implements CloseableTrace {

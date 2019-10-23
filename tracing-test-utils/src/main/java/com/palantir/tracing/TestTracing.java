@@ -29,8 +29,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public @interface TestTracing {
 
     /**
-     * Enable snapshot testing to capture all traces to a file in src/test/resources and then verify all successive
-     * runs against this golden master file.
+     * Enable snapshot testing to capture all traces to a file in src/test/resources and then verify all successive runs
+     * against this golden master file.
      */
     boolean snapshot() default false;
 

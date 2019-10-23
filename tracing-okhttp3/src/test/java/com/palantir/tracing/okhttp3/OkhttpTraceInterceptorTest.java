@@ -134,7 +134,9 @@ public final class OkhttpTraceInterceptorTest {
         when(chain.proceed(any(Request.class))).thenThrow(new IllegalStateException());
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
-        } catch (IllegalStateException e) { /* expected */ }
+        } catch (IllegalStateException e) {
+            /* expected */
+        }
         assertThat(Tracer.startSpan("").getParentSpanId().get()).isEqualTo(before.getSpanId());
     }
 

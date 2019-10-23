@@ -37,12 +37,13 @@ public final class Serialization {
     public static List<Span> deserialize(Path file) throws IOException {
         try (Stream<String> lines = Files.lines(file)) {
             return lines.map(line -> {
-                try {
-                    return mapper.readValue(line, SerializableSpan.class).asSpan();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }).collect(ImmutableList.toImmutableList());
+                        try {
+                            return mapper.readValue(line, SerializableSpan.class).asSpan();
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .collect(ImmutableList.toImmutableList());
         }
     }
 
