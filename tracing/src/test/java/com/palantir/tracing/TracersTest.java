@@ -277,7 +277,7 @@ public final class TracersTest {
             // Inner operation must complete first to avoid confusion
             assertThat(observed.get(0))
                     .extracting(Span::getOperation)
-                    .isEqualTo("Initial: " + operationName);
+                    .isEqualTo(operationName + " initial");
             assertThat(observed.get(1))
                     .extracting(Span::getOperation)
                     .isEqualTo(operationName);
@@ -303,7 +303,7 @@ public final class TracersTest {
             // Inner operation must complete first to avoid confusion
             assertThat(observed.get(0))
                     .extracting(Span::getOperation)
-                    .isEqualTo("Initial: " + operationName);
+                    .isEqualTo(operationName + " initial");
             assertThat(observed.get(1))
                     .extracting(Span::getOperation)
                     .isEqualTo(operationName);
@@ -328,7 +328,7 @@ public final class TracersTest {
         assertThat(observed).hasSize(1);
         assertThat(observed.get(0))
                 .extracting(Span::getOperation)
-                .isEqualTo("Initial: " + operationName);
+                .isEqualTo(operationName + " initial");
         // Complete the future
         rawFuture.set("complete");
         assertThat(traced).isDone();
@@ -358,7 +358,7 @@ public final class TracersTest {
             assertThat(observed).hasSize(2);
             assertThat(observed.get(0))
                     .extracting(Span::getOperation)
-                    .isEqualTo("Initial: " + operationName);
+                    .isEqualTo(operationName + " initial");
             assertThat(observed.get(1))
                     .extracting(Span::getOperation)
                     .isEqualTo(operationName);

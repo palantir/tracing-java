@@ -202,7 +202,7 @@ public final class Tracers {
         // no active trace, the detached span would not be associated with work initiated by delegateFactory.
         try (CloseableSpan ignored =
                 // This could be more efficient using https://github.com/palantir/tracing-java/issues/177
-                span.childSpan("Initial: " + operation)) {
+                span.childSpan(operation + " initial")) {
             result = Preconditions.checkNotNull(delegateFactory.get(), "Expected a ListenableFuture");
         } finally {
             if (result != null) {
