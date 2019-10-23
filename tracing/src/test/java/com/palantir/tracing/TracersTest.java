@@ -20,8 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
+import com.palantir.logsafe.exceptions.SafeNullPointerException;
+import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.api.Span;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -255,6 +262,120 @@ public final class TracersTest {
         });
         runnable.run();
         assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("outside");
+    }
+
+    @Test
+    public void testWrapFuture_immediate() {
+        List<Span> observed = new ArrayList<>();
+        Tracer.subscribe("futureTest", observed::add);
+        try {
+            String operationName = "testOperation";
+            ListenableFuture<String> traced =
+                    Tracers.wrapListenableFuture(operationName, () -> Futures.immediateFuture("result"));
+            assertThat(traced).isDone();
+            assertThat(observed).hasSize(2);
+            // Inner operation must complete first to avoid confusion
+            assertThat(observed.get(0))
+                    .extracting(Span::getOperation)
+                    .isEqualTo(operationName + " initial");
+            assertThat(observed.get(1))
+                    .extracting(Span::getOperation)
+                    .isEqualTo(operationName);
+            assertThat(observed)
+                    .allSatisfy(span -> assertThat(span)
+                            .extracting(Span::getTraceId)
+                            .isEqualTo("defaultTraceId"));
+        } finally {
+            Tracer.unsubscribe("futureTest");
+        }
+    }
+
+    @Test
+    public void testWrapFuture_failure() {
+        List<Span> observed = new ArrayList<>();
+        Tracer.subscribe("futureTest", observed::add);
+        try {
+            String operationName = "testOperation";
+            ListenableFuture<String> traced = Tracers.wrapListenableFuture(operationName,
+                    () -> Futures.immediateFailedFuture(new SafeRuntimeException("result")));
+            assertThat(traced).isDone();
+            assertThat(observed).hasSize(2);
+            // Inner operation must complete first to avoid confusion
+            assertThat(observed.get(0))
+                    .extracting(Span::getOperation)
+                    .isEqualTo(operationName + " initial");
+            assertThat(observed.get(1))
+                    .extracting(Span::getOperation)
+                    .isEqualTo(operationName);
+            assertThat(observed)
+                    .allSatisfy(span -> assertThat(span)
+                            .extracting(Span::getTraceId)
+                            .isEqualTo("defaultTraceId"));
+        } finally {
+            Tracer.unsubscribe("futureTest");
+        }
+    }
+
+    @Test
+    public void testWrapFuture_delayed() {
+        List<Span> observed = new ArrayList<>();
+        Tracer.subscribe("futureTest", observed::add);
+        String operationName = "testOperation";
+        SettableFuture<String> rawFuture = SettableFuture.create();
+        SettableFuture<String> traced = Tracers.wrapListenableFuture(operationName, () -> rawFuture);
+        assertThat(traced).isNotDone();
+        // Inner operation has completed
+        assertThat(observed).hasSize(1);
+        assertThat(observed.get(0))
+                .extracting(Span::getOperation)
+                .isEqualTo(operationName + " initial");
+        // Complete the future
+        rawFuture.set("complete");
+        assertThat(traced).isDone();
+        assertThat(observed).hasSize(2);
+        assertThat(observed.get(1))
+                .extracting(Span::getOperation)
+                .isEqualTo(operationName);
+        assertThat(observed)
+                .allSatisfy(span -> assertThat(span)
+                        .extracting(Span::getTraceId)
+                        .isEqualTo("defaultTraceId"));
+    }
+
+    @Test
+    public void testWrapFuture_throws() {
+        List<Span> observed = new ArrayList<>();
+        Tracer.subscribe("futureTest", observed::add);
+        try {
+            String operationName = "testOperation";
+            assertThatThrownBy(() -> Tracers.wrapListenableFuture(operationName, () -> {
+                // It's best if these cases result in a failed future, but we've found these in the
+                // wild so we must handle them properly.
+                throw new SafeRuntimeException("initial operation failure");
+            }))
+                    .isInstanceOf(SafeRuntimeException.class)
+                    .hasMessage("initial operation failure");
+            assertThat(observed).hasSize(2);
+            assertThat(observed.get(0))
+                    .extracting(Span::getOperation)
+                    .isEqualTo(operationName + " initial");
+            assertThat(observed.get(1))
+                    .extracting(Span::getOperation)
+                    .isEqualTo(operationName);
+            assertThat(observed)
+                    .allSatisfy(span -> assertThat(span)
+                            .extracting(Span::getTraceId)
+                            .isEqualTo("defaultTraceId"));
+        } finally {
+            Tracer.unsubscribe("futureTest");
+        }
+    }
+
+    @Test
+    public void testWrapFuture_returnNull() {
+        assertThatThrownBy(() -> Tracers.wrapListenableFuture("operation", () -> null))
+                .isInstanceOf(SafeNullPointerException.class)
+                .hasMessage("Expected a ListenableFuture");
     }
 
     @Test

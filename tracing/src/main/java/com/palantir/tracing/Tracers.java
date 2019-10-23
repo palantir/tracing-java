@@ -16,11 +16,16 @@
 
 package com.palantir.tracing;
 
+import com.google.common.annotations.Beta;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.palantir.logsafe.Preconditions;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 /** Utility methods for making {@link ExecutorService} and {@link Runnable} instances tracing-aware. */
 public final class Tracers {
@@ -172,6 +177,45 @@ public final class Tracers {
      */
     public static Runnable wrap(String operation, Runnable delegate) {
         return new TracingAwareRunnable(Optional.of(operation), delegate);
+    }
+
+    /**
+     * Traces the the execution of the <pre>delegateFactory</pre>, completing a span when the returned
+     * {@link ListenableFuture#isDone() ListenableFuture is done}.
+     *
+     * Example usage:
+     * <pre>{@code
+     *     ListenableFuture<Result> future = Tracers.wrapListenableFuture(
+     *         "remote operation",
+     *         () -> retrofitClient.doRequest());
+     * }</pre>
+     *
+     * Note that this function is not named <pre>wrap</pre> in order to avoid conflicting with potential utility
+     * methods for {@link Supplier suppliers}.
+     */
+    @Beta
+    public static <T, U extends ListenableFuture<T>> U wrapListenableFuture(
+            String operation, Supplier<U> delegateFactory) {
+        DetachedSpan span = DetachedSpan.start(operation);
+        U result = null;
+        // n.b. This span is required to apply tracing thread state to an initial request. Otherwise if there is
+        // no active trace, the detached span would not be associated with work initiated by delegateFactory.
+        try (CloseableSpan ignored =
+                // This could be more efficient using https://github.com/palantir/tracing-java/issues/177
+                span.childSpan(operation + " initial")) {
+            result = Preconditions.checkNotNull(delegateFactory.get(), "Expected a ListenableFuture");
+        } finally {
+            if (result != null) {
+                // In the successful case we add a listener in the finally block to prevent confusing traces
+                // when delegateFactory returns a completed future. This way the detached span cannot complete
+                // prior to its child.
+                result.addListener(span::complete, MoreExecutors.directExecutor());
+            } else {
+                // Complete the detached span, even if the delegateFactory throws.
+                span.complete();
+            }
+        }
+        return result;
     }
 
     /**
