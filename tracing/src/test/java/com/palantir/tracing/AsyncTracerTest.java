@@ -18,7 +18,7 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.Lists;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +52,7 @@ public class AsyncTracerTest {
         Tracer.initTrace(Observability.SAMPLE, "defaultTraceId");
         Tracer.fastStartSpan("defaultSpan");
         AsyncTracer asyncTracer = new AsyncTracer();
-        List<String> observedSpans = Lists.newArrayList();
+        List<String> observedSpans = new ArrayList<>();
         Tracer.subscribe(
                 AsyncTracerTest.class.getName(),
                 span -> observedSpans.add(span.getOperation()));
