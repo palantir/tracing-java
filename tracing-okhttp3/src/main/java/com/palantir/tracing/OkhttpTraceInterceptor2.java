@@ -45,8 +45,7 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
         try (Closeable span = createNetworkCallSpan.apply(request)) {
             TraceMetadata metadata = Tracer.getTraceMetadata();
 
-            Request.Builder tracedRequest = request
-                    .newBuilder()
+            Request.Builder tracedRequest = request.newBuilder()
                     .addHeader(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
                     .addHeader(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
                     .addHeader(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");

@@ -32,8 +32,7 @@ import org.mockito.MockitoAnnotations;
 
 public final class AsyncSpanObserverTest {
 
-    @Mock
-    private SpanObserver observer;
+    @Mock private SpanObserver observer;
 
     private DeterministicScheduler scheduler;
 

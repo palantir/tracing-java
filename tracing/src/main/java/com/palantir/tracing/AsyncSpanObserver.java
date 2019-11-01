@@ -29,9 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A {@link SpanObserver} whose observations are executed on a supplied {@link ExecutorService}.
- */
+/** A {@link SpanObserver} whose observations are executed on a supplied {@link ExecutorService}. */
 public abstract class AsyncSpanObserver implements SpanObserver {
 
     private static final Logger log = LoggerFactory.getLogger(AsyncSpanObserver.class);
@@ -62,21 +60,26 @@ public abstract class AsyncSpanObserver implements SpanObserver {
                 return span;
             });
 
-            Futures.addCallback(future, new FutureCallback<Span>() {
-                @Override
-                public void onSuccess(Span _value) {
-                    numInflights.decrementAndGet();
-                }
+            Futures.addCallback(
+                    future,
+                    new FutureCallback<Span>() {
+                        @Override
+                        public void onSuccess(Span _value) {
+                            numInflights.decrementAndGet();
+                        }
 
-                @Override
-                public void onFailure(Throwable error) {
-                    log.trace("Failed to notify observer", error);
-                    numInflights.decrementAndGet();
-                }
-            }, MoreExecutors.directExecutor());
+                        @Override
+                        public void onFailure(Throwable error) {
+                            log.trace("Failed to notify observer", error);
+                            numInflights.decrementAndGet();
+                        }
+                    },
+                    MoreExecutors.directExecutor());
         } else {
-            log.trace("Failed to notify span observer since the maximum number of allowed concurrent observations was "
-                    + "exceeded", SafeArg.of("maxInflights", maxInflights));
+            log.trace(
+                    "Failed to notify span observer since the maximum number of allowed concurrent observations was "
+                            + "exceeded",
+                    SafeArg.of("maxInflights", maxInflights));
             numInflights.decrementAndGet();
         }
     }

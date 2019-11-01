@@ -21,8 +21,7 @@ import org.junit.Test;
 
 public class RenderTracingRuleDemo {
 
-    @Rule
-    public final RenderTracingRule rule = new RenderTracingRule();
+    @Rule public final RenderTracingRule rule = new RenderTracingRule();
 
     @Test
     @SuppressWarnings("NestedTryDepth") // contrived example just to get enough complexity!
