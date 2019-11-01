@@ -469,7 +469,7 @@ public final class TracersTest {
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableIsIsolated() throws Exception {
         String traceIdBeforeConstruction = Tracer.getTraceId();
 
-        List<String> traceIds = Lists.newArrayList();
+        List<String> traceIds = new ArrayList<>();
 
         Runnable wrappedRunnable = Tracers.wrapWithNewTrace(() -> {
             traceIds.add(Tracer.getTraceId());
@@ -498,7 +498,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableHasSpan() throws Exception {
-        List<List<OpenSpan>> spans = Lists.newArrayList();
+        List<List<OpenSpan>> spans = new ArrayList<>();
 
         Runnable wrappedRunnable = Tracers.wrapWithNewTrace(() -> {
             spans.add(getCurrentTrace());
@@ -516,7 +516,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableHasGivenSpan() throws Exception {
-        List<List<OpenSpan>> spans = Lists.newArrayList();
+        List<List<OpenSpan>> spans = new ArrayList<>();
 
         Runnable wrappedRunnable = Tracers.wrapWithNewTrace("operation", () -> {
             spans.add(getCurrentTrace());
@@ -599,7 +599,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapRunnableWithAlternateTraceId_traceStateInsideRunnableHasSpan() {
-        List<List<OpenSpan>> spans = Lists.newArrayList();
+        List<List<OpenSpan>> spans = new ArrayList<>();
 
         String traceIdToUse = "someTraceId";
         Runnable wrappedRunnable = Tracers.wrapWithAlternateTraceId(traceIdToUse, () -> {
@@ -618,7 +618,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapRunnableWithAlternateTraceId_traceStateInsideRunnableHasGivenSpan() {
-        List<List<OpenSpan>> spans = Lists.newArrayList();
+        List<List<OpenSpan>> spans = new ArrayList<>();
 
         String traceIdToUse = "someTraceId";
         Runnable wrappedRunnable = Tracers.wrapWithAlternateTraceId(traceIdToUse, "operation", () -> {
@@ -803,12 +803,14 @@ public final class TracersTest {
     }
 
     private static List<OpenSpan> getCurrentTrace() {
-        return Tracer.copyTrace().map(trace -> {
-            List<OpenSpan> spans = Lists.newArrayList();
-            while (!trace.isEmpty()) {
-                spans.add(trace.pop().get());
-            }
-            return Lists.reverse(spans);
-        }).orElseGet(Collections::emptyList);
+        return Tracer.copyTrace()
+                .map(trace -> {
+                    List<OpenSpan> spans = new ArrayList<>();
+                    while (!trace.isEmpty()) {
+                        spans.add(trace.pop().get());
+                    }
+                    return Lists.reverse(spans);
+                })
+                .orElseGet(Collections::emptyList);
     }
 }

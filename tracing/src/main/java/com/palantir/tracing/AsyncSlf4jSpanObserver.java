@@ -25,12 +25,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import com.google.common.collect.Lists;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.tracing.api.Span;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,7 +87,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
         private static Iterable<? extends ZipkinCompatAnnotation> spanTypeToZipkinAnnotations(
                 Span span, ZipkinCompatEndpoint endpoint) {
-            List<ZipkinCompatAnnotation> annotations = Lists.newArrayListWithCapacity(2);
+            List<ZipkinCompatAnnotation> annotations = new ArrayList<>(2);
             switch (span.type()) {
                 case CLIENT_OUTGOING:
                     annotations.add(ZipkinCompatAnnotation.of(span.getStartTimeMicroSeconds(), "cs", endpoint));
@@ -114,7 +114,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
         private static Iterable<? extends ZipkinCompatBinaryAnnotation> spanMetadataToZipkinBinaryAnnotations(
                 Span span, ZipkinCompatEndpoint endpoint) {
-            List<ZipkinCompatBinaryAnnotation> binaryAnnotations = Lists.newArrayList();
+            List<ZipkinCompatBinaryAnnotation> binaryAnnotations = new ArrayList<>();
             for (Map.Entry<String, String> entry : span.getMetadata().entrySet()) {
                 binaryAnnotations.add(ZipkinCompatBinaryAnnotation.of(entry.getKey(), entry.getValue(), endpoint));
             }
