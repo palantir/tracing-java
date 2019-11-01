@@ -41,8 +41,8 @@ org.javassist:javassist:3.22.0-GA (2 constraints: f61d2fc1)
 org.jboss.logging:jboss-logging:3.3.2.Final (2 constraints: 7a1edc7a)
 org.jboss.xnio:xnio-api:3.3.8.Final (2 constraints: 6f1a4d45)
 org.jboss.xnio:xnio-nio:3.3.8.Final (1 constraints: c40da530)
-org.openjdk.jmh:jmh-core:1.21 (2 constraints: e915f7d7)
-org.openjdk.jmh:jmh-generator-annprocess:1.21 (1 constraints: d804f430)
+org.openjdk.jmh:jmh-core:1.22 (2 constraints: eb1529d8)
+org.openjdk.jmh:jmh-generator-annprocess:1.22 (1 constraints: d904f530)
 org.slf4j:slf4j-api:1.7.25 (12 constraints: 019f793f)
 
 [Test dependencies]
