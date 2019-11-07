@@ -16,7 +16,9 @@
 
 package com.palantir.tracing;
 
+import com.google.common.collect.ImmutableMap;
 import com.palantir.tracing.api.SpanType;
+import java.util.Map;
 
 /**
  * Wraps the {@link Tracer} methods in a closeable resource to enable the usage of the try-with-resources pattern.
@@ -28,30 +30,54 @@ import com.palantir.tracing.api.SpanType;
  *
  */
 public final class CloseableTracer implements AutoCloseable {
-    private static final CloseableTracer INSTANCE = new CloseableTracer();
 
-    private CloseableTracer() { }
+    private static final CloseableTracer INSTANCE = new CloseableTracer(ImmutableMap.of());
+
+    private final Map<String, String> metadata;
+
+    private CloseableTracer(Map<String, String> metadata) {
+        this.metadata = ImmutableMap.copyOf(metadata);
+    }
 
     /**
-     * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     * Opens a new span for this thread's call trace with a {@link SpanType#LOCAL LOCAL} span type, labeled with the
+     * provided operation.
      */
     public static CloseableTracer startSpan(String operation) {
-        return startSpan(operation, SpanType.LOCAL);
+        return startSpan(operation, SpanType.LOCAL, ImmutableMap.of());
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation.
+     */
+    public static CloseableTracer startSpan(String operation, Map<String, String> metadata) {
+        return startSpan(operation, SpanType.LOCAL, metadata);
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation.
+     */
+    public static CloseableTracer startSpan(String operation, SpanType spanType) {
+        return startSpan(operation, spanType, ImmutableMap.of());
     }
 
     /**
      * Opens a new span for this thread's call trace with the provided {@link SpanType},
-     * labeled with the provided operation.
+     * labeled with the provided operation, and closed with the provided metadata.
      *
      * If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
-    public static CloseableTracer startSpan(String operation, SpanType spanType) {
+    public static CloseableTracer startSpan(String operation, SpanType spanType, Map<String, String> metadata) {
         Tracer.fastStartSpan(operation, spanType);
-        return INSTANCE;
+        return metadata.isEmpty()
+                ? INSTANCE
+                : new CloseableTracer(metadata);
     }
 
     @Override
     public void close() {
-        Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan(metadata);
     }
 }
