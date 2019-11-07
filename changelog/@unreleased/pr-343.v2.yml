@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: CloseableTracer now supports creating spans with metadata.
+  links:
+  - https://github.com/palantir/tracing-java/pull/343
