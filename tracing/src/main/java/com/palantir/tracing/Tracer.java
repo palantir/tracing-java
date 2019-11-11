@@ -342,7 +342,10 @@ public final class Tracer {
 
     /**
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
+     *
+     * @deprecated Use {@link #fastCompleteSpan()}
      */
+    @Deprecated
     public static void fastCompleteSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace != null) {
@@ -373,8 +376,11 @@ public final class Tracer {
     /**
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
      * If the return value is not used, prefer {@link Tracer#fastCompleteSpan(Map)}.
+     *
+     * @deprecated Use {@link #completeSpan()}
      */
     @CheckReturnValue
+    @Deprecated
     public static Optional<Span> completeSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace == null) {
