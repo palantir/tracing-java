@@ -146,7 +146,13 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
-        return getOrCreateCurrentTrace().startSpan(operation, parentSpanId, type);
+        Trace trace = getOrCreateCurrentTrace();
+        boolean wasEmpty = trace.isEmpty();
+        OpenSpan result = trace.startSpan(operation, parentSpanId, type);
+        if (wasEmpty) {
+            setRequestIdIfPresent(trace.getRequestId());
+        }
+        return result;
     }
 
     /**
@@ -155,7 +161,13 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static OpenSpan startSpan(String operation, SpanType type) {
-        return getOrCreateCurrentTrace().startSpan(operation, type);
+        Trace trace = getOrCreateCurrentTrace();
+        boolean wasEmpty = trace.isEmpty();
+        OpenSpan result = trace.startSpan(operation, type);
+        if (wasEmpty) {
+            setRequestIdIfPresent(trace.getRequestId());
+        }
+        return result;
     }
 
     /**
@@ -171,14 +183,24 @@ public final class Tracer {
      * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(String operation, String parentSpanId, SpanType type) {
-        getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
+        Trace trace = getOrCreateCurrentTrace();
+        boolean wasEmpty = trace.isEmpty();
+        trace.fastStartSpan(operation, parentSpanId, type);
+        if (wasEmpty) {
+            setRequestIdIfPresent(trace.getRequestId());
+        }
     }
 
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(String operation, SpanType type) {
-        getOrCreateCurrentTrace().fastStartSpan(operation, type);
+        Trace trace = getOrCreateCurrentTrace();
+        boolean wasEmpty = trace.isEmpty();
+        trace.fastStartSpan(operation, type);
+        if (wasEmpty) {
+            setRequestIdIfPresent(trace.getRequestId());
+        }
     }
 
     /**
@@ -525,6 +547,7 @@ public final class Tracer {
         // Give log appenders access to the trace id and whether the trace is being sampled
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
+        setRequestIdIfPresent(trace.getRequestId());
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {
@@ -534,6 +557,14 @@ public final class Tracer {
         } else {
             // To ensure MDC state is cleared when trace is not observable
             MDC.remove(Tracers.TRACE_SAMPLED_KEY);
+        }
+    }
+
+    private static void setRequestIdIfPresent(Optional<String> requestId) {
+        if (requestId.isPresent()) {
+            MDC.put(Tracers.REQUEST_ID_KEY, requestId.get());
+        } else {
+            MDC.remove(Tracers.REQUEST_ID_KEY);
         }
     }
 
@@ -551,5 +582,6 @@ public final class Tracer {
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
+        MDC.remove(Tracers.REQUEST_ID_KEY);
     }
 }

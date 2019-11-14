@@ -1,0 +1,6 @@
+type: feature
+feature:
+  description: Introduce a new MDC property, _requestId, that disambiguates span stacks
+    that belong to the same traceid but are different requests.
+  links:
+  - https://github.com/palantir/tracing-java/pull/364

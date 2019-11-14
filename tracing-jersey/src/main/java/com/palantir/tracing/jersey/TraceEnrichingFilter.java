@@ -46,6 +46,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
      * This is the name of the trace id property we set on {@link ContainerRequestContext}.
      */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
+    public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
@@ -65,24 +66,31 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
 
+        // XXX: leaks abstraction and ties us to requestId === spanId of initial span
+        // however the leak is contained without this repository, so maybe OK?
+        // alternative is to expose requestId as a property on the current trace to all clients.
+        // or read the property from the MDC at this point
+        String requestId;
+
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
             // HTTP request did not indicate a trace; initialize trace state and create a span.
             Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
-            Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
+            requestId = Tracer.startSpan(operation, SpanType.SERVER_INCOMING).getSpanId();
         } else {
             Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
             if (spanId == null) {
-                Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
+                requestId = Tracer.startSpan(operation, SpanType.SERVER_INCOMING).getSpanId();
             } else {
                 // caller's span is this span's parent.
-                Tracer.fastStartSpan(operation, spanId, SpanType.SERVER_INCOMING);
+                requestId = Tracer.startSpan(operation, spanId, SpanType.SERVER_INCOMING).getSpanId();
             }
         }
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
+        requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId);
     }
 
     // Handles outgoing response

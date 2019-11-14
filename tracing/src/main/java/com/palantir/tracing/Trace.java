@@ -136,6 +136,8 @@ public abstract class Trace {
         return traceId;
     }
 
+    abstract Optional<String> getRequestId();
+
     abstract Optional<String> getOriginatingSpanId();
 
     /** Returns a copy of this Trace which can be independently mutated. */
@@ -196,6 +198,18 @@ public abstract class Trace {
         }
 
         @Override
+        Optional<String> getRequestId() {
+            if (stack.isEmpty()) {
+                return Optional.empty();
+            }
+            OpenSpan top = stack.peekFirst();
+            if (top.type() != SpanType.SERVER_INCOMING) {
+                return Optional.empty();
+            }
+            return Optional.of(top.getSpanId());
+        }
+
+        @Override
         Optional<String> getOriginatingSpanId() {
             if (stack.isEmpty()) {
                 return Optional.empty();
@@ -220,36 +234,52 @@ public abstract class Trace {
          * This allows thread trace state to be cleared when all "started" spans have been "removed".
          */
         private int numberOfSpans;
-        private Optional<String> originatingSpanId = Optional.empty();
+        private Optional<String> originatingSpanId;
+        private Optional<String> requestId;
 
-        private Unsampled(int numberOfSpans, String traceId) {
+        private Unsampled(
+                int numberOfSpans,
+                String traceId,
+                Optional<String> originatingSpanId,
+                Optional<String> requestId) {
             super(traceId);
             this.numberOfSpans = numberOfSpans;
+            this.originatingSpanId = originatingSpanId;
+            this.requestId = requestId;
             validateNumberOfSpans();
         }
 
         private Unsampled(String traceId) {
-            this(0, traceId);
+            this(0, traceId, Optional.empty(), Optional.empty());
         }
 
         @Override
-        void fastStartSpan(String _operation, String parentSpanId, SpanType _type) {
-            startSpan(Optional.of(parentSpanId));
+        void fastStartSpan(String _operation, String parentSpanId, SpanType type) {
+            if (numberOfSpans == 0) {
+                originatingSpanId = Optional.of(parentSpanId);
+                if (type == SpanType.SERVER_INCOMING) {
+                    requestId = Optional.of(Tracers.randomId());
+                }
+            }
+            numberOfSpans++;
         }
 
         @Override
-        void fastStartSpan(String _operation, SpanType _type) {
+        void fastStartSpan(String _operation, SpanType type) {
+            if (numberOfSpans == 0 && type == SpanType.SERVER_INCOMING) {
+                requestId = Optional.of(Tracers.randomId());
+            }
             numberOfSpans++;
         }
 
         @Override
         protected void push(OpenSpan span) {
-            startSpan(span.getParentSpanId());
-        }
-
-        private void startSpan(Optional<String> parentSpanId) {
             if (numberOfSpans == 0) {
-                originatingSpanId = parentSpanId;
+                originatingSpanId = span.getParentSpanId();
+
+                if (span.type() == SpanType.SERVER_INCOMING) {
+                    requestId = Optional.of(span.getSpanId());
+                }
             }
             numberOfSpans++;
         }
@@ -267,6 +297,7 @@ public abstract class Trace {
             }
             if (numberOfSpans == 0) {
                 originatingSpanId = Optional.empty();
+                requestId = Optional.empty();
             }
             return Optional.empty();
         }
@@ -283,13 +314,18 @@ public abstract class Trace {
         }
 
         @Override
+        Optional<String> getRequestId() {
+            return requestId;
+        }
+
+        @Override
         Optional<String> getOriginatingSpanId() {
             return originatingSpanId;
         }
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId());
+            return new Unsampled(numberOfSpans, getTraceId(), getOriginatingSpanId(), getRequestId());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */

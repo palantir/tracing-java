@@ -103,6 +103,21 @@ public class TracedOperationHandlerTest {
     }
 
     @Test
+    public void whenTraceIsInHeader_usesGivenTraceIdWithDifferentRequestIds() throws Exception {
+        setRequestTraceId(traceId);
+        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
+
+        handler.handleRequest(exchange);
+        String firstRequestId = exchange.getAttachment(TracedOperationHandler.REQUEST_ID_ATTACHMENT);
+        assertThat(firstRequestId).isNotEmpty();
+
+        handler.handleRequest(exchange);
+        String secondRequestId = exchange.getAttachment(TracedOperationHandler.REQUEST_ID_ATTACHMENT);
+        assertThat(secondRequestId).isNotEmpty();
+        assertThat(firstRequestId).isNotEqualTo(secondRequestId);
+    }
+
+    @Test
     public void whenParentSpanIsGiven_usesParentSpan() throws Exception {
         setRequestTraceId(traceId);
         String parentSpanId = Tracers.randomId();
@@ -166,11 +181,19 @@ public class TracedOperationHandlerTest {
     public void populatesSlf4jMdc() throws Exception {
         setRequestTraceId(traceId);
         AtomicReference<String> mdcTraceValue = new AtomicReference<>();
-        new TracedOperationHandler(exc -> mdcTraceValue.set(MDC.get(Tracers.TRACE_ID_KEY)), "GET /traced")
-                .handleRequest(exchange);
+        AtomicReference<String> mdcRequestIdValue = new AtomicReference<>();
+        new TracedOperationHandler(
+                exc -> {
+                    mdcTraceValue.set(MDC.get(Tracers.TRACE_ID_KEY));
+                    mdcRequestIdValue.set(MDC.get(Tracers.REQUEST_ID_KEY));
+                },
+                "GET /traced"
+        ).handleRequest(exchange);
         assertThat(mdcTraceValue).hasValue(traceId);
+        assertThat(mdcRequestIdValue.get()).isNotNull();
         // Value should be cleared when the handler returns
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
+        assertThat(MDC.get(Tracers.REQUEST_ID_KEY)).isNull();
     }
 
     private void setRequestTraceId(String theTraceId) {

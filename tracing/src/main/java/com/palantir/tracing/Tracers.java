@@ -35,6 +35,12 @@ public final class Tracers {
      * field can take the values of "1" or "0", where "1" indicates the trace was sampled.
      */
     public static final String TRACE_SAMPLED_KEY = "_sampled";
+    /**
+     * The key under which the outermost span ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}.
+     * It is present only if the outermost span of the current trace is a SERVER_INCOMING span, and can be used
+     * to distinguish between incoming requests with the same traceid header.
+     */
+    public static final String REQUEST_ID_KEY = "_requestId";
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
     private static final char[] HEX_DIGITS =
             {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
