@@ -46,6 +46,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
      * This is the name of the trace id property we set on {@link ContainerRequestContext}.
      */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
+    public static final String LOCAL_TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.localTraceId";
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
@@ -71,7 +72,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
             Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
             Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         } else {
-            Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
+            // propagate the traceid from request headers, but create a new local trace id to disambiguate
+            Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId, Tracers.randomId());
             if (spanId == null) {
                 Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
             } else {
@@ -82,6 +84,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
+        Tracer.getLocalTraceId().ifPresent(localId ->
+                requestContext.setProperty(LOCAL_TRACE_ID_PROPERTY_NAME, localId));
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
     }
 

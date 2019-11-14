@@ -100,7 +100,8 @@ public final class TracedOperationHandler implements HttpHandler {
 
     /** Initializes trace state given a trace-id header from the client. */
     private void initializeTraceFromExisting(HeaderMap headers, String traceId) {
-        Tracer.initTrace(getObservabilityFromHeader(headers), traceId);
+        // propagate the traceid from request headers, but create a new local trace id to disambiguate
+        Tracer.initTrace(getObservabilityFromHeader(headers), traceId, Tracers.randomId());
         String spanId = headers.getFirst(SPAN_ID); // nullable
         if (spanId == null) {
             Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);

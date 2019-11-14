@@ -103,6 +103,29 @@ public class TracedOperationHandlerTest {
     }
 
     @Test
+    public void whenTraceIsInHeader_usesGivenTraceIdwithDifferentLocalIds() throws Exception {
+        setRequestTraceId(traceId);
+        AtomicReference<String> traceIdValue = new AtomicReference<>();
+        AtomicReference<String> localTraceIdValue = new AtomicReference<>();
+        TracedOperationHandler traceSettingHandler =
+                new TracedOperationHandler(exc -> {
+                    traceIdValue.set(Tracer.getTraceId());
+                    localTraceIdValue.set(Tracer.getLocalTraceId().orElse(null));
+
+                }, "GET /traced");
+        traceSettingHandler.handleRequest(exchange);
+
+        assertThat(traceIdValue.get()).isEqualTo(traceId);
+        assertThat(localTraceIdValue).isNotNull();
+        String firstLocalId = localTraceIdValue.get();
+
+        traceSettingHandler.handleRequest(exchange);
+        assertThat(traceIdValue.get()).isEqualTo(traceId);
+        assertThat(localTraceIdValue.get()).isNotNull();
+        assertThat(localTraceIdValue.get()).isNotEqualTo(firstLocalId);
+    }
+
+    @Test
     public void whenParentSpanIsGiven_usesParentSpan() throws Exception {
         setRequestTraceId(traceId);
         String parentSpanId = Tracers.randomId();

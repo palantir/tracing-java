@@ -118,6 +118,36 @@ public final class TraceEnrichingFilterTest {
     }
 
     @Test
+    public void testTraceState_withHeaderUsesTraceIdWithDifferentLocalIds() {
+        Response response = target.path("/local-trace").request()
+                .header(TraceHttpHeaders.TRACE_ID, "traceId")
+                .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
+                .header(TraceHttpHeaders.SPAN_ID, "spanId")
+                .get();
+        assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isEqualTo("traceId");
+        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
+        assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
+        verify(observer).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /local-trace");
+
+        String firstLocalTrace = response.readEntity(String.class);
+        assertThat(firstLocalTrace).isNotEmpty();
+
+        // make the query again
+        Response otherResponse = target.path("/local-trace").request()
+                .header(TraceHttpHeaders.TRACE_ID, "traceId")
+                .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
+                .header(TraceHttpHeaders.SPAN_ID, "spanId")
+                .get();
+        assertThat(otherResponse.getHeaderString(TraceHttpHeaders.TRACE_ID)).isEqualTo("traceId");
+        assertThat(otherResponse.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
+        assertThat(otherResponse.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
+        String otherLocalTrace = otherResponse.readEntity(String.class);
+        assertThat(otherLocalTrace).isNotEmpty();
+        assertThat(otherLocalTrace).isNotEqualTo(firstLocalTrace);
+    }
+
+    @Test
     public void testTraceState_respectsMethod() {
         Response response = target.path("/trace").request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
@@ -153,6 +183,17 @@ public final class TraceEnrichingFilterTest {
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace");
+    }
+
+    @Test
+    public void testTraceState_withoutRequestHeadersDoesNotGenerateLocalTrace() {
+        Response response = target.path("/local-trace").request().get();
+        assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
+        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
+        assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
+        verify(observer).consume(spanCaptor.capture());
+        assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /local-trace");
+        assertThat(response.readEntity(String.class)).isNullOrEmpty();
     }
 
     @Test
@@ -263,6 +304,11 @@ public final class TraceEnrichingFilterTest {
         }
 
         @Override
+        public String getLocalTraceId() {
+            return Tracer.getLocalTraceId().orElse(null);
+        }
+
+        @Override
         public StreamingOutput getFailingStreamingTraceOperation() {
             return os -> {
                 throw new RuntimeException();
@@ -295,6 +341,10 @@ public final class TraceEnrichingFilterTest {
         @GET
         @Path("/failing-trace")
         void getFailingTraceOperation();
+
+        @GET
+        @Path("/local-trace")
+        String getLocalTraceId();
 
         @GET
         @Path("/failing-streaming-trace")

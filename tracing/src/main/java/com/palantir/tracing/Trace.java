@@ -29,6 +29,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -44,10 +45,13 @@ import java.util.Optional;
 public abstract class Trace {
 
     private final String traceId;
+    @Nullable
+    private final String localTraceId;
 
-    private Trace(String traceId) {
+    private Trace(String traceId, @Nullable  String localTraceId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
+        this.localTraceId = localTraceId;
     }
 
     /**
@@ -136,27 +140,44 @@ public abstract class Trace {
         return traceId;
     }
 
+    /**
+     * The globally unique non-empty identifier for this call trace within a service (or another locality context).
+     *
+     * While {@link #getTraceId()} is expected to be propagated across RPC calls, localTraceId distinguishes between
+     * two concurrent RPC calls made to a service with the same traceid.
+     */
+    final Optional<String> getLocalTraceId() {
+        // XXX: should this be equal to traceId if localTraceId is not set?
+        return Optional.ofNullable(localTraceId);
+    }
+
     abstract Optional<String> getOriginatingSpanId();
 
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
     static Trace of(boolean isObservable, String traceId) {
-        return isObservable ? new Sampled(traceId) : new Unsampled(traceId);
+        return isObservable ? new Sampled(traceId, null) : new Unsampled(traceId, null);
+    }
+
+    static Trace of(boolean isObservable, String traceId, String localTraceId) {
+        checkArgument(!Strings.isNullOrEmpty(localTraceId), "localTraceId must be non-empty");
+        return isObservable ? new Sampled(traceId, localTraceId) : new Unsampled(traceId, localTraceId);
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, String traceId) {
-            super(traceId);
+        private Sampled(ArrayDeque<OpenSpan> stack, String traceId, @Nullable String localTraceId) {
+            super(traceId, localTraceId);
             this.stack = stack;
         }
 
-        private Sampled(String traceId) {
-            this(new ArrayDeque<>(), traceId);
+        private Sampled(String traceId, @Nullable String localTraceId) {
+            this(new ArrayDeque<>(), traceId, localTraceId);
         }
+
 
         @Override
         @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
@@ -205,7 +226,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId());
+            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getLocalTraceId().orElse(null));
         }
 
         @Override
@@ -222,14 +243,14 @@ public abstract class Trace {
         private int numberOfSpans;
         private Optional<String> originatingSpanId = Optional.empty();
 
-        private Unsampled(int numberOfSpans, String traceId) {
-            super(traceId);
+        private Unsampled(int numberOfSpans, String traceId, @Nullable String localTraceId) {
+            super(traceId, localTraceId);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId) {
-            this(0, traceId);
+        private Unsampled(String traceId, @Nullable String localTraceId) {
+            this(0, traceId, localTraceId);
         }
 
         @Override
@@ -289,7 +310,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId());
+            return new Unsampled(numberOfSpans, getTraceId(), getLocalTraceId().orElse(null));
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
