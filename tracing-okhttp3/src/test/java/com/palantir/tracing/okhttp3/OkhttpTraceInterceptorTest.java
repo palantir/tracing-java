@@ -72,10 +72,10 @@ public final class OkhttpTraceInterceptorTest {
         verifyNoMoreInteractions(chain);
 
         Request intercepted = requestCaptor.getValue();
-        assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
-        assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isNull();
-        assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
+        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).hasSize(1);
+        assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).hasSize(1);
+        assertThat(intercepted.headers(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEmpty();
+        assertThat(intercepted.headers(TraceHttpHeaders.PARENT_SPAN_ID)).isEmpty();
     }
 
     @Test
@@ -94,11 +94,11 @@ public final class OkhttpTraceInterceptorTest {
         verifyNoMoreInteractions(chain);
 
         Request intercepted = requestCaptor.getValue();
-        assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
-        assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotEqualTo(parentState.getSpanId());
-        assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
-        assertThat(intercepted.header(TraceHttpHeaders.PARENT_SPAN_ID)).isEqualTo(parentState.getSpanId());
-        assertThat(intercepted.header(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEqualTo(originatingSpanId);
+        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
+        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).doesNotContain(parentState.getSpanId());
+        assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
+        assertThat(intercepted.headers(TraceHttpHeaders.PARENT_SPAN_ID)).containsOnly(parentState.getSpanId());
+        assertThat(intercepted.headers(TraceHttpHeaders.ORIGINATING_SPAN_ID)).containsOnly(originatingSpanId);
     }
 
     @Test
@@ -106,7 +106,7 @@ public final class OkhttpTraceInterceptorTest {
         Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
-        assertThat(requestCaptor.getValue().header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("1");
+        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED)).containsOnly("1");
     }
 
     @Test
@@ -116,9 +116,9 @@ public final class OkhttpTraceInterceptorTest {
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
         Request intercepted = requestCaptor.getValue();
-        assertThat(intercepted.header(TraceHttpHeaders.SPAN_ID)).isNotNull();
-        assertThat(intercepted.header(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
-        assertThat(intercepted.header(TraceHttpHeaders.IS_SAMPLED)).isEqualTo("0");
+        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).hasSize(1);
+        assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
+        assertThat(intercepted.headers(TraceHttpHeaders.IS_SAMPLED)).containsOnly("0");
     }
 
     @Test
@@ -153,5 +153,24 @@ public final class OkhttpTraceInterceptorTest {
         verify(observer).consume(spanCaptor.capture());
         Span okhttpSpan = spanCaptor.getValue();
         assertThat(okhttpSpan.type()).isEqualTo(SpanType.CLIENT_OUTGOING);
+    }
+
+    @Test
+    public void testHeaders_noMultiValue() throws IOException {
+        Request request = new Request.Builder()
+                .url("http://localhost")
+                .header(TraceHttpHeaders.SPAN_ID, "existingSpan")
+                .header(TraceHttpHeaders.TRACE_ID, "existingTraceId")
+                .header(TraceHttpHeaders.IS_SAMPLED, "existingSampled")
+                .build();
+        when(chain.request()).thenReturn(request);
+
+        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        OkhttpTraceInterceptor.INSTANCE.intercept(chain);
+        verify(chain).proceed(requestCaptor.capture());
+
+        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.SPAN_ID)).hasSize(1);
+        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.TRACE_ID)).hasSize(1);
+        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED)).containsOnly("1");
     }
 }

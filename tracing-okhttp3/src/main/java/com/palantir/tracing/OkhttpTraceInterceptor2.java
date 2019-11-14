@@ -47,9 +47,9 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
 
             Request.Builder tracedRequest = request
                     .newBuilder()
-                    .addHeader(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                    .addHeader(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
-                    .addHeader(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
+                    .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
+                    .header(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
+                    .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
 
             if (metadata.getParentSpanId().isPresent()) {
                 tracedRequest.header(TraceHttpHeaders.PARENT_SPAN_ID, metadata.getParentSpanId().get());
