@@ -78,15 +78,6 @@ public final class Tracer {
         return Trace.of(observable, traceId);
     }
 
-    /**
-     * Creates a new localized trace, but does not set it as the current trace.
-     */
-    private static Trace createTrace(Observability observability, String traceId, String localTraceId) {
-        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
-        boolean observable = shouldObserve(observability);
-        return Trace.of(observable, traceId, localTraceId);
-    }
-
     private static boolean shouldObserve(Observability observability) {
         switch (observability) {
             case SAMPLE:
@@ -146,13 +137,6 @@ public final class Tracer {
      */
     public static void initTrace(Observability observability, String traceId) {
         setTrace(createTrace(observability, traceId));
-    }
-
-    /**
-     * Initializes the current thread's trace, erasing any previously accrued open spans.
-     */
-    public static void initTrace(Observability observability, String traceId, String localTraceId) {
-        setTrace(createTrace(observability, traceId, localTraceId));
     }
 
     /**
@@ -500,8 +484,8 @@ public final class Tracer {
     }
 
     /** Returns the globally unique identifier for this thread's trace specific to this call. */
-    public static Optional<String> getLocalTraceId() {
-        return checkNotNull(currentTrace.get(), "There is no trace").getLocalTraceId();
+    public static Optional<String> getTopSpanId() {
+        return checkNotNull(currentTrace.get(), "There is no trace").getTopSpanId();
     }
 
     /** Clears the current trace id and returns it if present. */

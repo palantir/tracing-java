@@ -29,7 +29,6 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
-import javax.annotation.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -45,13 +44,10 @@ import javax.annotation.Nullable;
 public abstract class Trace {
 
     private final String traceId;
-    @Nullable
-    private final String localTraceId;
 
-    private Trace(String traceId, @Nullable  String localTraceId) {
+    private Trace(String traceId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
-        this.localTraceId = localTraceId;
     }
 
     /**
@@ -143,13 +139,10 @@ public abstract class Trace {
     /**
      * The globally unique non-empty identifier for this call trace within a service (or another locality context).
      *
-     * While {@link #getTraceId()} is expected to be propagated across RPC calls, localTraceId distinguishes between
-     * two concurrent RPC calls made to a service with the same traceid.
+     * While {@link #getTraceId()} is expected to be propagated across RPC calls, the top span id distinguishes
+     * between two concurrent RPC calls made to a service with the same traceid.
      */
-    final Optional<String> getLocalTraceId() {
-        // XXX: should this be equal to traceId if localTraceId is not set?
-        return Optional.ofNullable(localTraceId);
-    }
+    abstract Optional<String> getTopSpanId();
 
     abstract Optional<String> getOriginatingSpanId();
 
@@ -157,27 +150,21 @@ public abstract class Trace {
     abstract Trace deepCopy();
 
     static Trace of(boolean isObservable, String traceId) {
-        return isObservable ? new Sampled(traceId, null) : new Unsampled(traceId, null);
-    }
-
-    static Trace of(boolean isObservable, String traceId, String localTraceId) {
-        checkArgument(!Strings.isNullOrEmpty(localTraceId), "localTraceId must be non-empty");
-        return isObservable ? new Sampled(traceId, localTraceId) : new Unsampled(traceId, localTraceId);
+        return isObservable ? new Sampled(traceId) : new Unsampled(traceId);
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, String traceId, @Nullable String localTraceId) {
-            super(traceId, localTraceId);
+        private Sampled(ArrayDeque<OpenSpan> stack, String traceId) {
+            super(traceId);
             this.stack = stack;
         }
 
-        private Sampled(String traceId, @Nullable String localTraceId) {
-            this(new ArrayDeque<>(), traceId, localTraceId);
+        private Sampled(String traceId) {
+            this(new ArrayDeque<>(), traceId);
         }
-
 
         @Override
         @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
@@ -217,6 +204,14 @@ public abstract class Trace {
         }
 
         @Override
+        Optional<String> getTopSpanId() {
+            if (stack.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(stack.peekLast().getSpanId());
+        }
+
+        @Override
         Optional<String> getOriginatingSpanId() {
             if (stack.isEmpty()) {
                 return Optional.empty();
@@ -226,7 +221,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getLocalTraceId().orElse(null));
+            return new Sampled(new ArrayDeque<>(stack), getTraceId());
         }
 
         @Override
@@ -242,35 +237,41 @@ public abstract class Trace {
          */
         private int numberOfSpans;
         private Optional<String> originatingSpanId = Optional.empty();
+        private Optional<String> topSpanId = Optional.empty();
 
-        private Unsampled(int numberOfSpans, String traceId, @Nullable String localTraceId) {
-            super(traceId, localTraceId);
+        private Unsampled(int numberOfSpans, String traceId) {
+            super(traceId);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId, @Nullable String localTraceId) {
-            this(0, traceId, localTraceId);
+        private Unsampled(String traceId) {
+            this(0, traceId);
         }
 
         @Override
         void fastStartSpan(String _operation, String parentSpanId, SpanType _type) {
-            startSpan(Optional.of(parentSpanId));
+            if (numberOfSpans == 0) {
+                originatingSpanId = Optional.of(parentSpanId);
+                topSpanId = Optional.of(Tracers.randomId());
+            }
+            numberOfSpans++;
         }
 
         @Override
         void fastStartSpan(String _operation, SpanType _type) {
+            if (numberOfSpans == 0) {
+                topSpanId = Optional.of(Tracers.randomId());
+            }
             numberOfSpans++;
         }
 
         @Override
         protected void push(OpenSpan span) {
-            startSpan(span.getParentSpanId());
-        }
-
-        private void startSpan(Optional<String> parentSpanId) {
             if (numberOfSpans == 0) {
-                originatingSpanId = parentSpanId;
+                // TODO: shouldn't this be span.getOriginatingSpanId?
+                originatingSpanId = span.getParentSpanId();
+                topSpanId = Optional.of(span.getSpanId());
             }
             numberOfSpans++;
         }
@@ -288,6 +289,7 @@ public abstract class Trace {
             }
             if (numberOfSpans == 0) {
                 originatingSpanId = Optional.empty();
+                topSpanId = Optional.empty();
             }
             return Optional.empty();
         }
@@ -304,13 +306,19 @@ public abstract class Trace {
         }
 
         @Override
+        Optional<String> getTopSpanId() {
+            return topSpanId;
+        }
+
+        @Override
         Optional<String> getOriginatingSpanId() {
             return originatingSpanId;
         }
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId(), getLocalTraceId().orElse(null));
+            // TODO: shouldn't this preserve originatingSpanId / topSpanId?
+            return new Unsampled(numberOfSpans, getTraceId());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
