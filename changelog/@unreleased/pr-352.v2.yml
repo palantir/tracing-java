@@ -1,0 +1,7 @@
+type: feature
+feature:
+  description: Introduce a new property on a Trace, topSpanId, that can be read to
+    disambiguate span stacks that belong to the same traceid but had different entry
+    points.
+  links:
+  - https://github.com/palantir/tracing-java/pull/352
