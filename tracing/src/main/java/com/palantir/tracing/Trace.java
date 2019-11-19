@@ -236,17 +236,23 @@ public abstract class Trace {
          * This allows thread trace state to be cleared when all "started" spans have been "removed".
          */
         private int numberOfSpans;
-        private Optional<String> originatingSpanId = Optional.empty();
-        private Optional<String> topSpanId = Optional.empty();
+        private Optional<String> originatingSpanId;
+        private Optional<String> topSpanId;
 
-        private Unsampled(int numberOfSpans, String traceId) {
+        private Unsampled(
+                int numberOfSpans,
+                String traceId,
+                Optional<String> originatingSpanId,
+                Optional<String> topSpanId) {
             super(traceId);
             this.numberOfSpans = numberOfSpans;
+            this.originatingSpanId = originatingSpanId;
+            this.topSpanId = topSpanId;
             validateNumberOfSpans();
         }
 
         private Unsampled(String traceId) {
-            this(0, traceId);
+            this(0, traceId, Optional.empty(), Optional.empty());
         }
 
         @Override
@@ -269,7 +275,6 @@ public abstract class Trace {
         @Override
         protected void push(OpenSpan span) {
             if (numberOfSpans == 0) {
-                // TODO: shouldn't this be span.getOriginatingSpanId?
                 originatingSpanId = span.getParentSpanId();
                 topSpanId = Optional.of(span.getSpanId());
             }
@@ -317,8 +322,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            // TODO: shouldn't this preserve originatingSpanId / topSpanId?
-            return new Unsampled(numberOfSpans, getTraceId());
+            return new Unsampled(numberOfSpans, getTraceId(), getOriginatingSpanId(), getTopSpanId());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
