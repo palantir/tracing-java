@@ -295,8 +295,8 @@ public final class TraceEnrichingFilterTest {
         }
 
         @Override
-        public String getTopSpanId() {
-            return Tracer.getTopSpanId().get();
+        public String getOutermostSpanId() {
+            return Tracer.getOutermostSpanId().get();
         }
 
         @Override
@@ -335,7 +335,7 @@ public final class TraceEnrichingFilterTest {
 
         @GET
         @Path("/top-span")
-        String getTopSpanId();
+        String getOutermostSpanId();
 
         @GET
         @Path("/failing-streaming-trace")

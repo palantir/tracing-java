@@ -484,8 +484,8 @@ public final class Tracer {
     }
 
     /** Returns the globally unique identifier for this thread's trace specific to this call. */
-    public static Optional<String> getTopSpanId() {
-        return checkNotNull(currentTrace.get(), "There is no trace").getTopSpanId();
+    public static Optional<String> getOutermostSpanId() {
+        return checkNotNull(currentTrace.get(), "There is no trace").getOutermostSpanId();
     }
 
     /** Clears the current trace id and returns it if present. */

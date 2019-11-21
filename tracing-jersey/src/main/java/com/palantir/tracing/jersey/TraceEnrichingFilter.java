@@ -46,7 +46,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
      * This is the name of the trace id property we set on {@link ContainerRequestContext}.
      */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
-    public static final String TOP_SPAN_ID_PROPERTY_NAME = "com.palantir.tracing.topSpanId";
+    public static final String TOP_SPAN_ID_PROPERTY_NAME = "com.palantir.tracing.outermostSpanId";
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
@@ -83,7 +83,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
-        Tracer.getTopSpanId().ifPresent(localId ->
+        Tracer.getOutermostSpanId().ifPresent(localId ->
                 requestContext.setProperty(TOP_SPAN_ID_PROPERTY_NAME, localId));
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
     }

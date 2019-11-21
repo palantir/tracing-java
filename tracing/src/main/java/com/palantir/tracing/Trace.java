@@ -142,7 +142,7 @@ public abstract class Trace {
      * While {@link #getTraceId()} is expected to be propagated across RPC calls, the top span id distinguishes
      * between two concurrent RPC calls made to a service with the same traceid.
      */
-    abstract Optional<String> getTopSpanId();
+    abstract Optional<String> getOutermostSpanId();
 
     abstract Optional<String> getOriginatingSpanId();
 
@@ -204,7 +204,7 @@ public abstract class Trace {
         }
 
         @Override
-        Optional<String> getTopSpanId() {
+        Optional<String> getOutermostSpanId() {
             if (stack.isEmpty()) {
                 return Optional.empty();
             }
@@ -237,17 +237,17 @@ public abstract class Trace {
          */
         private int numberOfSpans;
         private Optional<String> originatingSpanId;
-        private Optional<String> topSpanId;
+        private Optional<String> outermostSpanId;
 
         private Unsampled(
                 int numberOfSpans,
                 String traceId,
                 Optional<String> originatingSpanId,
-                Optional<String> topSpanId) {
+                Optional<String> outermostSpanId) {
             super(traceId);
             this.numberOfSpans = numberOfSpans;
             this.originatingSpanId = originatingSpanId;
-            this.topSpanId = topSpanId;
+            this.outermostSpanId = outermostSpanId;
             validateNumberOfSpans();
         }
 
@@ -259,7 +259,7 @@ public abstract class Trace {
         void fastStartSpan(String _operation, String parentSpanId, SpanType _type) {
             if (numberOfSpans == 0) {
                 originatingSpanId = Optional.of(parentSpanId);
-                topSpanId = Optional.of(Tracers.randomId());
+                outermostSpanId = Optional.of(Tracers.randomId());
             }
             numberOfSpans++;
         }
@@ -267,7 +267,7 @@ public abstract class Trace {
         @Override
         void fastStartSpan(String _operation, SpanType _type) {
             if (numberOfSpans == 0) {
-                topSpanId = Optional.of(Tracers.randomId());
+                outermostSpanId = Optional.of(Tracers.randomId());
             }
             numberOfSpans++;
         }
@@ -276,7 +276,7 @@ public abstract class Trace {
         protected void push(OpenSpan span) {
             if (numberOfSpans == 0) {
                 originatingSpanId = span.getParentSpanId();
-                topSpanId = Optional.of(span.getSpanId());
+                outermostSpanId = Optional.of(span.getSpanId());
             }
             numberOfSpans++;
         }
@@ -294,7 +294,7 @@ public abstract class Trace {
             }
             if (numberOfSpans == 0) {
                 originatingSpanId = Optional.empty();
-                topSpanId = Optional.empty();
+                outermostSpanId = Optional.empty();
             }
             return Optional.empty();
         }
@@ -311,8 +311,8 @@ public abstract class Trace {
         }
 
         @Override
-        Optional<String> getTopSpanId() {
-            return topSpanId;
+        Optional<String> getOutermostSpanId() {
+            return outermostSpanId;
         }
 
         @Override
@@ -322,7 +322,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId(), getOriginatingSpanId(), getTopSpanId());
+            return new Unsampled(numberOfSpans, getTraceId(), getOriginatingSpanId(), getOutermostSpanId());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */

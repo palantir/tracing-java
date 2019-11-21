@@ -110,7 +110,7 @@ public class TracedOperationHandlerTest {
         TracedOperationHandler traceSettingHandler =
                 new TracedOperationHandler(exc -> {
                     traceIdValue.set(Tracer.getTraceId());
-                    localTraceIdValue.set(Tracer.getTopSpanId().orElse(null));
+                    localTraceIdValue.set(Tracer.getOutermostSpanId().orElse(null));
 
                 }, "GET /traced");
         traceSettingHandler.handleRequest(exchange);
