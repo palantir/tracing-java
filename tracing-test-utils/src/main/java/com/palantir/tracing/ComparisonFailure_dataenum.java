@@ -26,8 +26,7 @@ import java.util.List;
 interface ComparisonFailure_dataenum {
     dataenum_case unequalOperation(Span expected, Span actual);
 
-    dataenum_case unequalChildren(
-            Span expected, Span actual, List<Span> expectedChildren, List<Span> actualChildren);
+    dataenum_case unequalChildren(Span expected, Span actual, List<Span> expectedChildren, List<Span> actualChildren);
 
     dataenum_case incompatibleStructure(Span expected, Span actual);
 }

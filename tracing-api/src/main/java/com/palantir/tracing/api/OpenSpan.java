@@ -30,46 +30,41 @@ import org.immutables.value.Value;
 public abstract class OpenSpan {
     private static final Clock CLOCK = Clock.systemUTC();
 
-    /**
-     * Returns a description of the operation for this event.
-     */
+    /** Returns a description of the operation for this event. */
     @Value.Parameter
     public abstract String getOperation();
 
     /**
      * Returns the start time in microseconds since epoch start of the span represented by this state.
-     * <p>
-     * Users of this class should not set this value manually in the builder, it is configured automatically when using
-     * the {@link #builder()} static.
+     *
+     * <p>Users of this class should not set this value manually in the builder, it is configured automatically when
+     * using the {@link #builder()} static.
      */
     @Value.Parameter
     public abstract long getStartTimeMicroSeconds();
 
     /**
      * Returns the starting clock position in nanoseconds for use in computing span duration.
-     * <p>
-     * Users of this class should not set this value manually in the builder, it is configured automatically when using
-     * the {@link #builder()} static.
+     *
+     * <p>Users of this class should not set this value manually in the builder, it is configured automatically when
+     * using the {@link #builder()} static.
      */
     @Value.Parameter
     public abstract long getStartClockNanoSeconds();
 
-    /**
-     * Returns the identifier of the parent span for the current span, if one exists.
-     */
+    /** Returns the identifier of the parent span for the current span, if one exists. */
     @Value.Parameter
     public abstract Optional<String> getParentSpanId();
 
     /**
      * Returns the identifier of the 'originating' span if one exists.
+     *
      * @see TraceHttpHeaders
      */
     @Value.Parameter
     public abstract Optional<String> getOriginatingSpanId();
 
-    /**
-     * Returns a globally unique identifier representing a single span within the call trace.
-     */
+    /** Returns a globally unique identifier representing a single span within the call trace. */
     @Value.Parameter
     public abstract String getSpanId();
 
@@ -79,20 +74,16 @@ public abstract class OpenSpan {
 
     /**
      * Indicates if this trace state was sampled public abstract boolean isSampled();
-     * <p>
-     * /** Returns a builder for {@link OpenSpan} pre-initialized to use the current time.
-     * <p>
-     * Users should not set the {@code startTimeMs} value manually.
+     *
+     * <p>/** Returns a builder for {@link OpenSpan} pre-initialized to use the current time.
+     *
+     * <p>Users should not set the {@code startTimeMs} value manually.
      */
     public static Builder builder() {
-        return new Builder()
-                .startTimeMicroSeconds(getNowInMicroSeconds())
-                .startClockNanoSeconds(System.nanoTime());
+        return new Builder().startTimeMicroSeconds(getNowInMicroSeconds()).startClockNanoSeconds(System.nanoTime());
     }
 
-    /**
-     * Use this factory method to avoid allocate {@link Builder} in hot path.
-     */
+    /** Use this factory method to avoid allocate {@link Builder} in hot path. */
     public static OpenSpan of(
             String operation,
             String spanId,
@@ -100,25 +91,16 @@ public abstract class OpenSpan {
             Optional<String> parentSpanId,
             Optional<String> originatingSpanId) {
         return ImmutableOpenSpan.of(
-                operation,
-                getNowInMicroSeconds(),
-                System.nanoTime(),
-                parentSpanId,
-                originatingSpanId,
-                spanId,
-                type);
+                operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, originatingSpanId, spanId, type);
     }
 
     /**
      * Deprecated.
+     *
      * @deprecated Use the variant that accepts an originating span id
      */
     @Deprecated
-    public static OpenSpan of(
-            String operation,
-            String spanId,
-            SpanType type,
-            Optional<String> parentSpanId) {
+    public static OpenSpan of(String operation, String spanId, SpanType type, Optional<String> parentSpanId) {
         return of(operation, spanId, type, parentSpanId, Optional.empty());
     }
 

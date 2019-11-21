@@ -31,8 +31,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class HtmlFormatterTest {
 
-    @TempDir
-    public Path path;
+    @TempDir public Path path;
 
     @ParameterizedTest
     @EnumSource(LayoutStrategy.class)

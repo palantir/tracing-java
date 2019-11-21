@@ -66,17 +66,12 @@ public final class TraceEnrichingFilterTest {
     public static final DropwizardAppRule<Configuration> APP =
             new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
 
-    @Captor
-    private ArgumentCaptor<Span> spanCaptor;
+    @Captor private ArgumentCaptor<Span> spanCaptor;
 
-    @Mock
-    private SpanObserver observer;
-    @Mock
-    private ContainerRequestContext request;
-    @Mock
-    private UriInfo uriInfo;
-    @Mock
-    private TraceSampler traceSampler;
+    @Mock private SpanObserver observer;
+    @Mock private ContainerRequestContext request;
+    @Mock private UriInfo uriInfo;
+    @Mock private TraceSampler traceSampler;
 
     private WebTarget target;
 
@@ -105,7 +100,8 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withHeaderUsesTraceId() {
-        Response response = target.path("/trace").request()
+        Response response = target.path("/trace")
+                .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
                 .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
@@ -119,7 +115,8 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_respectsMethod() {
-        Response response = target.path("/trace").request()
+        Response response = target.path("/trace")
+                .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
                 .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
@@ -133,7 +130,8 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_doesNotIncludePathParams() {
-        Response response = target.path("/trace/no").request()
+        Response response = target.path("/trace/no")
+                .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
                 .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
@@ -187,18 +185,13 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withSamplingHeaderWithoutTraceIdDoesNotUseTraceSampler() {
-        target.path("/trace").request()
-                .header(TraceHttpHeaders.IS_SAMPLED, "0")
-                .get();
+        target.path("/trace").request().header(TraceHttpHeaders.IS_SAMPLED, "0").get();
         verify(traceSampler, never()).sample();
 
-        target.path("/trace").request()
-                .header(TraceHttpHeaders.IS_SAMPLED, "1")
-                .get();
+        target.path("/trace").request().header(TraceHttpHeaders.IS_SAMPLED, "1").get();
         verify(traceSampler, never()).sample();
 
-        target.path("/trace").request()
-                .get();
+        target.path("/trace").request().get();
         verify(traceSampler, times(1)).sample();
     }
 
@@ -271,8 +264,7 @@ public final class TraceEnrichingFilterTest {
 
         @Override
         public StreamingOutput getStreamingTraceOperation() {
-            return os -> {
-            };
+            return os -> {};
         }
     }
 
