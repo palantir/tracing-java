@@ -117,6 +117,11 @@ public final class Tracers {
     public static ScheduledExecutorService wrap(ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
+            protected Runnable wrapRecurring(Runnable runnable) {
+                return wrapWithNewTrace(runnable);
+            }
+
+            @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrap(callable);
             }
@@ -135,6 +140,11 @@ public final class Tracers {
     public static ScheduledExecutorService wrap(String operation,
             ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
+            @Override
+            protected Runnable wrapRecurring(Runnable runnable) {
+                return wrapWithNewTrace(operation, runnable);
+            }
+
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrap(operation, callable);
@@ -269,6 +279,11 @@ public final class Tracers {
     public static ScheduledExecutorService wrapWithNewTrace(String operation,
             ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
+            @Override
+            protected Runnable wrapRecurring(Runnable runnable) {
+                return wrapTask(runnable);
+            }
+
             @Override
             protected <T> Callable<T> wrapTask(Callable<T> callable) {
                 return wrapWithNewTrace(operation, callable);

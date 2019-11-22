@@ -1,0 +1,26 @@
+type: break
+break:
+  description: |-
+    Scheduled executor recurring tasks are always given new trace IDs
+
+    Previously we had no good options for scheduled executors: Either
+    create a new traceId for every taskd regardless of whether it was
+    submitted to execute(runnable) or scheduleWithFixedDelay which
+    mean very different things.
+
+    Recurring tasks are most frequently scheduled on application startup
+    and continue to execute at a cadence until the service is halted.
+    In these cases we used to produce large traces bounded by the
+    runtime of the application, making the traceId of an error thrown
+    in this context unhelpful for debugging. In worse cases, lazily
+    scheduled tasks are created with the traceId of a request that
+    happened to cause lazy initialization, resulting in tracing state
+    that incorrectly blames to a particular user request.
+
+    While there are cases that we may want to preserve a single traceId
+    across a scheduled task, they are sparse and complex. In these cases
+    it's reasonable to expect developers to wrap tasks before scheduling
+    them with an executor to acknowledge the desired behavior, and make
+    it clear to others who read the code.
+  links:
+  - https://github.com/palantir/tracing-java/pull/362
