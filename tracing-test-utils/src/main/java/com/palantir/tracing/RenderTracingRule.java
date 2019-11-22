@@ -43,9 +43,7 @@ public final class RenderTracingRule implements TestRule {
                     Tracer.unsubscribe("RenderTracingRule");
 
                     String displayName = description.getClassName() + "#" + description.getMethodName();
-                    Path path = Utils.createOutputFile(
-                            description.getTestClass(),
-                            description.getMethodName());
+                    Path path = Utils.createOutputFile(description.getTestClass(), description.getMethodName());
 
                     Collection<Span> allSpans = subscriber.getAllSpans();
 

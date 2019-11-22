@@ -59,7 +59,8 @@ class TracingDemos {
             });
         });
 
-        assertThat(countDownLatch.await(expectedDurationMillis + 1000, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(countDownLatch.await(expectedDurationMillis + 1000, TimeUnit.MILLISECONDS))
+                .isTrue();
     }
 
     @Test
@@ -75,25 +76,27 @@ class TracingDemos {
             String traceId = Tracer.getTraceId();
 
             IntStream.range(0, numCallbacks).forEach(i -> {
-
                 DetachedSpan span = DetachedSpan.start("callback-pending" + i + " (cross thread span)");
 
-                Futures.addCallback(future, new FutureCallback<Object>() {
-                    @Override
-                    public void onSuccess(Object _value) {
-                        assertThat(Tracer.hasTraceId()).isFalse();
-                        try (CloseableSpan tracer = span.completeAndStartChild("success" + i)) {
-                            assertThat(Tracer.getTraceId()).isEqualTo(traceId);
-                            sleep(10);
-                            latch.countDown();
-                        }
-                    }
+                Futures.addCallback(
+                        future,
+                        new FutureCallback<Object>() {
+                            @Override
+                            public void onSuccess(Object _value) {
+                                assertThat(Tracer.hasTraceId()).isFalse();
+                                try (CloseableSpan tracer = span.completeAndStartChild("success" + i)) {
+                                    assertThat(Tracer.getTraceId()).isEqualTo(traceId);
+                                    sleep(10);
+                                    latch.countDown();
+                                }
+                            }
 
-                    @Override
-                    public void onFailure(Throwable _throwable) {
-                        Assertions.fail();
-                    }
-                }, executorService);
+                            @Override
+                            public void onFailure(Throwable _throwable) {
+                                Assertions.fail();
+                            }
+                        },
+                        executorService);
             });
 
             try (CloseableTracer root = CloseableTracer.startSpan("bbb")) {
@@ -101,7 +104,6 @@ class TracingDemos {
                     future.set(null);
                 });
             }
-
         }
         assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     }
@@ -120,7 +122,6 @@ class TracingDemos {
 
         try (CloseableTracer submit = CloseableTracer.startSpan("submit")) {
             IntStream.range(0, numElem).forEach(i -> {
-
                 Tracer.clearCurrentTrace(); // just pretending all these tasks are on a fresh request
 
                 DetachedSpan span = DetachedSpan.start("callback-pending" + i + " (cross thread span)");
@@ -163,20 +164,21 @@ class TracingDemos {
 
         DetachedSpan overall = DetachedSpan.start("overall request");
         executor.execute(() -> {
-
             try (CloseableTracer t = CloseableTracer.startSpan("first network call (pretending this fails)")) {
                 sleep(100);
             }
 
             DetachedSpan backoff = overall.childDetachedSpan("backoff");
-            executor.schedule(() -> {
-                try (CloseableSpan attempt2 = backoff.completeAndStartChild("secondAttempt")) {
-                    sleep(100);
-                    overall.complete();
-                    latch.countDown();
-
-                }
-            }, 20, TimeUnit.MILLISECONDS);
+            executor.schedule(
+                    () -> {
+                        try (CloseableSpan attempt2 = backoff.completeAndStartChild("secondAttempt")) {
+                            sleep(100);
+                            overall.complete();
+                            latch.countDown();
+                        }
+                    },
+                    20,
+                    TimeUnit.MILLISECONDS);
         });
 
         assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
@@ -194,30 +196,36 @@ class TracingDemos {
 
         DetachedSpan foo = DetachedSpan.start("foo");
         FluentFuture.from(future)
-                .transform(result -> {
-                    try (CloseableSpan t = foo.childSpan("first transform")) {
-                        sleep(1000);
-                        return result;
-                    }
-                }, executor)
-                .transform(result -> {
-                    try (CloseableSpan t = foo.childSpan("second transform")) {
-                        sleep(1000);
-                        latch.countDown();
-                        return result;
-                    }
-                }, executor)
-                .addCallback(new FutureCallback<Object>() {
-                    @Override
-                    public void onSuccess(Object _value) {
-                        foo.complete();
-                    }
+                .transform(
+                        result -> {
+                            try (CloseableSpan t = foo.childSpan("first transform")) {
+                                sleep(1000);
+                                return result;
+                            }
+                        },
+                        executor)
+                .transform(
+                        result -> {
+                            try (CloseableSpan t = foo.childSpan("second transform")) {
+                                sleep(1000);
+                                latch.countDown();
+                                return result;
+                            }
+                        },
+                        executor)
+                .addCallback(
+                        new FutureCallback<Object>() {
+                            @Override
+                            public void onSuccess(Object _value) {
+                                foo.complete();
+                            }
 
-                    @Override
-                    public void onFailure(Throwable _throwable) {
-                        foo.complete();
-                    }
-                }, executor);
+                            @Override
+                            public void onFailure(Throwable _throwable) {
+                                foo.complete();
+                            }
+                        },
+                        executor);
 
         executor.execute(() -> {
             future.set(null);
@@ -259,6 +267,7 @@ class TracingDemos {
 
     interface QueuedWork {
         String name();
+
         DetachedSpan span();
     }
 }
