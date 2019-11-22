@@ -50,12 +50,19 @@ abstract class WrappingScheduledExecutorService extends WrappingExecutorService
     @Override
     public final ScheduledFuture<?> scheduleAtFixedRate(
             Runnable command, long initialDelay, long period, TimeUnit unit) {
-        return delegate.scheduleAtFixedRate(wrapTask(command), initialDelay, period, unit);
+        return delegate.scheduleAtFixedRate(wrapRecurring(command), initialDelay, period, unit);
     }
 
     @Override
     public final ScheduledFuture<?> scheduleWithFixedDelay(
             Runnable command, long initialDelay, long delay, TimeUnit unit) {
-        return delegate.scheduleWithFixedDelay(wrapTask(command), initialDelay, delay, unit);
+        return delegate.scheduleWithFixedDelay(wrapRecurring(command), initialDelay, delay, unit);
     }
+
+    /**
+     * Wraps a task that may be executed multiple times, perhaps using
+     * {@link #scheduleAtFixedRate(Runnable, long, long, TimeUnit)} or
+     * {@link #scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}.
+     */
+    protected abstract Runnable wrapRecurring(Runnable runnable);
 }

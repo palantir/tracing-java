@@ -39,8 +39,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -107,27 +109,82 @@ public final class TracersTest {
     }
 
     @Test
-    public void testWrapScheduledExecutorService() throws Exception {
-        ScheduledExecutorService wrappedService =
-                Tracers.wrap(Executors.newSingleThreadScheduledExecutor());
+    public void testWrapScheduledExecutorService() {
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadScheduledExecutor()), wrappedService -> {
+            // Empty trace
+            wrappedService.schedule(
+                    traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                    0, TimeUnit.SECONDS).get();
+            wrappedService.schedule(
+                    traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                    0, TimeUnit.SECONDS).get();
 
-        // Empty trace
-        wrappedService.schedule(
-                traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(
-                traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"), 0, TimeUnit.SECONDS).get();
+            // Non-empty trace
+            Tracer.fastStartSpan("foo");
+            Tracer.fastStartSpan("bar");
+            Tracer.fastStartSpan("baz");
+            wrappedService.schedule(
+                    traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                    0, TimeUnit.SECONDS).get();
+            wrappedService.schedule(
+                    traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                    0, TimeUnit.SECONDS).get();
+            Tracer.fastCompleteSpan();
+            Tracer.fastCompleteSpan();
+            Tracer.fastCompleteSpan();
+        });
+    }
 
-        // Non-empty trace
-        Tracer.fastStartSpan("foo");
-        Tracer.fastStartSpan("bar");
-        Tracer.fastStartSpan("baz");
-        wrappedService.schedule(
-                traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(
-                traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"), 0, TimeUnit.SECONDS).get();
-        Tracer.fastCompleteSpan();
-        Tracer.fastCompleteSpan();
-        Tracer.fastCompleteSpan();
+    @Test
+    public void testWrapScheduledExecutorService_scheduleAtFixedRate() {
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadScheduledExecutor()), wrappedService -> {
+            SettableFuture<String> first = SettableFuture.create();
+            SettableFuture<String> second = SettableFuture.create();
+            Tracer.fastStartSpan("start");
+            ScheduledFuture<?> scheduledFuture = wrappedService.scheduleAtFixedRate(() -> {
+                String traceId = Tracer.getTraceId();
+                if (!first.set(traceId)) {
+                    second.set(traceId);
+                }
+            }, 0, 1, TimeUnit.MILLISECONDS);
+            String secondValue = second.get();
+            scheduledFuture.cancel(true);
+            assertThat(secondValue)
+                    .describedAs("Scheduled task traceIds should be unique for each repetition")
+                    .isNotEqualTo(Futures.getDone(first))
+                    .describedAs("Scheduled task traceIds should be unique from the submitting thread")
+                    .isNotEqualTo(Tracer.getTraceId());
+            assertThat(Futures.getDone(first))
+                    .describedAs("Scheduled task traceIds should be unique from the submitting thread")
+                    .isNotEqualTo(Tracer.getTraceId());
+            Tracer.fastCompleteSpan();
+        });
+    }
+
+    @Test
+    public void testWrapScheduledExecutorService_scheduleWithFixedDelay() {
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadScheduledExecutor()), wrappedService -> {
+            SettableFuture<String> first = SettableFuture.create();
+            SettableFuture<String> second = SettableFuture.create();
+            Tracer.fastStartSpan("start");
+            ScheduledFuture<?> scheduledFuture = wrappedService.scheduleWithFixedDelay(() -> {
+                String traceId = Tracer.getTraceId();
+                if (!first.set(traceId)) {
+                    second.set(traceId);
+                }
+            }, 0, 1, TimeUnit.MILLISECONDS);
+            String secondValue = second.get();
+            scheduledFuture.cancel(true);
+            assertThat(secondValue)
+                    .describedAs("Scheduled task traceIds should be unique for each repetition")
+                    .isNotEqualTo(Futures.getDone(first))
+                    .describedAs("Scheduled task traceIds should be unique from the submitting thread")
+                    .isNotEqualTo(Tracer.getTraceId());
+            assertThat(Futures.getDone(first))
+                    .describedAs("Scheduled task traceIds should be unique from the submitting thread")
+                    .isNotEqualTo(Tracer.getTraceId());
+            Tracer.fastCompleteSpan();
+        });
     }
 
     @Test
@@ -812,5 +869,26 @@ public final class TracersTest {
                     return Lists.reverse(spans);
                 })
                 .orElseGet(Collections::emptyList);
+    }
+
+
+    private static <T extends ExecutorService> void withExecutor(Supplier<T> factory, ThrowingConsumer<T> test) {
+        T executor = factory.get();
+        try {
+            test.accept(executor);
+        } catch (RuntimeException | Error e) {
+            throw e;
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        } finally {
+            executor.shutdownNow();
+            assertThat(MoreExecutors.shutdownAndAwaitTermination(executor, 5, TimeUnit.SECONDS))
+                    .describedAs("Executor failed to shutdown within 5 seconds")
+                    .isTrue();
+        }
+    }
+
+    interface ThrowingConsumer<T> {
+        void accept(T executor) throws Exception;
     }
 }
