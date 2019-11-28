@@ -35,6 +35,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ExtendedUriInfo;
 import org.glassfish.jersey.server.model.Resource;
+import org.slf4j.MDC;
 
 // Default is `Priorities.USER` == 5000. This filter needs to execute earlier to ensure traces are ready to use.
 @Priority(500)
@@ -66,31 +67,25 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
 
-        // XXX: leaks abstraction and ties us to requestId === spanId of initial span
-        // however the leak is contained without this repository, so maybe OK?
-        // alternative is to expose requestId as a property on the current trace to all clients.
-        // or read the property from the MDC at this point
-        String requestId;
-
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
             // HTTP request did not indicate a trace; initialize trace state and create a span.
             Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
-            requestId = Tracer.startSpan(operation, SpanType.SERVER_INCOMING).getSpanId();
+            Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         } else {
             Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
             if (spanId == null) {
-                requestId = Tracer.startSpan(operation, SpanType.SERVER_INCOMING).getSpanId();
+                Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
             } else {
                 // caller's span is this span's parent.
-                requestId = Tracer.startSpan(operation, spanId, SpanType.SERVER_INCOMING).getSpanId();
+                Tracer.fastStartSpan(operation, spanId, SpanType.SERVER_INCOMING);
             }
         }
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
+        requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, MDC.get(Tracers.REQUEST_ID_KEY));
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
-        requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId);
     }
 
     // Handles outgoing response

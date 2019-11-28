@@ -29,6 +29,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
+import org.slf4j.MDC;
 
 /**
  * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding
@@ -61,32 +62,12 @@ public final class TracedOperationHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        HeaderMap headers = exchange.getRequestHeaders();
-        // TODO(rfink): Log/warn if we find multiple headers?
-        String traceIdHeader = headers.getFirst(TRACE_ID); // nullable
-        String traceId;
-        // XXX: again, nasty abstraction leak
-        String requestId;
-
-        // Set up thread-local span that inherits state from HTTP headers
-        if (Strings.isNullOrEmpty(traceIdHeader)) {
-            traceId = initializeNewTrace(headers);
-            requestId = Tracer.startSpan(operation, SpanType.SERVER_INCOMING).getSpanId();
-        } else {
-            traceId = traceIdHeader;
-            Tracer.initTrace(getObservabilityFromHeader(headers), traceIdHeader);
-            String spanId = headers.getFirst(SPAN_ID); // nullable
-            if (spanId == null) {
-                requestId = Tracer.startSpan(operation, SpanType.SERVER_INCOMING).getSpanId();
-            } else {
-                requestId = Tracer.startSpan(operation, spanId, SpanType.SERVER_INCOMING).getSpanId();
-            }
-        }
+        String traceId = initializeTrace(exchange);
 
         // Populate response before calling delegate since delegate might commit the response.
         exchange.getResponseHeaders().put(TRACE_ID, traceId);
         exchange.putAttachment(IS_SAMPLED_ATTACHMENT, Tracer.isTraceObservable());
-        exchange.putAttachment(REQUEST_ID_ATTACHMENT, requestId);
+        exchange.putAttachment(REQUEST_ID_ATTACHMENT, MDC.get(Tracers.REQUEST_ID_KEY));
         try {
             delegate.handleRequest(exchange);
         } finally {
@@ -105,11 +86,39 @@ public final class TracedOperationHandler implements HttpHandler {
         }
     }
 
+    /** Initializes trace state and a root span for this request, returning the traceId. */
+    private String initializeTrace(HttpServerExchange exchange) {
+        HeaderMap headers = exchange.getRequestHeaders();
+        // TODO(rfink): Log/warn if we find multiple headers?
+        String traceId = headers.getFirst(TRACE_ID); // nullable
+
+        // Set up thread-local span that inherits state from HTTP headers
+        if (Strings.isNullOrEmpty(traceId)) {
+            return initializeNewTrace(headers);
+        } else {
+            initializeTraceFromExisting(headers, traceId);
+        }
+        return traceId;
+    }
+
+    /** Initializes trace state given a trace-id header from the client. */
+    private void initializeTraceFromExisting(HeaderMap headers, String traceId) {
+        Tracer.initTrace(getObservabilityFromHeader(headers), traceId);
+        String spanId = headers.getFirst(SPAN_ID); // nullable
+        if (spanId == null) {
+            Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
+        } else {
+            // caller's span is this span's parent.
+            Tracer.fastStartSpan(operation, spanId, SpanType.SERVER_INCOMING);
+        }
+    }
+
     /** Initializes trace state for a request without tracing headers. */
     private String initializeNewTrace(HeaderMap headers) {
         // HTTP request did not indicate a trace; initialize trace state and create a span.
         String newTraceId = Tracers.randomId();
         Tracer.initTrace(getObservabilityFromHeader(headers), newTraceId);
+        Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
         return newTraceId;
     }
 
