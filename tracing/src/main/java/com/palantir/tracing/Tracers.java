@@ -334,30 +334,6 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state with the given traceId}
-     * for its execution. That is, the trace during its {@link Callable#call() execution} will use the traceId provided
-     * instead of any trace already set on the thread used to execute the callable. Each execution of the callable
-     * will use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is
-     * used to create the initial span.
-     */
-    public static <V> Callable<V> wrapWithAlternateTraceId(String traceId, String operation,
-            Observability observability, Callable<V> delegate) {
-        return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTrace(observability, traceId);
-                Tracer.fastStartSpan(operation);
-                return delegate.call();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
-            }
-        };
-    }
-
-    /**
      * Deprecated.
      *
      * @deprecated Use {@link #wrapWithNewTrace(String, Runnable)}
@@ -386,6 +362,30 @@ public final class Tracers {
                 Tracer.initTrace(observability, Tracers.randomId());
                 Tracer.fastStartSpan(operation);
                 delegate.run();
+            } finally {
+                Tracer.fastCompleteSpan();
+                restoreTrace(originalTrace);
+            }
+        };
+    }
+
+    /**
+     * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state with the given traceId}
+     * for its execution. That is, the trace during its {@link Callable#call() execution} will use the traceId provided
+     * instead of any trace already set on the thread used to execute the callable. Each execution of the callable
+     * will use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is
+     * used to create the initial span.
+     */
+    public static <V> Callable<V> wrapWithAlternateTraceId(String traceId, String operation,
+            Observability observability, Callable<V> delegate) {
+        return () -> {
+            // clear the existing trace and keep it around for restoration when we're done
+            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
+
+            try {
+                Tracer.initTrace(observability, traceId);
+                Tracer.fastStartSpan(operation);
+                return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
                 restoreTrace(originalTrace);
