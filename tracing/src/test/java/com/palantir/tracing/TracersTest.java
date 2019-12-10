@@ -546,7 +546,7 @@ public final class TracersTest {
     }
 
     @Test
-    public void testWrapCallableWithAlternateTraceId_traceStateInsideRunnableHasSpan() throws Exception {
+    public void testWrapCallableWithAlternateTraceId_traceStateInsideCallableHasSpan() throws Exception {
         String traceIdToUse = "someTraceId";
         Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithAlternateTraceId(
                 traceIdToUse,
