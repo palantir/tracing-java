@@ -406,7 +406,7 @@ public final class Tracers {
     public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable delegate) {
         return wrapWithAlternateTraceId(traceId, operation, Observability.UNDECIDED, delegate);
     }
-/*
+
     /**
      * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state with the given traceId}
      * for its execution. That is, the trace during its {@link Runnable#run() execution} will use the traceId provided
