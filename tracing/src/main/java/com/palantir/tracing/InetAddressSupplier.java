@@ -19,6 +19,7 @@ package com.palantir.tracing;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.function.Supplier;
@@ -67,7 +68,7 @@ enum InetAddressSupplier implements Supplier<InetAddress>,
                 return Inet4Address.getByAddress(new byte[] {0, 0, 0, 0});
             }
             return jdkSuppliedAddress;
-        } catch (Exception e) {
+        } catch (RuntimeException | UnknownHostException | SocketException e) {
             try {
                 return Inet4Address.getByAddress(new byte[] {0, 0, 0, 0});
             } catch (UnknownHostException e1) {
