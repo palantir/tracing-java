@@ -528,10 +528,7 @@ public final class TracersTest {
         String traceIdBeforeConstruction = Tracer.getTraceId();
         String traceIdToUse = "someTraceId";
         Callable<String> wrappedCallable = Tracers.wrapWithAlternateTraceId(
-                traceIdToUse,
-                "operation",
-                Observability.UNDECIDED,
-                () -> Tracer.getTraceId());
+                traceIdToUse, "operation", Observability.UNDECIDED, Tracer::getTraceId);
 
         String traceIdInsideCallable = wrappedCallable.call();
 

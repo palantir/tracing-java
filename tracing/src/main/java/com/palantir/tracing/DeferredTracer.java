@@ -146,6 +146,7 @@ public final class DeferredTracer implements Serializable {
         }
     }
 
+    @SuppressWarnings("UnnecessaryLambda") // this library is allocation sensitive
     private static final Function<Trace, CloseableTrace> CLOSEABLE_TRACE_FUNCTION = originalTrace -> () -> {
         DefaultCloseableTrace.INSTANCE.close();
         Tracer.setTrace(originalTrace);
