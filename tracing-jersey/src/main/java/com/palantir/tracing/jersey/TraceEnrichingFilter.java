@@ -42,10 +42,9 @@ import org.glassfish.jersey.server.model.Resource;
 public final class TraceEnrichingFilter implements ContainerRequestFilter, ContainerResponseFilter {
     public static final TraceEnrichingFilter INSTANCE = new TraceEnrichingFilter();
 
-    /**
-     * This is the name of the trace id property we set on {@link ContainerRequestContext}.
-     */
+    /** This is the name of the trace id property we set on {@link ContainerRequestContext}. */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
+
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context

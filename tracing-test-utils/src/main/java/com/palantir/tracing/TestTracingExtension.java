@@ -52,7 +52,6 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         // TODO(forozco): cleanup stale snapshots from outdated tests cases/classes
     }
 
-
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);
@@ -99,7 +98,8 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
         Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(
-                expected, actual, expected.root(), actual.root()).collect(ImmutableSet.toImmutableSet());
+                        expected, actual, expected.root(), actual.root())
+                .collect(ImmutableSet.toImmutableSet());
 
         HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(actualSpans)
@@ -114,7 +114,6 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
                         .collect(ImmutableSet.toImmutableSet()))
                 .layoutStrategy(annotation.layout())
                 .build());
-
 
         HtmlFormatter.render(HtmlFormatter.RenderConfig.builder()
                 .spans(expectedSpans)
@@ -131,33 +130,31 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
                 .build());
 
         if (!failures.isEmpty()) {
-            throw new AssertionError(
-                    String.format(
-                            "Traces did not match the expected file '%s'.\n"
-                                    + "%s\n"
-                                    + "Visually Compare:\n"
-                                    + " - expected: file://%s\n"
-                                    + " - actual:   file://%s\n"
-                                    + "Or re-run with -Drecreate=true to accept the new behaviour.",
-                            snapshotFile,
-                            failures.stream()
-                                    .map(TestTracingExtension::renderFailure)
-                                    .collect(Collectors.joining("\n")),
-                            expectedPath.toAbsolutePath(),
-                            actualPath.toAbsolutePath()));
+            throw new AssertionError(String.format(
+                    "Traces did not match the expected file '%s'.\n"
+                            + "%s\n"
+                            + "Visually Compare:\n"
+                            + " - expected: file://%s\n"
+                            + " - actual:   file://%s\n"
+                            + "Or re-run with -Drecreate=true to accept the new behaviour.",
+                    snapshotFile,
+                    failures.stream().map(TestTracingExtension::renderFailure).collect(Collectors.joining("\n")),
+                    expectedPath.toAbsolutePath(),
+                    actualPath.toAbsolutePath()));
         }
     }
 
     private static String renderFailure(ComparisonFailure failure) {
         return failure.map(
-                (ComparisonFailure.unequalOperation t) -> String.format("Expected operation %s but received %s",
+                (ComparisonFailure.unequalOperation t) -> String.format(
+                        "Expected operation %s but received %s",
                         t.expected().getOperation(), t.actual().getOperation()),
                 (ComparisonFailure.unequalChildren t) -> String.format(
                         "Expected children with operations %s but received %s",
                         t.expectedChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList()),
                         t.actualChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList())),
-                (ComparisonFailure.incompatibleStructure t) -> String.format(
-                        "Expected children to structured similarly"));
+                (ComparisonFailure.incompatibleStructure t) ->
+                        String.format("Expected children to structured similarly"));
     }
 
     private static String testName(ExtensionContext context) {
@@ -180,5 +177,4 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
 
         return Paths.get(circleArtifactsDir).resolve(name);
     }
-
 }
