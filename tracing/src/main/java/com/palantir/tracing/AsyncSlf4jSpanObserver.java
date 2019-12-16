@@ -64,12 +64,19 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     abstract static class ZipkinCompatSpan {
 
         abstract String getTraceId();
+
         abstract String getId();
+
         abstract String getName();
+
         abstract Optional<String> getParentId();
+
         abstract long getTimestamp();
+
         abstract long getDuration();
+
         abstract List<ZipkinCompatAnnotation> annotations();
+
         abstract List<ZipkinCompatBinaryAnnotation> binaryAnnotations();
 
         static ZipkinCompatSpan fromSpan(Span span, ZipkinCompatEndpoint endpoint) {
@@ -79,7 +86,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
                     .name(span.getOperation())
                     .parentId(span.getParentSpanId())
                     .timestamp(span.getStartTimeMicroSeconds())
-                    .duration(nanoToMicro(span.getDurationNanoSeconds()))  // Zipkin-durations are micro-seconds, round
+                    .duration(nanoToMicro(span.getDurationNanoSeconds())) // Zipkin-durations are micro-seconds, round
                     .addAllAnnotations(spanTypeToZipkinAnnotations(span, endpoint))
                     .addAllBinaryAnnotations(spanMetadataToZipkinBinaryAnnotations(span, endpoint))
                     .build();
@@ -139,7 +146,9 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
     abstract static class ZipkinCompatAnnotation {
         abstract long timestamp(); // epoch microseconds
+
         abstract String value();
+
         abstract ZipkinCompatEndpoint endpoint();
 
         static ZipkinCompatAnnotation of(long timestamp, String value, ZipkinCompatEndpoint endpoint) {
@@ -157,7 +166,9 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     abstract static class ZipkinCompatBinaryAnnotation {
 
         abstract String key();
+
         abstract String value();
+
         abstract ZipkinCompatEndpoint endpoint();
 
         static ZipkinCompatBinaryAnnotation of(String key, String value, ZipkinCompatEndpoint endpoint) {
@@ -175,7 +186,9 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     abstract static class ZipkinCompatEndpoint {
         abstract String serviceName();
+
         abstract Optional<String> ipv4();
+
         abstract Optional<String> ipv6();
         // port may be omitted
     }
@@ -183,8 +196,8 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     private AsyncSlf4jSpanObserver(String serviceName, InetAddress ip, Logger logger, ExecutorService executorService) {
         super(executorService);
 
-        ImmutableZipkinCompatEndpoint.Builder endpointBuilder = ImmutableZipkinCompatEndpoint.builder()
-                .serviceName(serviceName);
+        ImmutableZipkinCompatEndpoint.Builder endpointBuilder =
+                ImmutableZipkinCompatEndpoint.builder().serviceName(serviceName);
         if (ip instanceof Inet4Address) {
             endpointBuilder.ipv4(ip.getHostAddress());
         } else if (ip instanceof Inet6Address) {
@@ -196,8 +209,11 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     }
 
     public static AsyncSlf4jSpanObserver of(String serviceName, ExecutorService executorService) {
-        return new AsyncSlf4jSpanObserver(serviceName, InetAddressSupplier.INSTANCE.get(),
-                LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class), executorService);
+        return new AsyncSlf4jSpanObserver(
+                serviceName,
+                InetAddressSupplier.INSTANCE.get(),
+                LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class),
+                executorService);
     }
 
     public static AsyncSlf4jSpanObserver of(

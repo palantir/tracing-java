@@ -101,6 +101,7 @@ public final class TestTracingExtensionDemo {
             });
         });
 
-        assertThat(countDownLatch.await(expectedDurationMillis + 1000, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(countDownLatch.await(expectedDurationMillis + 1000, TimeUnit.MILLISECONDS))
+                .isTrue();
     }
 }

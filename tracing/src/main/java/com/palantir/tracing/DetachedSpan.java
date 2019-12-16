@@ -28,10 +28,10 @@ public interface DetachedSpan {
      * originating thread will not automatically parented to this span (because it does not modify any thread local
      * tracing state). If you don't need this cross-thread functionality, use {@link CloseableTracer}.
      *
-     * On the destination thread, you can call {@link #completeAndStartChild} to mark the end of this
-     * {@link DetachedSpan} and continue tracing regular thread-local work. Alternatively, if you want to keep this
-     * DetachedSpan open, you can instrument 'sub tasks' using {@link #childSpan} or {@link #childDetachedSpan},
-     * but must remember to call {@link #complete} eventually.
+     * <p>On the destination thread, you can call {@link #completeAndStartChild} to mark the end of this {@link
+     * DetachedSpan} and continue tracing regular thread-local work. Alternatively, if you want to keep this
+     * DetachedSpan open, you can instrument 'sub tasks' using {@link #childSpan} or {@link #childDetachedSpan}, but
+     * must remember to call {@link #complete} eventually.
      */
     @CheckReturnValue
     static DetachedSpan start(String operation) {
@@ -49,15 +49,15 @@ public interface DetachedSpan {
     }
 
     /**
-     * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan}
-     * as the parent instead of thread state.
+     * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan} as the parent
+     * instead of thread state.
      */
     @MustBeClosed
     CloseableSpan childSpan(String operationName, SpanType type);
 
     /**
-     * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead
-     * of thread state.
+     * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead of
+     * thread state.
      */
     @MustBeClosed
     default CloseableSpan childSpan(String operationName) {
@@ -82,8 +82,8 @@ public interface DetachedSpan {
     DetachedSpan childDetachedSpan(String operation, SpanType type);
 
     /**
-     * Starts a child {@link DetachedSpan} using this instance as the parent.
-     * Equivalent to {@link #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
+     * Starts a child {@link DetachedSpan} using this instance as the parent. Equivalent to {@link
+     * #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
     default DetachedSpan childDetachedSpan(String operation) {
@@ -91,8 +91,8 @@ public interface DetachedSpan {
     }
 
     /**
-     * Completes this span. After complete is invoked, other methods are not expected to produce spans, but
-     * they must not throw either in order to avoid confusing failures.
+     * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
+     * not throw either in order to avoid confusing failures.
      */
     void complete();
 }
