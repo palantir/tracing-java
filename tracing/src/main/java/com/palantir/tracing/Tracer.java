@@ -91,6 +91,12 @@ public final class Tracer {
         throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
     }
 
+    /**
+     * In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId
+     * stack, so we just make one up (just in time). This matches the behaviour of Tracer#startSpan.
+     * <p>
+     * n.b. this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
+     */
     @Beta
     public static TraceMetadata getTraceMetadata() {
         Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
@@ -105,10 +111,6 @@ public final class Tracer {
                     .traceId(trace.getTraceId())
                     .build();
         } else {
-            // In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId
-            // stack, so we just make one up (just in time). This matches the behaviour of Tracer#startSpan.
-
-            // n.b. this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
             return TraceMetadata.builder()
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
