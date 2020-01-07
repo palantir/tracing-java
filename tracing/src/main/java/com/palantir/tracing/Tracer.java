@@ -96,7 +96,10 @@ public final class Tracer {
      * n.b. this is a bit funky because calling maybeGetTraceMetadata multiple times will return different spanIds
      */
     public static Optional<TraceMetadata> maybeGetTraceMetadata() {
-        Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
+        Trace trace = currentTrace.get();
+        if (trace == null) {
+            return Optional.empty();
+        }
 
         if (trace.isObservable()) {
             return trace.top()
