@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: Make Tracer#getTraceMetadata public to allow third party libraries
+    to propagate trace related ids
+  links:
+  - https://github.com/palantir/tracing-java/pull/387

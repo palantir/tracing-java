@@ -20,7 +20,6 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
-import com.google.common.annotations.Beta;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
@@ -29,7 +28,6 @@ import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
-import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -91,30 +89,33 @@ public final class Tracer {
         throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
     }
 
-    @Beta
-    static TraceMetadata getTraceMetadata() {
-        Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
+    /**
+     * In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId stack, so we just
+     * make one up (just in time). This matches the behaviour of Tracer#startSpan.
+     * <p>
+     * n.b. this is a bit funky because calling maybeGetTraceMetadata multiple times will return different spanIds
+     */
+    public static Optional<TraceMetadata> maybeGetTraceMetadata() {
+        Trace trace = currentTrace.get();
+        if (trace == null) {
+            return Optional.empty();
+        }
 
         if (trace.isObservable()) {
-            OpenSpan openSpan = trace.top()
-                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
-            return TraceMetadata.builder()
-                    .spanId(openSpan.getSpanId())
-                    .parentSpanId(openSpan.getParentSpanId())
-                    .originatingSpanId(trace.getOriginatingSpanId())
-                    .traceId(trace.getTraceId())
-                    .build();
+            return trace.top()
+                    .map(openSpan -> TraceMetadata.builder()
+                            .spanId(openSpan.getSpanId())
+                            .parentSpanId(openSpan.getParentSpanId())
+                            .originatingSpanId(trace.getOriginatingSpanId())
+                            .traceId(trace.getTraceId())
+                            .build());
         } else {
-            // In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId
-            // stack, so we just make one up (just in time). This matches the behaviour of Tracer#startSpan.
-
-            // n.b. this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
-            return TraceMetadata.builder()
+            return Optional.of(TraceMetadata.builder()
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
                     .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
-                    .build();
+                    .build());
         }
     }
 
