@@ -92,7 +92,7 @@ public final class Tracer {
     }
 
     @Beta
-    static TraceMetadata getTraceMetadata() {
+    public static TraceMetadata getTraceMetadata() {
         Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
 
         if (trace.isObservable()) {
