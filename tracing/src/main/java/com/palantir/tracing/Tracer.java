@@ -109,12 +109,12 @@ public final class Tracer {
                             .traceId(trace.getTraceId())
                             .build());
         } else {
-            return TraceMetadata.builder()
+            return Optional.of(TraceMetadata.builder()
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
                     .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
-                    .build();
+                    .build());
         }
     }
 
