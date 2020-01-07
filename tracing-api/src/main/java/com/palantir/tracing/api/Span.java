@@ -20,19 +20,23 @@ import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
-/**
- * A value class representing a completed Span, see {@link OpenSpan} for a description of the fields.
- */
+/** A value class representing a completed Span, see {@link OpenSpan} for a description of the fields. */
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
 public abstract class Span {
 
     public abstract String getTraceId();
+
     public abstract Optional<String> getParentSpanId();
+
     public abstract String getSpanId();
+
     public abstract SpanType type();
+
     public abstract String getOperation();
+
     public abstract long getStartTimeMicroSeconds();
+
     public abstract long getDurationNanoSeconds();
     /**
      * Returns a map of custom key-value metadata with which spans will be annotated. For example, a "userId" key could
@@ -45,5 +49,4 @@ public abstract class Span {
     }
 
     public static class Builder extends ImmutableSpan.Builder {}
-
 }

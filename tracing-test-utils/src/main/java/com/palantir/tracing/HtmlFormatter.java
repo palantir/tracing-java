@@ -47,9 +47,13 @@ final class HtmlFormatter {
     @Value.Immutable
     interface RenderConfig {
         Collection<Span> spans();
+
         Path path();
+
         String displayName();
+
         LayoutStrategy layoutStrategy();
+
         Set<String> problemSpanIds();
 
         @Value.Derived
@@ -92,8 +96,7 @@ final class HtmlFormatter {
 
     private void renderSplitByTraceId(StringBuilder sb) {
         Map<String, SpanAnalyzer.Result> analyzedByTraceId = SpanAnalyzer.analyzeByTraceId(config.spans());
-        analyzedByTraceId.entrySet()
-                .stream()
+        analyzedByTraceId.entrySet().stream()
                 .sorted(Comparator.comparing(e -> e.getValue().bounds()))
                 .forEachOrdered(entry -> {
                     SpanAnalyzer.Result analysis = entry.getValue();
@@ -103,8 +106,7 @@ final class HtmlFormatter {
 
     private void renderAllSpansForOneTraceId(String traceId, SpanAnalyzer.Result analysis, StringBuilder sb) {
         sb.append("<div style=\"border-top: 1px solid #E1E8ED\" title=\"" + traceId + "\">\n");
-        analysis.orderedSpans()
-                .stream()
+        analysis.orderedSpans().stream()
                 .filter(s -> !SpanAnalyzer.isSyntheticRoot(s))
                 .forEach(span -> {
                     boolean suspectedCollision = analysis.collisions().contains(span);
@@ -115,16 +117,18 @@ final class HtmlFormatter {
 
     private void header(StringBuilder sb) throws IOException {
         OffsetDateTime startTime = Instant.ofEpochMilli(
-                TimeUnit.MILLISECONDS.convert(config.bounds().startMicros(), TimeUnit.MICROSECONDS))
+                        TimeUnit.MILLISECONDS.convert(config.bounds().startMicros(), TimeUnit.MICROSECONDS))
                 .atOffset(ZoneOffset.UTC);
         OffsetDateTime endTime = Instant.ofEpochMilli(
-                TimeUnit.MILLISECONDS.convert(config.bounds().endNanos(), TimeUnit.NANOSECONDS))
+                        TimeUnit.MILLISECONDS.convert(config.bounds().endNanos(), TimeUnit.NANOSECONDS))
                 .atOffset(ZoneOffset.UTC);
-        sb.append(template("header.html", ImmutableMap.<String, String>builder()
-                .put("{{DISPLAY_NAME}}", config.displayName())
-                .put("{{START_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(startTime))
-                .put("{{END_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(endTime))
-                .build()));
+        sb.append(template(
+                "header.html",
+                ImmutableMap.<String, String>builder()
+                        .put("{{DISPLAY_NAME}}", config.displayName())
+                        .put("{{START_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(startTime))
+                        .put("{{END_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(endTime))
+                        .build()));
     }
 
     private void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
@@ -132,24 +136,32 @@ final class HtmlFormatter {
 
         long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
 
-        sb.append(template("span.html", ImmutableMap.<String, String>builder()
-                .put("{{LEFT}}", Float.toString(Utils.percent(
-                        transposedStartMicros, config.bounds().durationMicros())))
-                .put("{{WIDTH}}", Float.toString(Utils.percent(
-                        span.getDurationNanoSeconds(), config.bounds().durationNanos())))
-                .put("{{HUE}}", Long.toString(hue))
-                .put("{{SPANID}}", span.getSpanId())
-                .put("{{CLASS}}", config.problemSpanIds().contains(span.getSpanId()) ? "problem-span" : "")
-                .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
-                .put("{{FINISH}}", Utils.renderDuration(transposedStartMicros + TimeUnit.MICROSECONDS.convert(
-                        span.getDurationNanoSeconds(),
-                        TimeUnit.NANOSECONDS), TimeUnit.MICROSECONDS))
-                .put("{{OPERATION}}", span.getOperation())
-                .put("{{DURATION}}", Utils.renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
-                .put("{{COLLISION}}", suspectedCollision ? " (collision)" : "")
-                .build()));
+        sb.append(template(
+                "span.html",
+                ImmutableMap.<String, String>builder()
+                        .put(
+                                "{{LEFT}}",
+                                Float.toString(Utils.percent(transposedStartMicros, config.bounds().durationMicros())))
+                        .put(
+                                "{{WIDTH}}",
+                                Float.toString(
+                                        Utils.percent(span.getDurationNanoSeconds(), config.bounds().durationNanos())))
+                        .put("{{HUE}}", Long.toString(hue))
+                        .put("{{SPANID}}", span.getSpanId())
+                        .put("{{CLASS}}", config.problemSpanIds().contains(span.getSpanId()) ? "problem-span" : "")
+                        .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
+                        .put(
+                                "{{FINISH}}",
+                                Utils.renderDuration(
+                                        transposedStartMicros
+                                                + TimeUnit.MICROSECONDS.convert(
+                                                        span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS),
+                                        TimeUnit.MICROSECONDS))
+                        .put("{{OPERATION}}", span.getOperation())
+                        .put("{{DURATION}}", Utils.renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
+                        .put("{{COLLISION}}", suspectedCollision ? " (collision)" : "")
+                        .build()));
     }
-
 
     private void rawSpanJson(StringBuilder sb) {
         sb.append("\n<pre style=\"background: #CED9E0;"

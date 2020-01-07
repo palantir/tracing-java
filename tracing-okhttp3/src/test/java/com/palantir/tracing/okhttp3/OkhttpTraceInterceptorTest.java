@@ -46,10 +46,17 @@ import org.mockito.junit.MockitoJUnitRunner;
 @SuppressWarnings("deprecation")
 public final class OkhttpTraceInterceptorTest {
 
-    @Mock private Interceptor.Chain chain;
-    @Mock private SpanObserver observer;
-    @Captor private ArgumentCaptor<Request> requestCaptor;
-    @Captor private ArgumentCaptor<Span> spanCaptor;
+    @Mock
+    private Interceptor.Chain chain;
+
+    @Mock
+    private SpanObserver observer;
+
+    @Captor
+    private ArgumentCaptor<Request> requestCaptor;
+
+    @Captor
+    private ArgumentCaptor<Span> spanCaptor;
 
     @Before
     public void before() {
@@ -106,7 +113,8 @@ public final class OkhttpTraceInterceptorTest {
         Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
-        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED)).containsOnly("1");
+        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED))
+                .containsOnly("1");
     }
 
     @Test
@@ -134,7 +142,9 @@ public final class OkhttpTraceInterceptorTest {
         when(chain.proceed(any(Request.class))).thenThrow(new IllegalStateException());
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
-        } catch (IllegalStateException e) { /* expected */ }
+        } catch (IllegalStateException e) {
+            /* expected */
+        }
         assertThat(Tracer.startSpan("").getParentSpanId().get()).isEqualTo(before.getSpanId());
     }
 
@@ -171,6 +181,7 @@ public final class OkhttpTraceInterceptorTest {
 
         assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.SPAN_ID)).hasSize(1);
         assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.TRACE_ID)).hasSize(1);
-        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED)).containsOnly("1");
+        assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED))
+                .containsOnly("1");
     }
 }

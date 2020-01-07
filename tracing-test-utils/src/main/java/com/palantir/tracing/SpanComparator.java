@@ -21,8 +21,7 @@ import java.util.Comparator;
 
 final class SpanComparator {
 
-    public static final Comparator<Span> INSTANCE = Comparator
-            .comparing(Span::getStartTimeMicroSeconds)
+    public static final Comparator<Span> INSTANCE = Comparator.comparing(Span::getStartTimeMicroSeconds)
             .thenComparing(Span::getDurationNanoSeconds)
             .thenComparing(Span::getOperation);
 

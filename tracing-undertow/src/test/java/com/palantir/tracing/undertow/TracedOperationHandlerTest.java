@@ -52,10 +52,13 @@ public class TracedOperationHandlerTest {
 
     @Mock
     private SpanObserver observer;
+
     @Mock
     private TraceSampler traceSampler;
+
     @Mock
     private HttpHandler delegate;
+
     private HttpServerExchange exchange = HttpServerExchanges.createStub();
     private String traceId;
 
@@ -99,7 +102,8 @@ public class TracedOperationHandlerTest {
     public void whenTraceIsInHeader_usesGivenTraceId() throws Exception {
         setRequestTraceId(traceId);
         handler.handleRequest(exchange);
-        assertThat(exchange.getResponseHeaders().getFirst(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
+        assertThat(exchange.getResponseHeaders().getFirst(TraceHttpHeaders.TRACE_ID))
+                .isEqualTo(traceId);
     }
 
     @Test
@@ -134,7 +138,8 @@ public class TracedOperationHandlerTest {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
         handler.handleRequest(exchange);
 
-        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT)).isEqualTo(true);
+        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT))
+                .isEqualTo(true);
     }
 
     @Test
@@ -142,7 +147,8 @@ public class TracedOperationHandlerTest {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "0");
         handler.handleRequest(exchange);
 
-        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT)).isEqualTo(false);
+        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT))
+                .isEqualTo(false);
     }
 
     @Test
