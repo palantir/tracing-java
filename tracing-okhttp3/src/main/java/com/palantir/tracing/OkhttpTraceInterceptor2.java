@@ -16,9 +16,11 @@
 
 package com.palantir.tracing;
 
+import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import okhttp3.Interceptor;
 import okhttp3.Request;
@@ -43,7 +45,8 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
         Request request = chain.request();
 
         try (Closeable span = createNetworkCallSpan.apply(request)) {
-            TraceMetadata metadata = Tracer.getTraceMetadata();
+            TraceMetadata metadata = Tracer.maybeGetTraceMetadata()
+                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
 
             Request.Builder tracedRequest = request
                     .newBuilder()

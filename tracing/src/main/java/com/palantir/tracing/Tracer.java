@@ -92,23 +92,22 @@ public final class Tracer {
     }
 
     /**
-     * In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId
-     * stack, so we just make one up (just in time). This matches the behaviour of Tracer#startSpan.
+     * In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId stack, so we just
+     * make one up (just in time). This matches the behaviour of Tracer#startSpan.
      * <p>
-     * n.b. this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
+     * n.b. this is a bit funky because calling maybeGetTraceMetadata multiple times will return different spanIds
      */
-    public static TraceMetadata getTraceMetadata() {
+    public static Optional<TraceMetadata> maybeGetTraceMetadata() {
         Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
 
         if (trace.isObservable()) {
-            OpenSpan openSpan = trace.top()
-                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
-            return TraceMetadata.builder()
-                    .spanId(openSpan.getSpanId())
-                    .parentSpanId(openSpan.getParentSpanId())
-                    .originatingSpanId(trace.getOriginatingSpanId())
-                    .traceId(trace.getTraceId())
-                    .build();
+            return trace.top()
+                    .map(openSpan -> TraceMetadata.builder()
+                            .spanId(openSpan.getSpanId())
+                            .parentSpanId(openSpan.getParentSpanId())
+                            .originatingSpanId(trace.getOriginatingSpanId())
+                            .traceId(trace.getTraceId())
+                            .build());
         } else {
             return TraceMetadata.builder()
                     .spanId(Tracers.randomId())
