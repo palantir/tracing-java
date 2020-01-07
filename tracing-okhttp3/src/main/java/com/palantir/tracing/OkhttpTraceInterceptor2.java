@@ -20,7 +20,6 @@ import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Function;
 import okhttp3.Interceptor;
 import okhttp3.Request;
