@@ -16,12 +16,10 @@
 
 package com.palantir.tracing;
 
-import com.google.common.annotations.Beta;
 import java.util.Optional;
 import org.immutables.value.Value;
 
 /** Ids necessary to write headers onto network requests. */
-@Beta
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
 public interface TraceMetadata {

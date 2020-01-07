@@ -97,7 +97,6 @@ public final class Tracer {
      * <p>
      * n.b. this is a bit funky because calling getTraceMetadata multiple times will return different spanIds
      */
-    @Beta
     public static TraceMetadata getTraceMetadata() {
         Trace trace = checkNotNull(currentTrace.get(), "Unable to getTraceMetadata when there is trace in progress");
 
