@@ -24,7 +24,7 @@ import org.immutables.value.Value;
 @Beta
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
-interface TraceMetadata {
+public interface TraceMetadata {
 
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#TRACE_ID}. */
     String getTraceId();
