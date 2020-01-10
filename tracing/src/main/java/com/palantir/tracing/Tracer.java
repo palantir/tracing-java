@@ -28,6 +28,7 @@ import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
+import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -87,6 +88,16 @@ public final class Tracer {
         }
 
         throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
+    }
+
+    /**
+     * Deprecated. This exists to avoid ABI breaks due to a cross-jar package private call that existed in <=4.1.0.
+     * @deprecated Use {@link Tracer#maybeGetTraceMetadata()} instead.
+     */
+    @Deprecated
+    static TraceMetadata getTraceMetadata() {
+        return maybeGetTraceMetadata()
+                .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
     }
 
     /**
