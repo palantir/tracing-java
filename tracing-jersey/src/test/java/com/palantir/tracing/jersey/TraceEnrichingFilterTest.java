@@ -234,7 +234,7 @@ public final class TraceEnrichingFilterTest {
     @Test
     public void testFilter_setsMdcIfTraceIdHeaderIsNotePresent() throws Exception {
         TraceEnrichingFilter.INSTANCE.filter(request);
-        assertThat(MDC.get(Tracers.TRACE_ID_KEY).length()).isEqualTo(16);
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).hasSize(16);
         verify(request).setProperty(eq(TraceEnrichingFilter.TRACE_ID_PROPERTY_NAME), anyString());
     }
 

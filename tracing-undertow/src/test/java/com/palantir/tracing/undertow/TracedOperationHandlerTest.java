@@ -139,7 +139,7 @@ public class TracedOperationHandlerTest {
         handler.handleRequest(exchange);
 
         assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT))
-                .isEqualTo(true);
+                .isTrue();
     }
 
     @Test
@@ -148,7 +148,7 @@ public class TracedOperationHandlerTest {
         handler.handleRequest(exchange);
 
         assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT))
-                .isEqualTo(false);
+                .isFalse();
     }
 
     @Test
