@@ -18,7 +18,7 @@ buildscript {
     repositories {
         jcenter()
         maven { url "https://plugins.gradle.org/m2/" }
-        maven { url "http://palantir.bintray.com/releases" }
+        maven { url 'https://palantir.bintray.com/releases'}
     }
 
     dependencies {
@@ -41,7 +41,7 @@ apply plugin: 'com.palantir.consistent-versions'
 
 repositories {
     jcenter()
-    maven { url  "http://palantir.bintray.com/releases" }
+    maven { url  'https://palantir.bintray.com/releases'}
 }
 
 allprojects {
@@ -55,7 +55,7 @@ subprojects {
 
     repositories {
         jcenter()
-        maven { url "http://palantir.bintray.com/releases" }
+        maven { url 'https://palantir.bintray.com/releases'}
     }
 
     sourceCompatibility = 1.8
