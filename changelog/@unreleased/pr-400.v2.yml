@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Provide Tracing support for the full Undertow request lifecycle
+  links:
+  - https://github.com/palantir/tracing-java/pull/400
