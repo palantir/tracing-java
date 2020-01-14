@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
+import java.util.Optional;
 import javax.annotation.CheckReturnValue;
 
 /** Span which is not bound to thread state, and can be completed on any other thread. */
@@ -46,6 +47,21 @@ public interface DetachedSpan {
     @CheckReturnValue
     static DetachedSpan start(String operation, SpanType type) {
         return Tracer.detachInternal(operation, type);
+    }
+
+    /**
+     * Marks the beginning of a span, which you can {@link #complete} on any other thread.
+     *
+     * @see DetachedSpan#start(String)
+     */
+    @CheckReturnValue
+    static DetachedSpan start(
+            Observability observability,
+            String traceId,
+            Optional<String> parentSpanId,
+            String operation,
+            SpanType type) {
+        return Tracer.detachInternal(observability, traceId, parentSpanId, operation, type);
     }
 
     /**
