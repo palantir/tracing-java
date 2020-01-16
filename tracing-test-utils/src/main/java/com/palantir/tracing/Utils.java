@@ -55,7 +55,8 @@ final class Utils {
     private Utils() {}
 
     public static Path createOutputFile(Class<?> clazz, String methodName) {
-        Path base = Paths.get(Optional.ofNullable(System.getenv("CIRCLE_ARTIFACTS")).orElse("build"));
+        Path base = Paths.get(
+                Optional.ofNullable(System.getenv("CIRCLE_ARTIFACTS")).orElse("build"));
         Path dir = base.resolve("tracing").resolve(clazz.getSimpleName());
         try {
             Files.createDirectories(dir);

@@ -28,8 +28,7 @@ public final class TraceTest {
 
     @Test
     public void constructTrace_emptyTraceId() {
-        assertThatThrownBy(() -> Trace.of(false, ""))
-            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Trace.of(false, "")).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

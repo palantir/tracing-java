@@ -205,7 +205,10 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withEmptyTraceIdGeneratesValidTraceResponseHeaders() {
-        Response response = target.path("/trace").request().header(TraceHttpHeaders.TRACE_ID, "").get();
+        Response response = target.path("/trace")
+                .request()
+                .header(TraceHttpHeaders.TRACE_ID, "")
+                .get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();

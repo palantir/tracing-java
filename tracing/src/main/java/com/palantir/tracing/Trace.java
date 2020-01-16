@@ -34,12 +34,12 @@ import java.util.Optional;
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
  * not thread-safe and is intended to be used in a thread-local context.
  *
- * There are two implementations of {@link Trace}: {@link Sampled} and {@link Unsampled}.
- * A {@link Sampled sampled trace} records each span in order to record tracing data, however in most scenarios
- * most traces will be {@link Unsampled}, which avoids creation of span objects, random span ID generation,
- * clock reads, etc. Instead, the {@link Unsampled unsampled} implementation tracks the number of 'active' spans
- * on the current thread so it can provide correct {@link Trace#isEmpty()} values allowing the {@link Tracer}
- * utility to reset thread state after the emulated root span has been completed.
+ * <p>There are two implementations of {@link Trace}: {@link Sampled} and {@link Unsampled}. A
+ * {@link Sampled sampled trace} records each span in order to record tracing data, however in most scenarios most
+ * traces will be {@link Unsampled}, which avoids creation of span objects, random span ID generation, clock reads, etc.
+ * Instead, the {@link Unsampled unsampled} implementation tracks the number of 'active' spans on the current thread so
+ * it can provide correct {@link Trace#isEmpty()} values allowing the {@link Tracer} utility to reset thread state after
+ * the emulated root span has been completed.
  */
 public abstract class Trace {
 
@@ -52,8 +52,8 @@ public abstract class Trace {
 
     /**
      * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
-     * when the current trace is empty.
-     * If the return value is not used, prefer {@link #fastStartSpan(String, String, SpanType)}}.
+     * when the current trace is empty. If the return value is not used, prefer
+     * {@link #fastStartSpan(String, String, SpanType)}}.
      */
     @CheckReturnValue
     final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
@@ -70,8 +70,8 @@ public abstract class Trace {
     }
 
     /**
-     * Opens a new span for this thread's call trace, labeled with the provided operation.
-     * If the return value is not used, prefer {@link #fastStartSpan(String, SpanType)}}.
+     * Opens a new span for this thread's call trace, labeled with the provided operation. If the return value is not
+     * used, prefer {@link #fastStartSpan(String, SpanType)}}.
      */
     @CheckReturnValue
     final OpenSpan startSpan(String operation, SpanType type) {
@@ -86,12 +86,7 @@ public abstract class Trace {
                     Optional.of(prevState.get().getSpanId()),
                     orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()));
         } else {
-            span = OpenSpan.of(
-                    operation,
-                    Tracers.randomId(),
-                    type,
-                    Optional.empty(),
-                    getOriginatingSpanId());
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty(), getOriginatingSpanId());
         }
 
         push(span);
@@ -105,14 +100,10 @@ public abstract class Trace {
         return right;
     }
 
-    /**
-     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
-     */
+    /** Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}. */
     abstract void fastStartSpan(String operation, String parentSpanId, SpanType type);
 
-    /**
-     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
-     */
+    /** Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}. */
     abstract void fastStartSpan(String operation, SpanType type);
 
     protected abstract void push(OpenSpan span);
@@ -124,14 +115,12 @@ public abstract class Trace {
     abstract boolean isEmpty();
 
     /**
-     * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon {@link
-     * Tracer#completeSpan span completion}.
+     * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon
+     * {@link Tracer#completeSpan span completion}.
      */
     abstract boolean isObservable();
 
-    /**
-     * The globally unique non-empty identifier for this call trace.
-     */
+    /** The globally unique non-empty identifier for this call trace. */
     final String getTraceId() {
         return traceId;
     }
@@ -220,6 +209,7 @@ public abstract class Trace {
          * This allows thread trace state to be cleared when all "started" spans have been "removed".
          */
         private int numberOfSpans;
+
         private Optional<String> originatingSpanId = Optional.empty();
 
         private Unsampled(int numberOfSpans, String traceId) {
@@ -295,8 +285,8 @@ public abstract class Trace {
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
         private void validateNumberOfSpans() {
             if (numberOfSpans < 0) {
-                throw new SafeIllegalStateException("Unexpected negative numberOfSpans",
-                        SafeArg.of("numberOfSpans", numberOfSpans));
+                throw new SafeIllegalStateException(
+                        "Unexpected negative numberOfSpans", SafeArg.of("numberOfSpans", numberOfSpans));
             }
         }
 

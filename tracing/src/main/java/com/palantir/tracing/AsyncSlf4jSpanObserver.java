@@ -224,7 +224,10 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     @Override
     public void doConsume(Span span) {
         if (logger.isTraceEnabled()) {
-            logger.trace("{}", UnsafeArg.of("span", ZipkinCompatSpan.fromSpan(span, endpoint).toJson()));
+            logger.trace(
+                    "{}",
+                    UnsafeArg.of(
+                            "span", ZipkinCompatSpan.fromSpan(span, endpoint).toJson()));
         }
     }
 }

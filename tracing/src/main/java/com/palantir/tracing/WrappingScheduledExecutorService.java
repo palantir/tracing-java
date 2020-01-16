@@ -21,15 +21,16 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * An abstract {@code ScheduledExecutorService} that allows subclasses to
- * {@linkplain #wrapTask(Callable) wrap} tasks before they are submitted to the underlying executor.
+ * An abstract {@code ScheduledExecutorService} that allows subclasses to {@linkplain #wrapTask(Callable) wrap} tasks
+ * before they are submitted to the underlying executor.
+ *
  * <p>
+ *
  * <p>Note that task wrapping may occur even if the task is never executed.
  *
  * @author Luke Sandberg
  */
-abstract class WrappingScheduledExecutorService extends WrappingExecutorService
-        implements ScheduledExecutorService {
+abstract class WrappingScheduledExecutorService extends WrappingExecutorService implements ScheduledExecutorService {
     private final ScheduledExecutorService delegate;
 
     protected WrappingScheduledExecutorService(ScheduledExecutorService delegate) {

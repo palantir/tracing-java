@@ -31,13 +31,16 @@ import java.util.function.Supplier;
 public final class Tracers {
     /** The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
     public static final String TRACE_ID_KEY = "traceId";
-    /** The key under which trace sampling state are inserted into SLF4J {@link org.slf4j.MDC MDCs}. If present, the
+    /**
+     * The key under which trace sampling state are inserted into SLF4J {@link org.slf4j.MDC MDCs}. If present, the
      * field can take the values of "1" or "0", where "1" indicates the trace was sampled.
      */
     public static final String TRACE_SAMPLED_KEY = "_sampled";
+
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
-    private static final char[] HEX_DIGITS =
-            {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+    private static final char[] HEX_DIGITS = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
+    };
 
     private Tracers() {}
 
@@ -73,8 +76,8 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the provided executor service such that any submitted {@link Callable} (or {@link Runnable}) is {@link
-     * #wrap wrapped} in order to be trace-aware.
+     * Wraps the provided executor service such that any submitted {@link Callable} (or {@link Runnable}) is
+     * {@link #wrap wrapped} in order to be trace-aware.
      */
     public static ExecutorService wrap(ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
@@ -109,10 +112,10 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the provided scheduled executor service to make submitted tasks traceable, see {@link
-     * #wrap(ScheduledExecutorService)}. This method should not be used to wrap a ScheduledExecutorService that has
-     * already been {@link #wrapWithNewTrace(ScheduledExecutorService) wrapped with new trace}. If this is done, a new
-     * trace will be generated for each execution, effectively bypassing the intent of this method.
+     * Wraps the provided scheduled executor service to make submitted tasks traceable, see
+     * {@link #wrap(ScheduledExecutorService)}. This method should not be used to wrap a ScheduledExecutorService that
+     * has already been {@link #wrapWithNewTrace(ScheduledExecutorService) wrapped with new trace}. If this is done, a
+     * new trace will be generated for each execution, effectively bypassing the intent of this method.
      */
     public static ScheduledExecutorService wrap(ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
@@ -137,8 +140,7 @@ public final class Tracers {
      * Like {@link #wrap(ScheduledExecutorService)}, but using the given {@link String operation} is used to create a
      * span for submitted tasks.
      */
-    public static ScheduledExecutorService wrap(String operation,
-            ScheduledExecutorService executorService) {
+    public static ScheduledExecutorService wrap(String operation, ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
             protected Runnable wrapRecurring(Runnable runnable) {
@@ -190,18 +192,25 @@ public final class Tracers {
     }
 
     /**
-     * Traces the the execution of the <pre>delegateFactory</pre>, completing a span when the returned
-     * {@link ListenableFuture#isDone() ListenableFuture is done}.
+     * Traces the the execution of the
      *
-     * Example usage:
+     * <pre>delegateFactory</pre>
+     *
+     * , completing a span when the returned {@link ListenableFuture#isDone() ListenableFuture is done}.
+     *
+     * <p>Example usage:
+     *
      * <pre>{@code
-     *     ListenableFuture<Result> future = Tracers.wrapListenableFuture(
-     *         "remote operation",
-     *         () -> retrofitClient.doRequest());
+     * ListenableFuture<Result> future = Tracers.wrapListenableFuture(
+     *     "remote operation",
+     *     () -> retrofitClient.doRequest());
      * }</pre>
      *
-     * Note that this function is not named <pre>wrap</pre> in order to avoid conflicting with potential utility
-     * methods for {@link Supplier suppliers}.
+     * Note that this function is not named
+     *
+     * <pre>wrap</pre>
+     *
+     * in order to avoid conflicting with potential utility methods for {@link Supplier suppliers}.
      */
     @Beta
     public static <T, U extends ListenableFuture<T>> U wrapListenableFuture(
@@ -239,11 +248,11 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the provided executor service to make submitted tasks traceable with a fresh {@link Trace trace}
-     * for each execution, see {@link #wrapWithNewTrace(String, ExecutorService)}. This method should not be used to
-     * wrap a ScheduledExecutorService that has already been {@link #wrap(ExecutorService) wrapped}. If this is
-     * done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
-     * wrapping. The given {@link String operation} is used to create the initial span.
+     * Wraps the provided executor service to make submitted tasks traceable with a fresh {@link Trace trace} for each
+     * execution, see {@link #wrapWithNewTrace(String, ExecutorService)}. This method should not be used to wrap a
+     * ScheduledExecutorService that has already been {@link #wrap(ExecutorService) wrapped}. If this is done, a new
+     * trace will be generated for each execution, effectively bypassing the intent of the previous wrapping. The given
+     * {@link String operation} is used to create the initial span.
      */
     public static ExecutorService wrapWithNewTrace(String operation, ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
@@ -272,12 +281,12 @@ public final class Tracers {
     /**
      * Wraps the provided scheduled executor service to make submitted tasks traceable with a fresh {@link Trace trace}
      * for each execution, see {@link #wrapWithNewTrace(String, ScheduledExecutorService)}. This method should not be
-     * used to wrap a ScheduledExecutorService that has already been {@link #wrap(ScheduledExecutorService) wrapped}.
-     * If this is done, a new trace will be generated for each execution, effectively bypassing the intent of the
-     * previous wrapping. The given {@link String operation} is used to create the initial span.
+     * used to wrap a ScheduledExecutorService that has already been {@link #wrap(ScheduledExecutorService) wrapped}. If
+     * this is done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
+     * wrapping. The given {@link String operation} is used to create the initial span.
      */
-    public static ScheduledExecutorService wrapWithNewTrace(String operation,
-            ScheduledExecutorService executorService) {
+    public static ScheduledExecutorService wrapWithNewTrace(
+            String operation, ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
             protected Runnable wrapRecurring(Runnable runnable) {
@@ -311,13 +320,13 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state} for its execution.
-     * That is, the trace during its {@link Callable#call() execution} is entirely separate from the trace at
-     * construction or any trace already set on the thread used to execute the callable. Each execution of the callable
-     * will have a fresh trace. The given {@link String operation} is used to create the initial span.
+     * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state} for its execution. That
+     * is, the trace during its {@link Callable#call() execution} is entirely separate from the trace at construction or
+     * any trace already set on the thread used to execute the callable. Each execution of the callable will have a
+     * fresh trace. The given {@link String operation} is used to create the initial span.
      */
-    public static <V> Callable<V> wrapWithNewTrace(String operation, Observability observability,
-            Callable<V> delegate) {
+    public static <V> Callable<V> wrapWithNewTrace(
+            String operation, Observability observability, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -348,10 +357,10 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state} for its execution.
-     * That is, the trace during its {@link Runnable#run() execution} is entirely separate from the trace at
-     * construction or any trace already set on the thread used to execute the runnable. Each execution of the runnable
-     * will have a fresh trace. The given {@link String operation} is used to create the initial span.
+     * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state} for its execution. That
+     * is, the trace during its {@link Runnable#run() execution} is entirely separate from the trace at construction or
+     * any trace already set on the thread used to execute the runnable. Each execution of the runnable will have a
+     * fresh trace. The given {@link String operation} is used to create the initial span.
      */
     public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
         return () -> {
@@ -372,12 +381,12 @@ public final class Tracers {
     /**
      * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state with the given traceId}
      * for its execution. That is, the trace during its {@link Callable#call() execution} will use the traceId provided
-     * instead of any trace already set on the thread used to execute the callable. Each execution of the callable
-     * will use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is
-     * used to create the initial span.
+     * instead of any trace already set on the thread used to execute the callable. Each execution of the callable will
+     * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
+     * create the initial span.
      */
-    public static <V> Callable<V> wrapWithAlternateTraceId(String traceId, String operation,
-            Observability observability, Callable<V> delegate) {
+    public static <V> Callable<V> wrapWithAlternateTraceId(
+            String traceId, String operation, Observability observability, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -410,12 +419,12 @@ public final class Tracers {
     /**
      * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state with the given traceId}
      * for its execution. That is, the trace during its {@link Runnable#run() execution} will use the traceId provided
-     * instead of any trace already set on the thread used to execute the runnable. Each execution of the runnable
-     * will use a new {@link Trace tracing state} with the same given traceId.  The given {@link String operation} is
-     * used to create the initial span.
+     * instead of any trace already set on the thread used to execute the runnable. Each execution of the runnable will
+     * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
+     * create the initial span.
      */
-    public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Observability observability,
-            Runnable delegate) {
+    public static Runnable wrapWithAlternateTraceId(
+            String traceId, String operation, Observability observability, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -447,8 +456,8 @@ public final class Tracers {
     /**
      * Wraps a given callable such that its execution operates with the {@link Trace thread-local Trace} of the thread
      * that constructs the {@link TracingAwareCallable} instance rather than the thread that executes the callable.
-     * <p>
-     * The constructor is typically called by a tracing-aware executor service on the same thread on which a user
+     *
+     * <p>The constructor is typically called by a tracing-aware executor service on the same thread on which a user
      * creates {@link Callable delegate}, and the {@link #call()} method is executed on an arbitrary (likely different)
      * thread with different {@link Trace tracing state}. In order to execute the task with the original (and
      * intuitively expected) tracing state, we remember the original state and set it for the duration of the
