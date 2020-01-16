@@ -27,6 +27,9 @@ import io.undertow.server.HttpServerExchange;
  *
  * This handler should be registered as early as possible in the request lifecycle to fully encapsulate
  * all work.
+ *
+ * If this handler is registered multiple times in the handler chain, subsequent executions are
+ * ignored to preserve the first, most accurate span.
  */
 public final class TracedRequestHandler implements HttpHandler {
 
@@ -40,5 +43,10 @@ public final class TracedRequestHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         UndertowTracing.getOrInitializeRequestTrace(exchange);
         delegate.handleRequest(exchange);
+    }
+
+    @Override
+    public String toString() {
+        return "TracedRequestHandler{delegate=" + delegate + '}';
     }
 }
