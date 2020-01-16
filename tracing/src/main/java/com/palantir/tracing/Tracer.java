@@ -210,9 +210,27 @@ public final class Tracer {
                 ? maybeCurrentTrace.getTraceId() : Tracers.randomId();
         boolean sampled = maybeCurrentTrace != null
                 ? maybeCurrentTrace.isObservable() : sampler.sample();
+        Optional<String> parentSpan = getParentSpanId(maybeCurrentTrace);
         return sampled
-                ? new SampledDetachedSpan(operation, type, traceId, getParentSpanId(maybeCurrentTrace))
-                : new UnsampledDetachedSpan(traceId);
+                ? new SampledDetachedSpan(operation, type, traceId, parentSpan)
+                : new UnsampledDetachedSpan(traceId, parentSpan);
+    }
+
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state.
+     * This is an internal utility that should not be called directly outside of {@link DetachedSpan}.
+     */
+    static DetachedSpan detachInternal(
+            Observability observability,
+            String traceId,
+            Optional<String> parentSpanId,
+            String operation,
+            SpanType type) {
+        // The current trace has no impact on this function, a new trace is spawned and existing thread state
+        // is not modified.
+        return shouldObserve(observability)
+                ? new SampledDetachedSpan(operation, type, traceId, parentSpanId)
+                : new UnsampledDetachedSpan(traceId, parentSpanId);
     }
 
     private static Optional<String> getParentSpanId(@Nullable Trace trace) {
@@ -223,6 +241,10 @@ public final class Tracer {
             }
         }
         return Optional.empty();
+    }
+
+    static boolean isSampled(DetachedSpan detachedSpan) {
+        return detachedSpan instanceof SampledDetachedSpan;
     }
 
     private static final class SampledDetachedSpan implements DetachedSpan {
@@ -283,16 +305,22 @@ public final class Tracer {
     private static final class UnsampledDetachedSpan implements DetachedSpan {
 
         private final String traceId;
+        private final Optional<String> parentSpanId;
 
-        UnsampledDetachedSpan(String traceId) {
+        UnsampledDetachedSpan(String traceId, Optional<String> parentSpanId) {
             this.traceId = traceId;
+            this.parentSpanId = parentSpanId;
         }
 
         @Override
         public CloseableSpan childSpan(String operationName, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId));
-            Tracer.fastStartSpan(operationName, type);
+            if (parentSpanId.isPresent()) {
+                Tracer.fastStartSpan(operationName, parentSpanId.get(), type);
+            } else {
+                Tracer.fastStartSpan(operationName, type);
+            }
             return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
         }
 
