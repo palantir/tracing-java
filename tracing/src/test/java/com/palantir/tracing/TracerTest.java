@@ -465,6 +465,34 @@ public final class TracerTest {
         Tracer.unsubscribe("1");
     }
 
+    @Test
+    public void testNewDetachedTrace() {
+        try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
+            String currentTraceId = Tracer.getTraceId();
+            DetachedSpan span = DetachedSpan.start(
+                    Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            try (CloseableSpan ignored2 = span.completeAndStartChild("foo")) {
+                assertThat(Tracer.getTraceId()).isEqualTo("12345");
+            }
+            assertThat(Tracer.getTraceId())
+                    .as("Current thread state should not be modified")
+                    .isEqualTo(currentTraceId);
+        }
+    }
+
+    @Test
+    public void testNewDetachedTrace_doesNotModifyCurrentState() {
+        try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
+            String currentTraceId = Tracer.getTraceId();
+            DetachedSpan span = DetachedSpan.start(
+                    Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            assertThat(Tracer.getTraceId())
+                    .as("Current thread state should not be modified")
+                    .isEqualTo(currentTraceId);
+            span.complete();
+        }
+    }
+
     private static void startAndFastCompleteSpan() {
         Tracer.fastStartSpan("operation");
         Tracer.fastCompleteSpan();
