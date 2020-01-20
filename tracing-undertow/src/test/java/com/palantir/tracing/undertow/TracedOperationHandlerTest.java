@@ -138,11 +138,13 @@ public class TracedOperationHandlerTest {
 
         AtomicReference<String> capturedParentSpanId = new AtomicReference<>();
         doAnswer((Answer<Void>) invocation -> {
-            Tracer.maybeGetTraceMetadata()
-                    .flatMap(TraceMetadata::getOriginatingSpanId)
-                    .ifPresent(capturedParentSpanId::set);
-            return null;
-        }).when(delegate).handleRequest(any());
+                    Tracer.maybeGetTraceMetadata()
+                            .flatMap(TraceMetadata::getOriginatingSpanId)
+                            .ifPresent(capturedParentSpanId::set);
+                    return null;
+                })
+                .when(delegate)
+                .handleRequest(any());
 
         handler.handleRequest(exchange);
 
@@ -168,8 +170,7 @@ public class TracedOperationHandlerTest {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
         handler.handleRequest(exchange);
 
-        assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED))
-                .isTrue();
+        assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED)).isTrue();
     }
 
     @Test
@@ -177,8 +178,7 @@ public class TracedOperationHandlerTest {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "0");
         handler.handleRequest(exchange);
 
-        assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED))
-                .isFalse();
+        assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED)).isFalse();
     }
 
     @Test

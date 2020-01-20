@@ -22,8 +22,8 @@ import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
- * A value object represented an open (i.e., non-completed) span. Once completed, the span is represented by a {@link
- * Span} object.
+ * A value object represented an open (i.e., non-completed) span. Once completed, the span is represented by a
+ * {@link Span} object.
  */
 @Value.Immutable
 @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)

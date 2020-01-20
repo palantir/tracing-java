@@ -70,19 +70,26 @@ public final class TracersTest {
 
     @Test
     public void testWrapExecutorService() throws Exception {
-        ExecutorService wrappedService =
-                Tracers.wrap(Executors.newSingleThreadExecutor());
+        ExecutorService wrappedService = Tracers.wrap(Executors.newSingleThreadExecutor());
 
         // Empty trace
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)")).get();
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)")).get();
+        wrappedService
+                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
+                .get();
+        wrappedService
+                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
+                .get();
 
         // Non-empty trace
         Tracer.fastStartSpan("foo");
         Tracer.fastStartSpan("bar");
         Tracer.fastStartSpan("baz");
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)")).get();
-        wrappedService.submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)")).get();
+        wrappedService
+                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
+                .get();
+        wrappedService
+                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
+                .get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -90,8 +97,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapExecutorService_withSpan() throws Exception {
-        ExecutorService wrappedService =
-                Tracers.wrap("operation", Executors.newSingleThreadExecutor());
+        ExecutorService wrappedService = Tracers.wrap("operation", Executors.newSingleThreadExecutor());
 
         // Empty trace
         wrappedService.submit(traceExpectingCallableWithSingleSpan("operation")).get();
@@ -112,23 +118,35 @@ public final class TracersTest {
     public void testWrapScheduledExecutorService() {
         withExecutor(() -> Tracers.wrap(Executors.newSingleThreadScheduledExecutor()), wrappedService -> {
             // Empty trace
-            wrappedService.schedule(
-                    traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                    0, TimeUnit.SECONDS).get();
-            wrappedService.schedule(
-                    traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                    0, TimeUnit.SECONDS).get();
+            wrappedService
+                    .schedule(
+                            traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                            0,
+                            TimeUnit.SECONDS)
+                    .get();
+            wrappedService
+                    .schedule(
+                            traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                            0,
+                            TimeUnit.SECONDS)
+                    .get();
 
             // Non-empty trace
             Tracer.fastStartSpan("foo");
             Tracer.fastStartSpan("bar");
             Tracer.fastStartSpan("baz");
-            wrappedService.schedule(
-                    traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                    0, TimeUnit.SECONDS).get();
-            wrappedService.schedule(
-                    traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                    0, TimeUnit.SECONDS).get();
+            wrappedService
+                    .schedule(
+                            traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                            0,
+                            TimeUnit.SECONDS)
+                    .get();
+            wrappedService
+                    .schedule(
+                            traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
+                            0,
+                            TimeUnit.SECONDS)
+                    .get();
             Tracer.fastCompleteSpan();
             Tracer.fastCompleteSpan();
             Tracer.fastCompleteSpan();
@@ -141,12 +159,16 @@ public final class TracersTest {
             SettableFuture<String> first = SettableFuture.create();
             SettableFuture<String> second = SettableFuture.create();
             Tracer.fastStartSpan("start");
-            ScheduledFuture<?> scheduledFuture = wrappedService.scheduleAtFixedRate(() -> {
-                String traceId = Tracer.getTraceId();
-                if (!first.set(traceId)) {
-                    second.set(traceId);
-                }
-            }, 0, 1, TimeUnit.MILLISECONDS);
+            ScheduledFuture<?> scheduledFuture = wrappedService.scheduleAtFixedRate(
+                    () -> {
+                        String traceId = Tracer.getTraceId();
+                        if (!first.set(traceId)) {
+                            second.set(traceId);
+                        }
+                    },
+                    0,
+                    1,
+                    TimeUnit.MILLISECONDS);
             String secondValue = second.get();
             scheduledFuture.cancel(true);
             assertThat(secondValue)
@@ -167,12 +189,16 @@ public final class TracersTest {
             SettableFuture<String> first = SettableFuture.create();
             SettableFuture<String> second = SettableFuture.create();
             Tracer.fastStartSpan("start");
-            ScheduledFuture<?> scheduledFuture = wrappedService.scheduleWithFixedDelay(() -> {
-                String traceId = Tracer.getTraceId();
-                if (!first.set(traceId)) {
-                    second.set(traceId);
-                }
-            }, 0, 1, TimeUnit.MILLISECONDS);
+            ScheduledFuture<?> scheduledFuture = wrappedService.scheduleWithFixedDelay(
+                    () -> {
+                        String traceId = Tracer.getTraceId();
+                        if (!first.set(traceId)) {
+                            second.set(traceId);
+                        }
+                    },
+                    0,
+                    1,
+                    TimeUnit.MILLISECONDS);
             String secondValue = second.get();
             scheduledFuture.cancel(true);
             assertThat(secondValue)
@@ -193,15 +219,23 @@ public final class TracersTest {
                 Tracers.wrap("operation", Executors.newSingleThreadScheduledExecutor());
 
         // Empty trace
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService
+                .schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS)
+                .get();
+        wrappedService
+                .schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS)
+                .get();
 
         // Non-empty trace
         Tracer.fastStartSpan("foo");
         Tracer.fastStartSpan("bar");
         Tracer.fastStartSpan("baz");
-        wrappedService.schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
-        wrappedService.schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS).get();
+        wrappedService
+                .schedule(traceExpectingCallableWithSingleSpan("operation"), 0, TimeUnit.SECONDS)
+                .get();
+        wrappedService
+                .schedule(traceExpectingRunnableWithSingleSpan("operation"), 0, TimeUnit.SECONDS)
+                .get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
@@ -209,8 +243,7 @@ public final class TracersTest {
 
     @Test
     public void testWrapExecutorServiceWithNewTrace() throws Exception {
-        ExecutorService wrappedService =
-                Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadExecutor());
+        ExecutorService wrappedService = Tracers.wrapWithNewTrace("operation", Executors.newSingleThreadExecutor());
 
         Callable<Void> callable = newTraceExpectingCallable("operation");
         Runnable runnable = newTraceExpectingRunnable("operation");
@@ -332,16 +365,10 @@ public final class TracersTest {
             assertThat(traced).isDone();
             assertThat(observed).hasSize(2);
             // Inner operation must complete first to avoid confusion
-            assertThat(observed.get(0))
-                    .extracting(Span::getOperation)
-                    .isEqualTo(operationName + " initial");
-            assertThat(observed.get(1))
-                    .extracting(Span::getOperation)
-                    .isEqualTo(operationName);
-            assertThat(observed)
-                    .allSatisfy(span -> assertThat(span)
-                            .extracting(Span::getTraceId)
-                            .isEqualTo("defaultTraceId"));
+            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
+            assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+            assertThat(observed).allSatisfy(span ->
+                    assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
         } finally {
             Tracer.unsubscribe("futureTest");
         }
@@ -353,21 +380,15 @@ public final class TracersTest {
         Tracer.subscribe("futureTest", observed::add);
         try {
             String operationName = "testOperation";
-            ListenableFuture<String> traced = Tracers.wrapListenableFuture(operationName,
-                    () -> Futures.immediateFailedFuture(new SafeRuntimeException("result")));
+            ListenableFuture<String> traced = Tracers.wrapListenableFuture(
+                    operationName, () -> Futures.immediateFailedFuture(new SafeRuntimeException("result")));
             assertThat(traced).isDone();
             assertThat(observed).hasSize(2);
             // Inner operation must complete first to avoid confusion
-            assertThat(observed.get(0))
-                    .extracting(Span::getOperation)
-                    .isEqualTo(operationName + " initial");
-            assertThat(observed.get(1))
-                    .extracting(Span::getOperation)
-                    .isEqualTo(operationName);
-            assertThat(observed)
-                    .allSatisfy(span -> assertThat(span)
-                            .extracting(Span::getTraceId)
-                            .isEqualTo("defaultTraceId"));
+            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
+            assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+            assertThat(observed).allSatisfy(span ->
+                    assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
         } finally {
             Tracer.unsubscribe("futureTest");
         }
@@ -383,20 +404,14 @@ public final class TracersTest {
         assertThat(traced).isNotDone();
         // Inner operation has completed
         assertThat(observed).hasSize(1);
-        assertThat(observed.get(0))
-                .extracting(Span::getOperation)
-                .isEqualTo(operationName + " initial");
+        assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
         // Complete the future
         rawFuture.set("complete");
         assertThat(traced).isDone();
         assertThat(observed).hasSize(2);
-        assertThat(observed.get(1))
-                .extracting(Span::getOperation)
-                .isEqualTo(operationName);
-        assertThat(observed)
-                .allSatisfy(span -> assertThat(span)
-                        .extracting(Span::getTraceId)
-                        .isEqualTo("defaultTraceId"));
+        assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+        assertThat(observed).allSatisfy(span ->
+                assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
     }
 
     @Test
@@ -406,23 +421,17 @@ public final class TracersTest {
         try {
             String operationName = "testOperation";
             assertThatThrownBy(() -> Tracers.wrapListenableFuture(operationName, () -> {
-                // It's best if these cases result in a failed future, but we've found these in the
-                // wild so we must handle them properly.
-                throw new SafeRuntimeException("initial operation failure");
-            }))
+                        // It's best if these cases result in a failed future, but we've found these in the
+                        // wild so we must handle them properly.
+                        throw new SafeRuntimeException("initial operation failure");
+                    }))
                     .isInstanceOf(SafeRuntimeException.class)
                     .hasMessage("initial operation failure");
             assertThat(observed).hasSize(2);
-            assertThat(observed.get(0))
-                    .extracting(Span::getOperation)
-                    .isEqualTo(operationName + " initial");
-            assertThat(observed.get(1))
-                    .extracting(Span::getOperation)
-                    .isEqualTo(operationName);
-            assertThat(observed)
-                    .allSatisfy(span -> assertThat(span)
-                            .extracting(Span::getTraceId)
-                            .isEqualTo("defaultTraceId"));
+            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
+            assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+            assertThat(observed).allSatisfy(span ->
+                    assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
         } finally {
             Tracer.unsubscribe("futureTest");
         }
@@ -451,12 +460,9 @@ public final class TracersTest {
                 .isNotEqualTo(traceIdAfterCalls)
                 .isNotEqualTo(traceIdSecondCall);
 
-        assertThat(traceIdSecondCall)
-                .isNotEqualTo(traceIdBeforeConstruction)
-                .isNotEqualTo(traceIdAfterCalls);
+        assertThat(traceIdSecondCall).isNotEqualTo(traceIdBeforeConstruction).isNotEqualTo(traceIdAfterCalls);
 
-        assertThat(traceIdBeforeConstruction)
-                .isEqualTo(traceIdAfterCalls);
+        assertThat(traceIdBeforeConstruction).isEqualTo(traceIdAfterCalls);
     }
 
     @Test
@@ -515,13 +521,12 @@ public final class TracersTest {
         };
 
         Callable<Boolean> sampledCallable = Tracers.wrapWithNewTrace("someTraceId", Observability.SAMPLE, rawCallable);
-        Callable<Boolean> unSampledCallable = Tracers.wrapWithNewTrace("someTraceId", Observability.DO_NOT_SAMPLE,
-                rawCallable);
+        Callable<Boolean> unSampledCallable =
+                Tracers.wrapWithNewTrace("someTraceId", Observability.DO_NOT_SAMPLE, rawCallable);
 
         assertThat(sampledCallable.call()).isTrue();
         assertThat(unSampledCallable.call()).isFalse();
     }
-
 
     @Test
     public void testWrapCallableWithAlternateTraceId_traceStateInsideCallableUsesGivenTraceId() throws Exception {
@@ -546,10 +551,7 @@ public final class TracersTest {
     public void testWrapCallableWithAlternateTraceId_traceStateInsideCallableHasSpan() throws Exception {
         String traceIdToUse = "someTraceId";
         Callable<List<OpenSpan>> wrappedCallable = Tracers.wrapWithAlternateTraceId(
-                traceIdToUse,
-                "operation",
-                Observability.UNDECIDED,
-                TracersTest::getCurrentTrace);
+                traceIdToUse, "operation", Observability.UNDECIDED, TracersTest::getCurrentTrace);
 
         List<OpenSpan> spans = wrappedCallable.call();
 
@@ -567,11 +569,8 @@ public final class TracersTest {
         Callable rawCallable = () -> {
             throw new IllegalStateException();
         };
-        Callable wrappedCallable = Tracers.wrapWithAlternateTraceId(
-                "someTraceId",
-                "operation",
-                Observability.UNDECIDED,
-                rawCallable);
+        Callable wrappedCallable =
+                Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.UNDECIDED, rawCallable);
 
         assertThatThrownBy(() -> wrappedCallable.call()).isInstanceOf(IllegalStateException.class);
         assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
@@ -581,38 +580,30 @@ public final class TracersTest {
     public void testWrapCallableWithAlternateTraceId_traceStateRestoredToCleared() throws Exception {
         // Clear out the default initialized trace
         Tracer.getAndClearTraceIfPresent();
-        Tracers.wrapWithAlternateTraceId(
-                "someTraceId",
-                "operation",
-                Observability.UNDECIDED,
-                () -> {
+        Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.UNDECIDED, () -> {
                     // no-op
                     return null;
-                }).call();
+                })
+                .call();
         assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
     public void testWrapCallableWithAlternateTraceId_canSpecifyObservability() throws Exception {
-        Callable sampledCallable = () -> assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
-        Callable wrappedSampledCallable = Tracers.wrapWithAlternateTraceId(
-                "someTraceId",
-                "operation",
-                Observability.SAMPLE,
-                sampledCallable);
+        Callable sampledCallable = () ->
+                assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
+        Callable wrappedSampledCallable =
+                Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledCallable);
 
         wrappedSampledCallable.call();
 
-        Callable unSampledCallable = () -> assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
+        Callable unSampledCallable = () ->
+                assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
         Callable wrappedUnSampledCallable = Tracers.wrapWithAlternateTraceId(
-                "someTraceId",
-                "operation",
-                Observability.DO_NOT_SAMPLE,
-                unSampledCallable);
+                "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledCallable);
 
         wrappedUnSampledCallable.call();
     }
-
 
     @Test
     public void testWrapRunnableWithNewTrace_traceStateInsideRunnableIsIsolated() throws Exception {
@@ -637,12 +628,9 @@ public final class TracersTest {
                 .isNotEqualTo(traceIdAfterCalls)
                 .isNotEqualTo(traceIdSecondCall);
 
-        assertThat(traceIdSecondCall)
-                .isNotEqualTo(traceIdBeforeConstruction)
-                .isNotEqualTo(traceIdAfterCalls);
+        assertThat(traceIdSecondCall).isNotEqualTo(traceIdBeforeConstruction).isNotEqualTo(traceIdAfterCalls);
 
-        assertThat(traceIdBeforeConstruction)
-                .isEqualTo(traceIdAfterCalls);
+        assertThat(traceIdBeforeConstruction).isEqualTo(traceIdAfterCalls);
     }
 
     @Test
@@ -700,8 +688,9 @@ public final class TracersTest {
         // Clear out the default initialized trace
         Tracer.getAndClearTraceIfPresent();
         Tracers.wrapWithNewTrace(() -> {
-            // no-op
-        }).run();
+                    // no-op
+                })
+                .run();
         assertThat(Tracer.hasTraceId()).isFalse();
     }
 
@@ -719,8 +708,8 @@ public final class TracersTest {
             assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
         };
 
-        Runnable unSampledRunnable = Tracers.wrapWithNewTrace("someTraceId", Observability.DO_NOT_SAMPLE,
-                rawUnSampledRunnable);
+        Runnable unSampledRunnable =
+                Tracers.wrapWithNewTrace("someTraceId", Observability.DO_NOT_SAMPLE, rawUnSampledRunnable);
 
         unSampledRunnable.run();
     }
@@ -801,28 +790,25 @@ public final class TracersTest {
         // Clear out the default initialized trace
         Tracer.getAndClearTraceIfPresent();
         Tracers.wrapWithAlternateTraceId("someTraceId", () -> {
-            // no-op
-        }).run();
+                    // no-op
+                })
+                .run();
         assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
     public void testWrapRunnableWithAlternateTraceId_canSpecifyObservability() {
-        Runnable sampledRunnable = () -> assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
-        Runnable wrappedSampledRunnable = Tracers.wrapWithAlternateTraceId(
-                "someTraceId",
-                "operation",
-                Observability.SAMPLE,
-                sampledRunnable);
+        Runnable sampledRunnable = () ->
+                assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
+        Runnable wrappedSampledRunnable =
+                Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledRunnable);
 
         wrappedSampledRunnable.run();
 
-        Runnable unSampledRunnable = () -> assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
+        Runnable unSampledRunnable = () ->
+                assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
         Runnable wrappedUnSampledRunnable = Tracers.wrapWithAlternateTraceId(
-                "someTraceId",
-                "operation",
-                Observability.DO_NOT_SAMPLE,
-                unSampledRunnable);
+                "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledRunnable);
 
         wrappedUnSampledRunnable.run();
     }
@@ -837,10 +823,10 @@ public final class TracersTest {
     }
 
     /**
-     * n.b. When this test fails it may be fair to update the expected values if the new frames make sense, this
-     * should not necessarily be a blocker, but a function to ensure we consider the consequences of future changes.
-     * Keep in mind that Tracing is used heavily and will appear in stack traces for a lot of exceptions, where we
-     * want to maintain high signal for quick debugging.
+     * n.b. When this test fails it may be fair to update the expected values if the new frames make sense, this should
+     * not necessarily be a blocker, but a function to ensure we consider the consequences of future changes. Keep in
+     * mind that Tracing is used heavily and will appear in stack traces for a lot of exceptions, where we want to
+     * maintain high signal for quick debugging.
      */
     @Test
     public void testExecutorStackDepth_callable() throws InterruptedException, ExecutionException {
@@ -861,10 +847,10 @@ public final class TracersTest {
     }
 
     /**
-     * n.b. When this test fails it may be fair to update the expected values if the new frames make sense, this
-     * should not necessarily be a blocker, but a function to ensure we consider the consequences of future changes.
-     * Keep in mind that Tracing is used heavily and will appear in stack traces for a lot of exceptions, where we
-     * want to maintain high signal for quick debugging.
+     * n.b. When this test fails it may be fair to update the expected values if the new frames make sense, this should
+     * not necessarily be a blocker, but a function to ensure we consider the consequences of future changes. Keep in
+     * mind that Tracing is used heavily and will appear in stack traces for a lot of exceptions, where we want to
+     * maintain high signal for quick debugging.
      */
     @Test
     public void testExecutorStackDepth_runnable() {
@@ -964,7 +950,6 @@ public final class TracersTest {
                 })
                 .orElseGet(Collections::emptyList);
     }
-
 
     private static <T extends ExecutorService> void withExecutor(Supplier<T> factory, ThrowingConsumer<T> test) {
         T executor = factory.get();

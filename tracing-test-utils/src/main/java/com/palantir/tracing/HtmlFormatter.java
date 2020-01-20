@@ -126,26 +126,38 @@ final class HtmlFormatter {
                 "header.html",
                 ImmutableMap.<String, String>builder()
                         .put("{{DISPLAY_NAME}}", config.displayName())
-                        .put("{{START_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(startTime))
-                        .put("{{END_TIME}}", DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").format(endTime))
+                        .put(
+                                "{{START_TIME}}",
+                                DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                                        .format(startTime))
+                        .put(
+                                "{{END_TIME}}",
+                                DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                                        .format(endTime))
                         .build()));
     }
 
     private void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
-        long transposedStartMicros = span.getStartTimeMicroSeconds() - config.bounds().startMicros();
+        long transposedStartMicros = span.getStartTimeMicroSeconds()
+                - config.bounds().startMicros();
 
-        long hue = Hashing.adler32().hashString(span.getTraceId(), StandardCharsets.UTF_8).padToLong() % 360;
+        long hue = Hashing.adler32()
+                        .hashString(span.getTraceId(), StandardCharsets.UTF_8)
+                        .padToLong()
+                % 360;
 
         sb.append(template(
                 "span.html",
                 ImmutableMap.<String, String>builder()
                         .put(
                                 "{{LEFT}}",
-                                Float.toString(Utils.percent(transposedStartMicros, config.bounds().durationMicros())))
+                                Float.toString(Utils.percent(
+                                        transposedStartMicros, config.bounds().durationMicros())))
                         .put(
                                 "{{WIDTH}}",
-                                Float.toString(
-                                        Utils.percent(span.getDurationNanoSeconds(), config.bounds().durationNanos())))
+                                Float.toString(Utils.percent(
+                                        span.getDurationNanoSeconds(),
+                                        config.bounds().durationNanos())))
                         .put("{{HUE}}", Long.toString(hue))
                         .put("{{SPANID}}", span.getSpanId())
                         .put("{{CLASS}}", config.problemSpanIds().contains(span.getSpanId()) ? "problem-span" : "")

@@ -21,15 +21,13 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
 /**
- * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding {@link
- * DetachedSpan} to span the entire request.
- * See <a href="https://github.com/openzipkin/b3-propagation">b3-propagation</a>.
+ * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding {@link DetachedSpan}
+ * to span the entire request. See <a href="https://github.com/openzipkin/b3-propagation">b3-propagation</a>.
  *
- * This handler should be registered as early as possible in the request lifecycle to fully encapsulate
- * all work.
+ * <p>This handler should be registered as early as possible in the request lifecycle to fully encapsulate all work.
  *
- * If this handler is registered multiple times in the handler chain, subsequent executions are
- * ignored to preserve the first, most accurate span.
+ * <p>If this handler is registered multiple times in the handler chain, subsequent executions are ignored to preserve
+ * the first, most accurate span.
  */
 public final class TracedRequestHandler implements HttpHandler {
 

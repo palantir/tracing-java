@@ -29,8 +29,8 @@ public interface DetachedSpan {
      * originating thread will not automatically parented to this span (because it does not modify any thread local
      * tracing state). If you don't need this cross-thread functionality, use {@link CloseableTracer}.
      *
-     * <p>On the destination thread, you can call {@link #completeAndStartChild} to mark the end of this {@link
-     * DetachedSpan} and continue tracing regular thread-local work. Alternatively, if you want to keep this
+     * <p>On the destination thread, you can call {@link #completeAndStartChild} to mark the end of this
+     * {@link DetachedSpan} and continue tracing regular thread-local work. Alternatively, if you want to keep this
      * DetachedSpan open, you can instrument 'sub tasks' using {@link #childSpan} or {@link #childDetachedSpan}, but
      * must remember to call {@link #complete} eventually.
      */
@@ -98,8 +98,8 @@ public interface DetachedSpan {
     DetachedSpan childDetachedSpan(String operation, SpanType type);
 
     /**
-     * Starts a child {@link DetachedSpan} using this instance as the parent. Equivalent to {@link
-     * #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
+     * Starts a child {@link DetachedSpan} using this instance as the parent. Equivalent to
+     * {@link #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
     default DetachedSpan childDetachedSpan(String operation) {

@@ -25,18 +25,19 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 
 /**
- * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding {@link
- * com.palantir.tracing.Trace} and {@link com.palantir.tracing.api.Span} for delegating to the configured {@link
- * #delegate} handler. See <a href="https://github.com/openzipkin/b3-propagation">b3-propagation</a>.
+ * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding
+ * {@link com.palantir.tracing.Trace} and {@link com.palantir.tracing.api.Span} for delegating to the configured
+ * {@link #delegate} handler. See <a href="https://github.com/openzipkin/b3-propagation">b3-propagation</a>.
  *
  * <p>Note that this handler must be registered after routing, each instance is used for exactly one operation name.
- * This {@link HttpHandler handler} traces the execution of the {@link TracedOperationHandler#delegate} handlers {@link
- * HttpHandler#handleRequest(HttpServerExchange)}, but does not apply tracing to any asynchronous operations that
+ * This {@link HttpHandler handler} traces the execution of the {@link TracedOperationHandler#delegate} handlers
+ * {@link HttpHandler#handleRequest(HttpServerExchange)}, but does not apply tracing to any asynchronous operations that
  * handler may register.
  */
 public final class TracedOperationHandler implements HttpHandler {
     /**
      * Attachment to check whether the current request is being traced.
+     *
      * @deprecated in favor of {@link TracingAttachments#IS_SAMPLED}
      */
     @Deprecated

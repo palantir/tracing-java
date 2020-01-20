@@ -30,14 +30,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * An abstract {@code ExecutorService} that allows subclasses to
- * {@linkplain #wrapTask(Callable) wrap} tasks before they are submitted
- * to the underlying executor.
+ * An abstract {@code ExecutorService} that allows subclasses to {@linkplain #wrapTask(Callable) wrap} tasks before they
+ * are submitted to the underlying executor.
+ *
  * <p>
+ *
  * <p>Note that task wrapping may occur even if the task is never executed.
+ *
  * <p>
- * <p>For delegation without task-wrapping, see
- * {@link ForwardingExecutorService}.
+ *
+ * <p>For delegation without task-wrapping, see {@link ForwardingExecutorService}.
  *
  * @author Chris Nokleberg
  */
@@ -49,19 +51,17 @@ abstract class WrappingExecutorService implements ExecutorService {
     }
 
     /**
-     * Wraps a {@code Callable} for submission to the underlying executor. This
-     * method is also applied to any {@code Runnable} passed to the default
-     * implementation of {@link #wrapTask(Runnable)}.
+     * Wraps a {@code Callable} for submission to the underlying executor. This method is also applied to any
+     * {@code Runnable} passed to the default implementation of {@link #wrapTask(Runnable)}.
      */
     protected abstract <T> Callable<T> wrapTask(Callable<T> callable);
 
     /**
-     * Wraps a {@code Runnable} for submission to the underlying executor. The
-     * default implementation delegates to {@link #wrapTask(Callable)}.
+     * Wraps a {@code Runnable} for submission to the underlying executor. The default implementation delegates to
+     * {@link #wrapTask(Callable)}.
      */
     protected Runnable wrapTask(Runnable command) {
-        final Callable<Object> wrapped = wrapTask(
-                Executors.callable(command, null));
+        final Callable<Object> wrapped = wrapTask(Executors.callable(command, null));
         return () -> {
             try {
                 wrapped.call();
@@ -78,8 +78,7 @@ abstract class WrappingExecutorService implements ExecutorService {
      *
      * @throws NullPointerException if any element of {@code tasks} is null
      */
-    private <T> ImmutableList<Callable<T>> wrapTasks(
-            Collection<? extends Callable<T>> tasks) {
+    private <T> ImmutableList<Callable<T>> wrapTasks(Collection<? extends Callable<T>> tasks) {
         ImmutableList.Builder<Callable<T>> builder = ImmutableList.builder();
         for (Callable<T> task : tasks) {
             builder.add(wrapTask(task));
@@ -109,14 +108,12 @@ abstract class WrappingExecutorService implements ExecutorService {
     }
 
     @Override
-    public final <T> List<Future<T>> invokeAll(
-            Collection<? extends Callable<T>> tasks) throws InterruptedException {
+    public final <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         return delegate.invokeAll(wrapTasks(tasks));
     }
 
     @Override
-    public final <T> List<Future<T>> invokeAll(
-            Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+    public final <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException {
         return delegate.invokeAll(wrapTasks(tasks), timeout, unit);
     }
@@ -128,8 +125,7 @@ abstract class WrappingExecutorService implements ExecutorService {
     }
 
     @Override
-    public final <T> T invokeAny(
-            Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+    public final <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
         return delegate.invokeAny(wrapTasks(tasks), timeout, unit);
     }
@@ -157,8 +153,7 @@ abstract class WrappingExecutorService implements ExecutorService {
     }
 
     @Override
-    public final boolean awaitTermination(long timeout, TimeUnit unit)
-            throws InterruptedException {
+    public final boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
         return delegate.awaitTermination(timeout, unit);
     }
 }
