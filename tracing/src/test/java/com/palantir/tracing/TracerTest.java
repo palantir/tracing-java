@@ -47,10 +47,13 @@ public final class TracerTest {
 
     @Mock
     private SpanObserver observer1;
+
     @Mock
     private SpanObserver observer2;
+
     @Mock
     private TraceSampler sampler;
+
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
@@ -297,7 +300,6 @@ public final class TracerTest {
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
     }
 
-
     @Test
     public void testGetAndClearTraceIfPresent() {
         Trace trace = Trace.of(true, "newTraceId");
@@ -469,8 +471,8 @@ public final class TracerTest {
     public void testNewDetachedTrace() {
         try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
             String currentTraceId = Tracer.getTraceId();
-            DetachedSpan span = DetachedSpan.start(
-                    Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            DetachedSpan span =
+                    DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
             try (CloseableSpan ignored2 = span.completeAndStartChild("foo")) {
                 assertThat(Tracer.getTraceId()).isEqualTo("12345");
             }
@@ -484,8 +486,8 @@ public final class TracerTest {
     public void testNewDetachedTrace_doesNotModifyCurrentState() {
         try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
             String currentTraceId = Tracer.getTraceId();
-            DetachedSpan span = DetachedSpan.start(
-                    Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            DetachedSpan span =
+                    DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
             assertThat(Tracer.getTraceId())
                     .as("Current thread state should not be modified")
                     .isEqualTo(currentTraceId);

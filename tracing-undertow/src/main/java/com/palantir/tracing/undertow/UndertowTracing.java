@@ -50,9 +50,7 @@ final class UndertowTracing {
 
     private static final String OPERATION_NAME = "Undertow Request";
 
-    /**
-     * Apply detached tracing state to the provided {@link HttpServerExchange request}.
-     */
+    /** Apply detached tracing state to the provided {@link HttpServerExchange request}. */
     static DetachedSpan getOrInitializeRequestTrace(HttpServerExchange exchange) {
         DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
         if (detachedSpan == null) {
@@ -79,10 +77,7 @@ final class UndertowTracing {
         exchange.addExchangeCompleteListener(DetachedTraceCompletionListener.INSTANCE);
     }
 
-    private static DetachedSpan detachedSpan(
-            boolean newTrace,
-            String traceId,
-            HeaderMap requestHeaders) {
+    private static DetachedSpan detachedSpan(boolean newTrace, String traceId, HeaderMap requestHeaders) {
         return DetachedSpan.start(
                 getObservabilityFromHeader(requestHeaders),
                 traceId,

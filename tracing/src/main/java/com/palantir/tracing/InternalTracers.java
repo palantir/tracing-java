@@ -19,9 +19,8 @@ package com.palantir.tracing;
 /**
  * Internal utilities meant for consumption only inside of the tracing codebase.
  *
- * Note: while this is internal, backwards compatibility should be preserved
- * for a couple releases to prevent breaking libraries which resolve mis-matched
- * tracing dependency versions.
+ * <p>Note: while this is internal, backwards compatibility should be preserved for a couple releases to prevent
+ * breaking libraries which resolve mis-matched tracing dependency versions.
  */
 public final class InternalTracers {
 

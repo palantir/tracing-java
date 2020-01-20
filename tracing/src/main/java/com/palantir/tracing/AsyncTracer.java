@@ -19,8 +19,8 @@ package com.palantir.tracing;
 import java.util.Optional;
 
 /**
- * Utility for tracking an operation that will be run asynchronously. It tracks the time it spent before {@link
- * #withTrace} is called.
+ * Utility for tracking an operation that will be run asynchronously. It tracks the time it spent before
+ * {@link #withTrace} is called.
  *
  * <pre>
  * <code>

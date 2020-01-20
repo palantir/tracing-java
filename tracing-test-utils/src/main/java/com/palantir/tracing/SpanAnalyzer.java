@@ -161,7 +161,8 @@ final class SpanAnalyzer {
 
         for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
             for (int acIndex = 0; acIndex < ac.size(); acIndex++) {
-                long numFailures = compareSpansRecursively(expected, actual, ex.get(exIndex), ac.get(acIndex)).count();
+                long numFailures = compareSpansRecursively(expected, actual, ex.get(exIndex), ac.get(acIndex))
+                        .count();
                 compatibility[exIndex][acIndex] = numFailures == 0;
             }
         }
