@@ -138,8 +138,8 @@ final class HtmlFormatter {
     }
 
     private void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
-        long transposedStartMicros = span.getStartTimeMicroSeconds()
-                - config.bounds().startMicros();
+        long transposedStartMicros =
+                span.getStartTimeMicroSeconds() - config.bounds().startMicros();
 
         long hue = Hashing.adler32()
                         .hashString(span.getTraceId(), StandardCharsets.UTF_8)
