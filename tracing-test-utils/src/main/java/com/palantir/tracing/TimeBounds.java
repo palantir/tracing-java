@@ -43,10 +43,8 @@ interface TimeBounds extends Comparable<TimeBounds> {
     }
 
     static TimeBounds fromSpans(Collection<Span> spans) {
-        long earliestStartMicros = spans.stream()
-                .mapToLong(Span::getStartTimeMicroSeconds)
-                .min()
-                .getAsLong();
+        long earliestStartMicros =
+                spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
         long latestEndNanos = spans.stream()
                 .mapToLong(span -> {
                     long startTimeNanos =

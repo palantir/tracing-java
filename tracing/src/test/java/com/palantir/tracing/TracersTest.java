@@ -590,15 +590,15 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallableWithAlternateTraceId_canSpecifyObservability() throws Exception {
-        Callable sampledCallable = () ->
-                assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
+        Callable sampledCallable =
+                () -> assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
         Callable wrappedSampledCallable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledCallable);
 
         wrappedSampledCallable.call();
 
-        Callable unSampledCallable = () ->
-                assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
+        Callable unSampledCallable =
+                () -> assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
         Callable wrappedUnSampledCallable = Tracers.wrapWithAlternateTraceId(
                 "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledCallable);
 
@@ -798,15 +798,15 @@ public final class TracersTest {
 
     @Test
     public void testWrapRunnableWithAlternateTraceId_canSpecifyObservability() {
-        Runnable sampledRunnable = () ->
-                assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
+        Runnable sampledRunnable =
+                () -> assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
         Runnable wrappedSampledRunnable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledRunnable);
 
         wrappedSampledRunnable.run();
 
-        Runnable unSampledRunnable = () ->
-                assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
+        Runnable unSampledRunnable =
+                () -> assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
         Runnable wrappedUnSampledRunnable = Tracers.wrapWithAlternateTraceId(
                 "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledRunnable);
 
