@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.google.common.util.concurrent.FluentFuture;
 import com.google.common.util.concurrent.FutureCallback;
@@ -30,7 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("FutureReturnValueIgnored")
@@ -93,7 +93,7 @@ class TracingDemos {
 
                             @Override
                             public void onFailure(Throwable _throwable) {
-                                Assertions.fail();
+                                fail("fail");
                             }
                         },
                         executorService);
