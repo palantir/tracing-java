@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Publish `tracing-test-utils`
+  links:
+  - https://github.com/palantir/tracing-java/pull/442
