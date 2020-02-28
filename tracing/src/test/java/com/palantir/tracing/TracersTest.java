@@ -367,8 +367,9 @@ public final class TracersTest {
             // Inner operation must complete first to avoid confusion
             assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
             assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
-            assertThat(observed).allSatisfy(span ->
-                    assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
+            assertThat(observed)
+                    .allSatisfy(span ->
+                            assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
         } finally {
             Tracer.unsubscribe("futureTest");
         }
@@ -387,8 +388,9 @@ public final class TracersTest {
             // Inner operation must complete first to avoid confusion
             assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
             assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
-            assertThat(observed).allSatisfy(span ->
-                    assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
+            assertThat(observed)
+                    .allSatisfy(span ->
+                            assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
         } finally {
             Tracer.unsubscribe("futureTest");
         }
@@ -410,8 +412,9 @@ public final class TracersTest {
         assertThat(traced).isDone();
         assertThat(observed).hasSize(2);
         assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
-        assertThat(observed).allSatisfy(span ->
-                assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
+        assertThat(observed)
+                .allSatisfy(
+                        span -> assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
     }
 
     @Test
@@ -430,8 +433,9 @@ public final class TracersTest {
             assertThat(observed).hasSize(2);
             assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
             assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
-            assertThat(observed).allSatisfy(span ->
-                    assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
+            assertThat(observed)
+                    .allSatisfy(span ->
+                            assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
         } finally {
             Tracer.unsubscribe("futureTest");
         }
