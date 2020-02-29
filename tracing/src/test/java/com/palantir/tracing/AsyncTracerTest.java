@@ -40,8 +40,8 @@ public class AsyncTracerTest {
 
         deferredTracer.withTrace(() -> {
             Trace traceCopy = Tracer.copyTrace().get();
-            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span ->
-                    span.getSpanId().equals("async-run"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("async-run"));
             return null;
         });
     }
@@ -70,23 +70,23 @@ public class AsyncTracerTest {
 
         asyncTracer.withTrace(() -> {
             Trace traceCopy = Tracer.copyTrace().get();
-            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span ->
-                    span.getSpanId().equals("async-run"));
-            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span ->
-                    span.getSpanId().equals("baz"));
-            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span ->
-                    span.getSpanId().equals("bar"));
-            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span ->
-                    span.getSpanId().equals("foo"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("async-run"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("baz"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("bar"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("foo"));
             return null;
         });
 
-        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span ->
-                span.getSpanId().equals("baz"));
-        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span ->
-                span.getSpanId().equals("bar"));
-        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span ->
-                span.getSpanId().equals("foo"));
+        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                .equals("baz"));
+        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                .equals("bar"));
+        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                .equals("foo"));
     }
 
     /** Get reference to the current trace. */
