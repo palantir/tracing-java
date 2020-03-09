@@ -162,7 +162,7 @@ jobs:
       - run: /liche -d . -r . -v
 
   circle-all:
-    docker: [{ image: 'docker.palantir.build/circle2-build-images/ubuntu-jdk-npm:0.40.727' }]
+    docker: [{ image: 'circleci/openjdk:8u222-stretch-node' }]
     resource_class: small
     steps:
       - run: {command: echo "All required jobs finished successfully"}
