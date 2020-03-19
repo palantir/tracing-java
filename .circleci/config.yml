@@ -147,7 +147,7 @@ jobs:
       - store_test_results: { path: ~/junit }
       - store_artifacts: { path: ~/artifacts }
 
-    trial-publish:
+  trial-publish:
     docker: [{ image: 'circleci/openjdk:8u222-stretch-node' }]
     environment:
       CIRCLE_TEST_REPORTS: /home/circleci/junit
