@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: RandomSampler provides a static factory, preferred over the constructor
+    to  advantage of deterministic values (zero and one).
+  links:
+  - https://github.com/palantir/tracing-java/pull/561
