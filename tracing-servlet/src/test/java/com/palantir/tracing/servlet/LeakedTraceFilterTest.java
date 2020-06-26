@@ -44,9 +44,9 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class LeakedTraceFilterTest {
     @ClassRule
-    @SuppressWarnings("deprecation")
     public static final DropwizardAppRule<Configuration> APP =
             new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
 

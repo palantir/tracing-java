@@ -60,10 +60,10 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.MDC;
 
+@SuppressWarnings("deprecation")
 public final class TraceEnrichingFilterTest {
 
     @ClassRule
-    @SuppressWarnings("deprecation")
     public static final DropwizardAppRule<Configuration> APP =
             new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
 
