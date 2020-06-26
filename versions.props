@@ -1,7 +1,7 @@
 # dependency-upgrader:OFF
 # We're intentionally not auto-upgrading these dependencies to avoid imposing unnecesary upgrades on all consumers.
 # Please bump these only when you need to use new features.
-com.fasterxml.jackson.*:* = 2.9.8
+com.fasterxml.jackson.*:* = 2.10.4
 com.google.guava:guava = 28.0-jre
 com.spotify.dataenum:* = 1.3.2
 com.palantir.safe-logging:* = 1.8.2
