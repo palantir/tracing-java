@@ -25,14 +25,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 final class TestTracingSubscriber implements SpanObserver {
 
     // Spans can be emitted from different threads, so using a concurrent datastructure rather than an ArrayList.
-    private final Queue<Span> allSpans = new ConcurrentLinkedQueue();
+    private final Queue<Span> allSpans = new ConcurrentLinkedQueue<>();
 
     @Override
     public void consume(Span span) {
         allSpans.add(span);
     }
 
-    public Collection<Span> getAllSpans() {
+    Collection<Span> getAllSpans() {
         return allSpans;
     }
 }

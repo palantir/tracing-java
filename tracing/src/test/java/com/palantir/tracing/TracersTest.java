@@ -570,10 +570,10 @@ public final class TracersTest {
     @Test
     public void testWrapCallableWithAlternateTraceId_traceStateRestoredWhenThrows() {
         String traceIdBeforeConstruction = Tracer.getTraceId();
-        Callable rawCallable = () -> {
+        Callable<Void> rawCallable = () -> {
             throw new IllegalStateException();
         };
-        Callable wrappedCallable =
+        Callable<Void> wrappedCallable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.UNDECIDED, rawCallable);
 
         assertThatThrownBy(() -> wrappedCallable.call()).isInstanceOf(IllegalStateException.class);
@@ -594,16 +594,16 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallableWithAlternateTraceId_canSpecifyObservability() throws Exception {
-        Callable sampledCallable =
+        Callable<?> sampledCallable =
                 () -> assertThat(Tracer.copyTrace().get().isObservable()).isTrue();
-        Callable wrappedSampledCallable =
+        Callable<?> wrappedSampledCallable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledCallable);
 
         wrappedSampledCallable.call();
 
-        Callable unSampledCallable =
+        Callable<?> unSampledCallable =
                 () -> assertThat(Tracer.copyTrace().get().isObservable()).isFalse();
-        Callable wrappedUnSampledCallable = Tracers.wrapWithAlternateTraceId(
+        Callable<?> wrappedUnSampledCallable = Tracers.wrapWithAlternateTraceId(
                 "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledCallable);
 
         wrappedUnSampledCallable.call();
