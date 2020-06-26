@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-apply plugin: 'org.inferred.processors'
+package com.palantir.tracing;
 
-apply from: "${rootDir}/gradle/publish-jar.gradle"
-apply plugin: 'com.palantir.revapi'
+enum NeverSampler implements TraceSampler {
+    INSTANCE;
 
-dependencies {
-    compile project(":tracing")
-    compile "jakarta.ws.rs:jakarta.ws.rs-api"
-
-    testImplementation "ch.qos.logback:logback-classic"
-    testImplementation "junit:junit"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.jmock:jmock"
-    testImplementation "org.mockito:mockito-core"
-
-    annotationProcessor "org.immutables:value"
-    compileOnly "org.immutables:value::annotations"
-    testCompileOnly "org.immutables:value::annotations"
+    @Override
+    public boolean sample() {
+        return false;
+    }
 }

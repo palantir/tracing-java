@@ -22,7 +22,7 @@ dependencies {
     compile project(":tracing")
 
     implementation 'com.google.guava:guava'
-    implementation 'javax.ws.rs:javax.ws.rs-api'
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation project(':tracing-api')
 
     testImplementation "io.dropwizard:dropwizard-testing"

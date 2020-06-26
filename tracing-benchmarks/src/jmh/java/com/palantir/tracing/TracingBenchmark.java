@@ -54,7 +54,7 @@ public class TracingBenchmark {
     public enum BenchmarkObservability {
         SAMPLE(AlwaysSampler.INSTANCE),
         DO_NOT_SAMPLE(() -> false),
-        UNDECIDED(new RandomSampler(0.01f));
+        UNDECIDED(RandomSampler.create(0.01f));
 
         private final TraceSampler traceSampler;
 
