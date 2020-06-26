@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Upgrade dropwizard version to 2.0 to get rid of outstanding javax references
+  links:
+  - https://github.com/palantir/tracing-java/pull/565
