@@ -63,6 +63,7 @@ import org.slf4j.MDC;
 public final class TraceEnrichingFilterTest {
 
     @ClassRule
+    @SuppressWarnings("deprecation")
     public static final DropwizardAppRule<Configuration> APP =
             new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
 
