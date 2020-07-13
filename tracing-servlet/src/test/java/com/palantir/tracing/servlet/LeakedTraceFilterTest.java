@@ -23,7 +23,6 @@ import com.palantir.tracing.Tracer;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import java.io.IOException;
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
@@ -46,8 +45,10 @@ import org.junit.Test;
 
 public class LeakedTraceFilterTest {
     @ClassRule
-    public static final DropwizardAppRule<Configuration> APP =
-            new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
+    @SuppressWarnings("deprecation")
+    public static final io.dropwizard.testing.junit.DropwizardAppRule<Configuration> APP =
+            new io.dropwizard.testing.junit.DropwizardAppRule<>(
+                    TracingTestServer.class, "src/test/resources/test-server.yml");
 
     private WebTarget target;
 

@@ -35,7 +35,6 @@ import com.palantir.tracing.api.TraceHttpHeaders;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -63,8 +62,10 @@ import org.slf4j.MDC;
 public final class TraceEnrichingFilterTest {
 
     @ClassRule
-    public static final DropwizardAppRule<Configuration> APP =
-            new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
+    @SuppressWarnings("deprecation")
+    public static final io.dropwizard.testing.junit.DropwizardAppRule<Configuration> APP =
+            new io.dropwizard.testing.junit.DropwizardAppRule<>(
+                    TracingTestServer.class, "src/test/resources/test-server.yml");
 
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
