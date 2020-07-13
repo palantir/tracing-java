@@ -16,10 +16,6 @@
 
 package com.palantir.tracing;
 
-import static com.palantir.logsafe.Preconditions.checkArgument;
-import static com.palantir.logsafe.Preconditions.checkNotNull;
-import static com.palantir.logsafe.Preconditions.checkState;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
@@ -34,16 +30,21 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+
+import static com.palantir.logsafe.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkNotNull;
+import static com.palantir.logsafe.Preconditions.checkState;
 
 /**
  * The singleton entry point for handling Zipkin-style traces and spans. Provides functionality for starting and
@@ -117,6 +118,7 @@ public final class Tracer {
                     .parentSpanId(openSpan.getParentSpanId())
                     .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
+                    .requestId(trace.getRequestId())
                     .build());
         } else {
             return Optional.of(TraceMetadata.builder()
@@ -124,6 +126,7 @@ public final class Tracer {
                     .parentSpanId(Optional.empty())
                     .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
+                    .requestId(trace.getRequestId())
                     .build());
         }
     }
