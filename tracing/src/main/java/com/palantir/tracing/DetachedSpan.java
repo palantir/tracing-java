@@ -65,22 +65,6 @@ public interface DetachedSpan {
     }
 
     /**
-     * Marks the beginning of a span, which you can {@link #complete} on any other thread.
-     *
-     * @see DetachedSpan#start(String)
-     */
-    @CheckReturnValue
-    static DetachedSpan start(
-            Observability observability,
-            String traceId,
-            Optional<String> requestId,
-            Optional<String> parentSpanId,
-            String operation,
-            SpanType type) {
-        return Tracer.detachInternal(observability, traceId, requestId, parentSpanId, operation, type);
-    }
-
-    /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan} as the parent
      * instead of thread state.
      */

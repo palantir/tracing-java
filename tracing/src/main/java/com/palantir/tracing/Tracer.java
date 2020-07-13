@@ -298,11 +298,6 @@ public final class Tracer {
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
 
-    /** Returns the unique request identifier for this thread's trace. */
-    public static Optional<String> getRequestId() {
-        return checkNotNull(currentTrace.get(), "There is no trace").getRequestId();
-    }
-
     static boolean isSampled(DetachedSpan detachedSpan) {
         return detachedSpan instanceof SampledDetachedSpan;
     }

@@ -27,6 +27,12 @@ public interface TraceMetadata {
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#TRACE_ID}. */
     String getTraceId();
 
+    /**
+     * Returns the unique request identifier for this thread's trace.
+     * Corresponds to {@link com.palantir.tracing.Tracers#REQUEST_ID_KEY}.
+     */
+    Optional<String> getRequestId();
+
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID}. */
     String getSpanId();
 

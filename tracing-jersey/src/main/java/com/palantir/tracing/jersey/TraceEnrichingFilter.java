@@ -18,6 +18,7 @@ package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
 import com.palantir.tracing.Observability;
+import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.Span;
@@ -86,7 +87,9 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
-        Tracer.getRequestId().ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
+        Tracer.maybeGetTraceMetadata()
+                .flatMap(TraceMetadata::getRequestId)
+                .ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
     }
 
     // Handles outgoing response
