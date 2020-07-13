@@ -387,6 +387,31 @@ public final class TracerTest {
             assertThat(Tracer.hasTraceId()).isFalse();
             try (CloseableSpan ignored = detached.childSpan(operation2)) {
                 assertThat(Tracer.hasTraceId()).isTrue();
+                assertThat(Tracer.maybeGetTraceMetadata().get().getRequestId()).isEmpty();
+            }
+            verify(observer1).consume(spanCaptor.capture());
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation2);
+            assertThat(Tracer.hasTraceId()).isFalse();
+        } finally {
+            detached.complete();
+        }
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.unsubscribe("1");
+    }
+
+    @Test
+    public void testDetachedTraceAppliedToThreadState_requestId() {
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.subscribe("1", observer1);
+        String operation1 = "operation";
+        String operation2 = "attached";
+        DetachedSpan detached = DetachedSpan.start(operation1, SpanType.SERVER_INCOMING);
+        String requestId = InternalTracers.getRequestId(detached).get();
+        try {
+            assertThat(Tracer.hasTraceId()).isFalse();
+            try (CloseableSpan ignored = detached.childSpan(operation2)) {
+                assertThat(Tracer.hasTraceId()).isTrue();
+                assertThat(Tracer.maybeGetTraceMetadata().get().getRequestId()).hasValue(requestId);
             }
             verify(observer1).consume(spanCaptor.capture());
             assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation2);
