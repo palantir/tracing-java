@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: Tracing uniquely identifies requests with request metadata and a `_requestId`
+    MDC property.
+  links:
+  - https://github.com/palantir/tracing-java/pull/574
