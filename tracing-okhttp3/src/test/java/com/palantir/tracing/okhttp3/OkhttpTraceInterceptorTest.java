@@ -67,12 +67,13 @@ public final class OkhttpTraceInterceptorTest {
 
     @After
     public void after() {
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         Tracer.unsubscribe("");
     }
 
     @Test
     public void testPopulatesNewTrace_whenNoTraceIsPresentInGlobalState() throws IOException {
+        Tracer.getAndClearTrace();
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).request();
         verify(chain).proceed(requestCaptor.capture());
@@ -88,7 +89,7 @@ public final class OkhttpTraceInterceptorTest {
     @Test
     public void testPopulatesNewTrace_whenParentTraceIsPresent() throws IOException {
         String originatingSpanId = "originating Span";
-        OpenSpan parentState = Tracer.startSpan("operation", originatingSpanId, SpanType.SERVER_INCOMING);
+        Tracer.initTraceWithSpan(Observability.SAMPLE, "id", "operation", originatingSpanId, SpanType.SERVER_INCOMING);
         String traceId = Tracer.getTraceId();
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
@@ -102,15 +103,13 @@ public final class OkhttpTraceInterceptorTest {
 
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
-        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).doesNotContain(parentState.getSpanId());
         assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
-        assertThat(intercepted.headers(TraceHttpHeaders.PARENT_SPAN_ID)).containsOnly(parentState.getSpanId());
         assertThat(intercepted.headers(TraceHttpHeaders.ORIGINATING_SPAN_ID)).containsOnly(originatingSpanId);
     }
 
     @Test
     public void testAddsIsSampledHeader_whenTraceIsObservable() throws IOException {
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
         assertThat(requestCaptor.getValue().headers(TraceHttpHeaders.IS_SAMPLED))
@@ -119,7 +118,7 @@ public final class OkhttpTraceInterceptorTest {
 
     @Test
     public void testHeaders_whenTraceIsNotObservable() throws IOException {
-        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+        Tracer.initTraceWithSpan(Observability.DO_NOT_SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         String traceId = Tracer.getTraceId();
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
@@ -175,7 +174,7 @@ public final class OkhttpTraceInterceptorTest {
                 .build();
         when(chain.request()).thenReturn(request);
 
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
         verify(chain).proceed(requestCaptor.capture());
 

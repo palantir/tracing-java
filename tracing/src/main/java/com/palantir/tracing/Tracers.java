@@ -20,6 +20,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.Preconditions;
+import com.palantir.tracing.api.SpanType;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,9 @@ public final class Tracers {
      * field can take the values of "1" or "0", where "1" indicates the trace was sampled.
      */
     public static final String TRACE_SAMPLED_KEY = "_sampled";
+
+    /** The key under which tracing request ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
+    public static final String REQUEST_ID_KEY = "_requestId";
 
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
     private static final char[] HEX_DIGITS = {
@@ -332,8 +336,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(observability, Tracers.randomId());
-                Tracer.fastStartSpan(operation);
+                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
                 return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -368,8 +371,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(observability, Tracers.randomId());
-                Tracer.fastStartSpan(operation);
+                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -392,8 +394,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(observability, traceId);
-                Tracer.fastStartSpan(operation);
+                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
                 return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -430,8 +431,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTrace(observability, traceId);
-                Tracer.fastStartSpan(operation);
+                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();

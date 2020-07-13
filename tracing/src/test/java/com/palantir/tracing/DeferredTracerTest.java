@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.tracing.api.SpanType;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -29,7 +30,7 @@ public class DeferredTracerTest {
 
     @Test
     public void testIsSerializable() throws IOException, ClassNotFoundException {
-        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
+        Tracer.initTraceWithSpan(Observability.UNDECIDED, "defaultTraceId", "span", SpanType.LOCAL);
 
         DeferredTracer deferredTracer = new DeferredTracer("operation");
 
@@ -38,7 +39,7 @@ public class DeferredTracerTest {
             objectOutputStream.writeObject(deferredTracer);
         }
 
-        Tracer.initTrace(Observability.UNDECIDED, "someOtherTraceId");
+        Tracer.initTraceWithSpan(Observability.UNDECIDED, "someOtherTraceId", "span", SpanType.LOCAL);
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try (ObjectInputStream objectInputStream = new ObjectInputStream(bais)) {
