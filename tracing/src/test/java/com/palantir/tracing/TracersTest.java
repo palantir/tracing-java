@@ -61,7 +61,7 @@ public final class TracersTest {
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         // Initialize a new trace for each test
-        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
+        Tracer.setTrace(Trace.of(true, "defaultTraceId", Optional.empty()));
     }
 
     @After

@@ -133,7 +133,7 @@ public final class Tracer {
     /**
      * Deprecated.
      *
-     * @deprecated Use {@link #initTrace(Observability, String)}
+     * @deprecated Use {@link #initTraceWithSpan(Observability, String, String, SpanType)}
      */
     @Deprecated
     public static void initTrace(Optional<Boolean> isObservable, String traceId) {
