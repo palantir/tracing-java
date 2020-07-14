@@ -16,6 +16,8 @@
 
 package com.palantir.tracing;
 
+import java.util.Optional;
+
 /**
  * Internal utilities meant for consumption only inside of the tracing codebase.
  *
@@ -27,6 +29,11 @@ public final class InternalTracers {
     /** Returns true if the provided detachedSpan is sampled. */
     public static boolean isSampled(DetachedSpan detachedSpan) {
         return Tracer.isSampled(detachedSpan);
+    }
+
+    /** Returns true if the provided detachedSpan is sampled. */
+    public static Optional<String> getRequestId(DetachedSpan detachedSpan) {
+        return Tracer.getRequestId(detachedSpan);
     }
 
     private InternalTracers() {}

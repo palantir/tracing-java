@@ -28,7 +28,7 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -70,7 +70,8 @@ public class TracedRequestHandlerTest {
 
         traceReportedLatch = new CountDownLatch(1);
         port = portSelector.incrementAndGet();
-        HttpHandler nextHandler = new TracedRequestHandler(ResponseCodeHandler.HANDLE_200);
+        HttpHandler nextHandler = new TracedRequestHandler(exchange -> exchange.getResponseHeaders()
+                .put(HttpString.tryFromString("requestId"), exchange.getAttachment(TracingAttachments.REQUEST_ID)));
         server = Undertow.builder()
                 .addHttpListener(port, null)
                 .setHandler(exchange -> {
@@ -101,6 +102,7 @@ public class TracedRequestHandlerTest {
         con.setRequestProperty(TraceHttpHeaders.TRACE_ID, "1234");
         assertThat(con.getResponseCode()).isEqualTo(200);
         assertThat(con.getHeaderField(TraceHttpHeaders.TRACE_ID)).isEqualTo("1234");
+        assertThat(con.getHeaderField("requestId")).isNotEmpty();
         assertThat(traceReportedLatch.await(5, TimeUnit.SECONDS)).isTrue();
         verifyNoMoreInteractions(traceSampler);
         verify(observer).consume(spanCaptor.capture());

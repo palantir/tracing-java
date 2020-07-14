@@ -18,6 +18,7 @@ package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
 import com.palantir.tracing.Observability;
+import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.Span;
@@ -45,6 +46,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     /** This is the name of the trace id property we set on {@link ContainerRequestContext}. */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
 
+    public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
+
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
@@ -67,21 +70,26 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
             // HTTP request did not indicate a trace; initialize trace state and create a span.
-            Tracer.initTrace(getObservabilityFromHeader(requestContext), Tracers.randomId());
-            Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
+            Tracer.initTraceWithSpan(
+                    getObservabilityFromHeader(requestContext),
+                    Tracers.randomId(),
+                    operation,
+                    SpanType.SERVER_INCOMING);
+        } else if (spanId == null) {
+            Tracer.initTraceWithSpan(
+                    getObservabilityFromHeader(requestContext), traceId, operation, SpanType.SERVER_INCOMING);
         } else {
-            Tracer.initTrace(getObservabilityFromHeader(requestContext), traceId);
-            if (spanId == null) {
-                Tracer.fastStartSpan(operation, SpanType.SERVER_INCOMING);
-            } else {
-                // caller's span is this span's parent.
-                Tracer.fastStartSpan(operation, spanId, SpanType.SERVER_INCOMING);
-            }
+            // caller's span is this span's parent.
+            Tracer.initTraceWithSpan(
+                    getObservabilityFromHeader(requestContext), traceId, operation, spanId, SpanType.SERVER_INCOMING);
         }
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
+        Tracer.maybeGetTraceMetadata()
+                .flatMap(TraceMetadata::getRequestId)
+                .ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
     }
 
     // Handles outgoing response

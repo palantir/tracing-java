@@ -18,6 +18,8 @@ package com.palantir.tracing.undertow;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.palantir.logsafe.SafeArg;
+import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
@@ -73,6 +75,11 @@ final class UndertowTracing {
         // Populate response before proceeding since later operations might commit the response.
         exchange.getResponseHeaders().put(TRACE_ID, traceId);
         exchange.putAttachment(TracingAttachments.IS_SAMPLED, InternalTracers.isSampled(detachedSpan));
+        Optional<String> requestId = InternalTracers.getRequestId(detachedSpan);
+        if (!requestId.isPresent()) {
+            throw new SafeIllegalStateException("No requestId is set", SafeArg.of("span", detachedSpan));
+        }
+        exchange.putAttachment(TracingAttachments.REQUEST_ID, requestId.get());
         exchange.putAttachment(REQUEST_SPAN, detachedSpan);
         exchange.addExchangeCompleteListener(DetachedTraceCompletionListener.INSTANCE);
     }

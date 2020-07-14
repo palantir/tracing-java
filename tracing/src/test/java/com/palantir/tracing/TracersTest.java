@@ -28,10 +28,12 @@ import com.palantir.logsafe.exceptions.SafeNullPointerException;
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
+import com.palantir.tracing.api.SpanType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -59,7 +61,7 @@ public final class TracersTest {
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         // Initialize a new trace for each test
-        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
+        Tracer.setTrace(Trace.of(true, "defaultTraceId", Optional.empty()));
     }
 
     @After
@@ -111,6 +113,24 @@ public final class TracersTest {
         wrappedService.submit(traceExpectingRunnableWithSingleSpan("operation")).get();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
+        Tracer.fastCompleteSpan();
+    }
+
+    @Test
+    public void testWrapExecutorService_withRequestId() throws Exception {
+        ExecutorService wrappedService = Tracers.wrap("operation", Executors.newSingleThreadExecutor());
+
+        // Non-empty trace
+        Tracer.initTraceWithSpan(Observability.UNDECIDED, "traceId", "root", SpanType.SERVER_INCOMING);
+        String requestId = Tracer.maybeGetTraceMetadata()
+                .flatMap(TraceMetadata::getRequestId)
+                .get();
+        wrappedService
+                .submit(traceExpectingCallableWithSingleSpan("operation", Optional.of(requestId)))
+                .get();
+        wrappedService
+                .submit(traceExpectingRunnableWithSingleSpan("operation", Optional.of(requestId)))
+                .get();
         Tracer.fastCompleteSpan();
     }
 
@@ -913,6 +933,11 @@ public final class TracersTest {
     }
 
     private static Callable<Void> traceExpectingCallableWithSingleSpan(String operation) {
+        return traceExpectingCallableWithSingleSpan(operation, Optional.empty());
+    }
+
+    private static Callable<Void> traceExpectingCallableWithSingleSpan(
+            String operation, Optional<String> expectedRequestId) {
         final String outsideTraceId = Tracer.getTraceId();
 
         return () -> {
@@ -924,11 +949,16 @@ public final class TracersTest {
             assertThat(traceId).isEqualTo(outsideTraceId);
             assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
+            assertThat(MDC.get(Tracers.REQUEST_ID_KEY)).isEqualTo(expectedRequestId.orElse(null));
             return null;
         };
     }
 
     private static Runnable traceExpectingRunnableWithSingleSpan(String operation) {
+        return traceExpectingRunnableWithSingleSpan(operation, Optional.empty());
+    }
+
+    private static Runnable traceExpectingRunnableWithSingleSpan(String operation, Optional<String> expectedRequestId) {
         final String outsideTraceId = Tracer.getTraceId();
 
         return () -> {
@@ -940,6 +970,7 @@ public final class TracersTest {
             assertThat(traceId).isEqualTo(outsideTraceId);
             assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
+            assertThat(MDC.get(Tracers.REQUEST_ID_KEY)).isEqualTo(expectedRequestId.orElse(null));
         };
     }
 

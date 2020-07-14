@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
@@ -45,9 +46,12 @@ public abstract class Trace {
 
     private final String traceId;
 
-    private Trace(String traceId) {
+    private final Optional<String> requestId;
+
+    private Trace(String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
+        this.requestId = checkNotNull(requestId, "requestId");
     }
 
     /**
@@ -125,26 +129,37 @@ public abstract class Trace {
         return traceId;
     }
 
+    /**
+     * The request identifier of this trace.
+     *
+     * The request identifier is an implementation detail of this tracing library. A new identifier is generated
+     * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
+     * distinguish between requests with the same traceId.
+     */
+    final Optional<String> getRequestId() {
+        return requestId;
+    }
+
     abstract Optional<String> getOriginatingSpanId();
 
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
-    static Trace of(boolean isObservable, String traceId) {
-        return isObservable ? new Sampled(traceId) : new Unsampled(traceId);
+    static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
+        return isObservable ? new Sampled(traceId, requestId) : new Unsampled(traceId, requestId);
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, String traceId) {
-            super(traceId);
+        private Sampled(ArrayDeque<OpenSpan> stack, String traceId, Optional<String> requestId) {
+            super(traceId, requestId);
             this.stack = stack;
         }
 
-        private Sampled(String traceId) {
-            this(new ArrayDeque<>(), traceId);
+        private Sampled(String traceId, Optional<String> requestId) {
+            this(new ArrayDeque<>(), traceId, requestId);
         }
 
         @Override
@@ -194,7 +209,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId());
+            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId());
         }
 
         @Override
@@ -212,14 +227,14 @@ public abstract class Trace {
 
         private Optional<String> originatingSpanId = Optional.empty();
 
-        private Unsampled(int numberOfSpans, String traceId) {
-            super(traceId);
+        private Unsampled(int numberOfSpans, String traceId, Optional<String> requestId) {
+            super(traceId, requestId);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId) {
-            this(0, traceId);
+        private Unsampled(String traceId, Optional<String> requestId) {
+            this(0, traceId, requestId);
         }
 
         @Override
@@ -279,7 +294,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId());
+            return new Unsampled(numberOfSpans, getTraceId(), getRequestId());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
@@ -292,7 +307,8 @@ public abstract class Trace {
 
         @Override
         public String toString() {
-            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId() + "'}";
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId()
+                    + "', requestId='" + getRequestId().orElse(null) + "'}";
         }
     }
 }

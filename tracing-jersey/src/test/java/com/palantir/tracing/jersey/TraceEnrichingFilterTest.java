@@ -225,6 +225,7 @@ public final class TraceEnrichingFilterTest {
         verify(request).setProperty(TraceEnrichingFilter.TRACE_ID_PROPERTY_NAME, "traceId");
         // Note: this will be set to a random value; we want to check whether the value is being set
         verify(request).setProperty(eq(TraceEnrichingFilter.SAMPLED_PROPERTY_NAME), anyBoolean());
+        verify(request).setProperty(eq(TraceEnrichingFilter.REQUEST_ID_PROPERTY_NAME), anyString());
     }
 
     @Test
@@ -240,6 +241,7 @@ public final class TraceEnrichingFilterTest {
         TraceEnrichingFilter.INSTANCE.filter(request);
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).hasSize(16);
         verify(request).setProperty(eq(TraceEnrichingFilter.TRACE_ID_PROPERTY_NAME), anyString());
+        verify(request).setProperty(eq(TraceEnrichingFilter.REQUEST_ID_PROPERTY_NAME), anyString());
     }
 
     public static class TracingTestServer extends Application<Configuration> {

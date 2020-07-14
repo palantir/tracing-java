@@ -24,5 +24,8 @@ public final class TracingAttachments {
     /** Attachment to check whether the current request is being traced. */
     public static final AttachmentKey<Boolean> IS_SAMPLED = AttachmentKey.create(Boolean.class);
 
+    /** Attachment providing the request identifier. */
+    public static final AttachmentKey<String> REQUEST_ID = AttachmentKey.create(String.class);
+
     private TracingAttachments() {}
 }
