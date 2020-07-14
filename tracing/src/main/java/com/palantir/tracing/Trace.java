@@ -129,7 +129,13 @@ public abstract class Trace {
         return traceId;
     }
 
-    /** The request identifier of this trace. */
+    /**
+     * The request identifier of this trace.
+     *
+     * The request identifier is an implementation detail of this tracing library. A new identifier is generated
+     * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
+     * distinguish between requests with the same traceId.
+     */
     final Optional<String> getRequestId() {
         return requestId;
     }
