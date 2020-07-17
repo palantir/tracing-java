@@ -377,7 +377,7 @@ public final class Tracer {
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
      * If the return value is not used, prefer {@link Tracer#fastCompleteSpan(Map)}.
      *
-     * @deprecated Use {@link #completeSpan()}
+     * @deprecated Use {@link #fastCompleteSpan()}
      */
     @CheckReturnValue
     @Deprecated
