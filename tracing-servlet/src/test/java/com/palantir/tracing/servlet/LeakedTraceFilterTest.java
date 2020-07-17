@@ -23,7 +23,6 @@ import com.palantir.tracing.Tracer;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import java.io.IOException;
 import java.util.EnumSet;
 import javax.servlet.DispatcherType;
@@ -46,8 +45,10 @@ import org.junit.Test;
 
 public class LeakedTraceFilterTest {
     @ClassRule
-    public static final DropwizardAppRule<Configuration> APP =
-            new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
+    @SuppressWarnings("deprecation")
+    public static final io.dropwizard.testing.junit.DropwizardAppRule<Configuration> APP =
+            new io.dropwizard.testing.junit.DropwizardAppRule<>(
+                    TracingTestServer.class, "src/test/resources/test-server.yml");
 
     private WebTarget target;
 
@@ -94,63 +95,71 @@ public class LeakedTraceFilterTest {
     public static class TracingTestServer extends Application<Configuration> {
         @Override
         public final void run(Configuration _config, final Environment env) {
-            env.servlets().addFilter("previousRequestLeaked", new Filter() {
-                @Override
-                public void init(FilterConfig _value) { }
+            env.servlets()
+                    .addFilter("previousRequestLeaked", new Filter() {
+                        @Override
+                        public void init(FilterConfig _value) {}
 
-                @Override
-                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-                        throws IOException, ServletException {
-                    // Open a span to simulate a thread from another request
-                    // leaving bad data without the leaked trace filter applied.
-                    Tracer.fastStartSpan("previous request leaked");
-                    chain.doFilter(request, response);
-                }
+                        @Override
+                        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                                throws IOException, ServletException {
+                            // Open a span to simulate a thread from another request
+                            // leaving bad data without the leaked trace filter applied.
+                            Tracer.fastStartSpan("previous request leaked");
+                            chain.doFilter(request, response);
+                        }
 
-                @Override
-                public void destroy() { }
-            }).addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true,
-                    "/previous-request-leaked");
+                        @Override
+                        public void destroy() {}
+                    })
+                    .addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/previous-request-leaked");
 
             // Register a filter to help us orchestrate test cases
-            env.servlets().addFilter("testFilter", new Filter() {
-                @Override
-                public void init(FilterConfig _value) {}
+            env.servlets()
+                    .addFilter("testFilter", new Filter() {
+                        @Override
+                        public void init(FilterConfig _value) {}
 
-                @Override
-                public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-                        throws IOException, ServletException {
-                    HttpServletResponse httpResponse = (HttpServletResponse) response;
-                    httpResponse.addHeader("Pre-Leak", Boolean.toString(Tracer.hasTraceId()));
-                    try {
-                        chain.doFilter(request, response);
-                    } finally {
-                        httpResponse.addHeader("Post-Leak", Boolean.toString(Tracer.hasTraceId()));
-                    }
-                }
+                        @Override
+                        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
+                                throws IOException, ServletException {
+                            HttpServletResponse httpResponse = (HttpServletResponse) response;
+                            httpResponse.addHeader("Pre-Leak", Boolean.toString(Tracer.hasTraceId()));
+                            try {
+                                chain.doFilter(request, response);
+                            } finally {
+                                httpResponse.addHeader("Post-Leak", Boolean.toString(Tracer.hasTraceId()));
+                            }
+                        }
 
-                @Override
-                public void destroy() {}
-            }).addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-
-            // Register the filter we're testing
-            env.servlets().addFilter("leakedTraceFilter", new LeakedTraceFilter())
+                        @Override
+                        public void destroy() {}
+                    })
                     .addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
 
-            env.servlets().addServlet("alwaysLeaks", new HttpServlet() {
-                @Override
-                protected void service(HttpServletRequest _value, HttpServletResponse resp) {
-                    Tracer.fastStartSpan("leaky");
-                    resp.addHeader("Leaky-Invoked", "true");
-                }
-            }).addMapping("/leaky");
+            // Register the filter we're testing
+            env.servlets()
+                    .addFilter("leakedTraceFilter", new LeakedTraceFilter())
+                    .addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
 
-            env.servlets().addServlet("reportingServlet", new HttpServlet() {
-                @Override
-                protected void service(HttpServletRequest _value, HttpServletResponse resp) {
-                    resp.addHeader("Servlet-Has-Trace", Boolean.toString(Tracer.hasTraceId()));
-                }
-            }).addMapping("/standard", "/previous-request-leaked");
+            env.servlets()
+                    .addServlet("alwaysLeaks", new HttpServlet() {
+                        @Override
+                        protected void service(HttpServletRequest _value, HttpServletResponse resp) {
+                            Tracer.fastStartSpan("leaky");
+                            resp.addHeader("Leaky-Invoked", "true");
+                        }
+                    })
+                    .addMapping("/leaky");
+
+            env.servlets()
+                    .addServlet("reportingServlet", new HttpServlet() {
+                        @Override
+                        protected void service(HttpServletRequest _value, HttpServletResponse resp) {
+                            resp.addHeader("Servlet-Has-Trace", Boolean.toString(Tracer.hasTraceId()));
+                        }
+                    })
+                    .addMapping("/standard", "/previous-request-leaked");
         }
     }
 }

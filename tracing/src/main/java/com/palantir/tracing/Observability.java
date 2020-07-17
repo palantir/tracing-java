@@ -16,22 +16,14 @@
 
 package com.palantir.tracing;
 
-/**
- * Represents the desired observability of a new trace.
- */
+/** Represents the desired observability of a new trace. */
 public enum Observability {
-    /**
-     * Force the trace to be sampled.
-     */
+    /** Force the trace to be sampled. */
     SAMPLE,
 
-    /**
-     * Force the trace to not be sampled.
-     */
+    /** Force the trace to not be sampled. */
     DO_NOT_SAMPLE,
 
-    /**
-     * Do not force, and let the tracer decide the observability.
-     */
+    /** Do not force, and let the tracer decide the observability. */
     UNDECIDED
 }

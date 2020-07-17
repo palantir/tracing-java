@@ -1,0 +1,5 @@
+type: fix
+fix:
+  description: Replace Trace headers instead of appending them.
+  links:
+  - https://github.com/palantir/tracing-java/pull/350

@@ -47,10 +47,13 @@ public final class TracerTest {
 
     @Mock
     private SpanObserver observer1;
+
     @Mock
     private SpanObserver observer2;
+
     @Mock
     private TraceSampler sampler;
+
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
@@ -61,7 +64,7 @@ public final class TracerTest {
 
     @After
     public void after() {
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.unsubscribe("0");
         Tracer.unsubscribe("1");
@@ -72,11 +75,13 @@ public final class TracerTest {
     @Test
     @SuppressWarnings("ResultOfMethodCallIgnored") // testing that exceptions are thrown
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
-        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.UNDECIDED, null))
+        assertThatLoggableExceptionThrownBy(
+                        () -> Tracer.initTraceWithSpan(Observability.UNDECIDED, null, "op", SpanType.LOCAL))
                 .hasLogMessage("traceId must be non-empty")
                 .hasArgs();
 
-        assertThatLoggableExceptionThrownBy(() -> Tracer.initTrace(Observability.UNDECIDED, ""))
+        assertThatLoggableExceptionThrownBy(
+                        () -> Tracer.initTraceWithSpan(Observability.UNDECIDED, "", "op", SpanType.LOCAL))
                 .hasLogMessage("traceId must be non-empty")
                 .hasArgs();
 
@@ -139,14 +144,14 @@ public final class TracerTest {
     public void testObserversAreInvokedOnObservableTracesOnly() throws Exception {
         Tracer.subscribe("1", observer1);
 
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
+        Tracer.setTrace(Trace.of(true, Tracers.randomId(), Optional.empty()));
         Span span = startAndCompleteSpan();
         verify(observer1).consume(span);
         span = startAndCompleteSpan();
         verify(observer1).consume(span);
         verifyNoMoreInteractions(observer1);
 
-        Tracer.initTrace(Observability.DO_NOT_SAMPLE, Tracers.randomId());
+        Tracer.setTrace(Trace.of(false, Tracers.randomId(), Optional.empty()));
         startAndFastCompleteSpan(); // not sampled, see above
         verifyNoMoreInteractions(observer1);
     }
@@ -156,7 +161,7 @@ public final class TracerTest {
         String traceId = Tracers.randomId();
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
         assertThat(Tracer.hasTraceId()).isFalse();
-        Tracer.initTrace(Observability.DO_NOT_SAMPLE, traceId);
+        Tracer.setTrace(Trace.of(false, traceId, Optional.empty()));
         // Unsampled trace should still apply thread state
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
         assertThat(Tracer.hasTraceId()).isTrue();
@@ -208,7 +213,7 @@ public final class TracerTest {
     @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
         Tracer.fastStartSpan("operation");
-        Tracer.setTrace(Trace.of(true, "newTraceId"));
+        Tracer.setTrace(Trace.of(true, "newTraceId", Optional.empty()));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
         assertThat(Tracer.completeSpan()).isEmpty();
@@ -217,7 +222,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsMdcTraceSampledKeyWhenObserved() {
-        Tracer.setTrace(Trace.of(true, "observedTraceId"));
+        Tracer.setTrace(Trace.of(true, "observedTraceId", Optional.empty()));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isEqualTo("1");
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -225,7 +230,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceMissingMdcTraceSampledKeyWhenNotObserved() {
-        Tracer.setTrace(Trace.of(false, "notObservedTraceId"));
+        Tracer.setTrace(Trace.of(false, "notObservedTraceId", Optional.empty()));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -299,10 +304,9 @@ public final class TracerTest {
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
     }
 
-
     @Test
     public void testGetAndClearTraceIfPresent() {
-        Trace trace = Trace.of(true, "newTraceId");
+        Trace trace = Trace.of(true, "newTraceId", Optional.empty());
         Tracer.setTrace(trace);
 
         Optional<Trace> nonEmptyTrace = Tracer.getAndClearTraceIfPresent();
@@ -346,19 +350,19 @@ public final class TracerTest {
 
     @Test
     public void testHasTraceId() {
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.fastStartSpan("testSpan");
         try {
-            assertThat(Tracer.hasTraceId()).isEqualTo(true);
+            assertThat(Tracer.hasTraceId()).isTrue();
         } finally {
             Tracer.fastCompleteSpan();
         }
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
     public void testSimpleDetachedTrace() {
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.subscribe("1", observer1);
         String operation = "operation";
         DetachedSpan detached = DetachedSpan.start(operation);
@@ -376,7 +380,7 @@ public final class TracerTest {
 
     @Test
     public void testDetachedTraceAppliedToThreadState() {
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.subscribe("1", observer1);
         String operation1 = "operation";
         String operation2 = "attached";
@@ -385,6 +389,31 @@ public final class TracerTest {
             assertThat(Tracer.hasTraceId()).isFalse();
             try (CloseableSpan ignored = detached.childSpan(operation2)) {
                 assertThat(Tracer.hasTraceId()).isTrue();
+                assertThat(Tracer.maybeGetTraceMetadata().get().getRequestId()).isEmpty();
+            }
+            verify(observer1).consume(spanCaptor.capture());
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation2);
+            assertThat(Tracer.hasTraceId()).isFalse();
+        } finally {
+            detached.complete();
+        }
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.unsubscribe("1");
+    }
+
+    @Test
+    public void testDetachedTraceAppliedToThreadState_requestId() {
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.subscribe("1", observer1);
+        String operation1 = "operation";
+        String operation2 = "attached";
+        DetachedSpan detached = DetachedSpan.start(operation1, SpanType.SERVER_INCOMING);
+        String requestId = InternalTracers.getRequestId(detached).get();
+        try {
+            assertThat(Tracer.hasTraceId()).isFalse();
+            try (CloseableSpan ignored = detached.childSpan(operation2)) {
+                assertThat(Tracer.hasTraceId()).isTrue();
+                assertThat(Tracer.maybeGetTraceMetadata().get().getRequestId()).hasValue(requestId);
             }
             verify(observer1).consume(spanCaptor.capture());
             assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation2);
@@ -398,7 +427,7 @@ public final class TracerTest {
 
     @Test
     public void testDetachedTraceRestoresTrace() {
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         DetachedSpan detached = DetachedSpan.start("detached");
         Tracer.fastStartSpan("standard");
         String standardTraceId = Tracer.getTraceId();
@@ -412,7 +441,7 @@ public final class TracerTest {
                 .isEqualTo(standardTraceId);
         Tracer.fastCompleteSpan();
         detached.complete();
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
     }
 
     @Test
@@ -420,13 +449,13 @@ public final class TracerTest {
         Tracer.setSampler(sampler);
         Tracer.subscribe("1", observer1);
         when(sampler.sample()).thenReturn(true);
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         try (CloseableTracer outer = CloseableTracer.startSpan("root")) {
-            assertThat(Tracer.hasTraceId()).isEqualTo(true);
+            assertThat(Tracer.hasTraceId()).isTrue();
             DetachedSpan.start("detached").complete();
-            assertThat(Tracer.hasTraceId()).isEqualTo(true);
+            assertThat(Tracer.hasTraceId()).isTrue();
         }
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         verify(sampler).sample();
         verify(observer1, times(2)).consume(any(Span.class));
         verifyNoMoreInteractions(observer1, sampler);
@@ -438,7 +467,7 @@ public final class TracerTest {
         Tracer.setSampler(sampler);
         when(sampler.sample()).thenReturn(true);
         Tracer.subscribe("1", observer1);
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         // Standard span starts first, so the detached tracer should build from the current threads state.
         Tracer.fastStartSpan("standard");
         DetachedSpan detached = DetachedSpan.start("detached");
@@ -448,9 +477,9 @@ public final class TracerTest {
         }
         assertThat(Tracer.getTraceId()).isEqualTo(standardTraceId);
         Tracer.fastCompleteSpan();
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         detached.complete();
-        assertThat(Tracer.hasTraceId()).isEqualTo(false);
+        assertThat(Tracer.hasTraceId()).isFalse();
         verify(sampler, times(1)).sample();
         ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);
         verify(observer1, times(3)).consume(captor.capture());
@@ -465,6 +494,34 @@ public final class TracerTest {
         assertThat(detachedSpan.getOperation()).isEqualTo("detached");
         assertThat(detachedSpan.getParentSpanId()).hasValue(standardSpan.getSpanId());
         Tracer.unsubscribe("1");
+    }
+
+    @Test
+    public void testNewDetachedTrace() {
+        try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
+            String currentTraceId = Tracer.getTraceId();
+            DetachedSpan span =
+                    DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            try (CloseableSpan ignored2 = span.completeAndStartChild("foo")) {
+                assertThat(Tracer.getTraceId()).isEqualTo("12345");
+            }
+            assertThat(Tracer.getTraceId())
+                    .as("Current thread state should not be modified")
+                    .isEqualTo(currentTraceId);
+        }
+    }
+
+    @Test
+    public void testNewDetachedTrace_doesNotModifyCurrentState() {
+        try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
+            String currentTraceId = Tracer.getTraceId();
+            DetachedSpan span =
+                    DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            assertThat(Tracer.getTraceId())
+                    .as("Current thread state should not be modified")
+                    .isEqualTo(currentTraceId);
+            span.complete();
+        }
     }
 
     private static void startAndFastCompleteSpan() {

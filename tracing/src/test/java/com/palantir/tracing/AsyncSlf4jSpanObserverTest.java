@@ -68,6 +68,7 @@ public final class AsyncSlf4jSpanObserverTest {
 
     @Mock
     private Appender<ILoggingEvent> appender;
+
     @Captor
     private ArgumentCaptor<ILoggingEvent> event;
 
@@ -98,10 +99,10 @@ public final class AsyncSlf4jSpanObserverTest {
     @Test
     public void testJsonFormatToLog() throws Exception {
         DeterministicScheduler executor = new DeterministicScheduler();
-        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
-                "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
-        Tracer.fastStartSpan("operation");
+        Tracer.subscribe(
+                TEST_OBSERVER,
+                AsyncSlf4jSpanObserver.of("serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
+        Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "operation", SpanType.LOCAL);
         Span span = Tracer.completeSpan().get();
         verify(appender, never()).doAppend(any(ILoggingEvent.class)); // async logger only fires when executor runs
 
@@ -113,7 +114,8 @@ public final class AsyncSlf4jSpanObserverTest {
                 .ipv4("127.0.0.1")
                 .build();
         assertThat(event.getValue().getFormattedMessage())
-                .isEqualTo(AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, expectedEndpoint).toJson());
+                .isEqualTo(AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, expectedEndpoint)
+                        .toJson());
         verifyNoMoreInteractions(appender);
     }
 
@@ -121,14 +123,13 @@ public final class AsyncSlf4jSpanObserverTest {
     public void testDefaultConstructorDeterminesIpAddress() throws Exception {
         DeterministicScheduler executor = new DeterministicScheduler();
         Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of("serviceName", executor));
-        Tracer.initTrace(Observability.SAMPLE, Tracers.randomId());
-        Tracer.fastStartSpan("operation");
+        Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "operation", SpanType.LOCAL);
         Span span = Tracer.completeSpan().get();
 
         executor.runNextPendingCommand();
         verify(appender).doAppend(event.capture());
-        ImmutableZipkinCompatEndpoint.Builder expectedEndpoint = ImmutableZipkinCompatEndpoint.builder()
-                .serviceName("serviceName");
+        ImmutableZipkinCompatEndpoint.Builder expectedEndpoint =
+                ImmutableZipkinCompatEndpoint.builder().serviceName("serviceName");
         InetAddress address = InetAddressSupplier.INSTANCE.get();
         if (address instanceof Inet4Address) {
             expectedEndpoint.ipv4(address.getHostAddress());
@@ -139,7 +140,8 @@ public final class AsyncSlf4jSpanObserverTest {
         }
 
         assertThat(event.getValue().getFormattedMessage())
-                .isEqualTo(AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, expectedEndpoint.build()).toJson());
+                .isEqualTo(AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, expectedEndpoint.build())
+                        .toJson());
     }
 
     @Test
@@ -159,8 +161,8 @@ public final class AsyncSlf4jSpanObserverTest {
                 .parentId(123456789L)
                 .id(234567890L)
                 .name("op")
-                .timestamp(43L)  // micro-seconds
-                .duration(44L)  // micro-seconds, rounded up
+                .timestamp(43L) // micro-seconds
+                .duration(44L) // micro-seconds, rounded up
                 .addAnnotation(Annotation.create(43L, "cs", Endpoint.create("service", 2)))
                 .addAnnotation(Annotation.create(87L, "cr", Endpoint.create("service", 2)))
                 .addBinaryAnnotation(BinaryAnnotation.create("userId", "1", Endpoint.create("service", 2)))
@@ -170,27 +172,24 @@ public final class AsyncSlf4jSpanObserverTest {
                 .serviceName("service")
                 .ipv4("0.0.0.2")
                 .build();
-        String actualString = AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, actualEndpoint).toJson();
+        String actualString = AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, actualEndpoint)
+                .toJson();
         assertThat(actualString).isEqualTo(expectedString);
     }
 
     @Test
     public void testSpanTypesConvertToZipkinAnnotations() throws Exception {
-        assertThat(zipkinSpan(10, 1001, SpanType.CLIENT_OUTGOING).annotations()).containsExactly(
-                annotation("cs", 10),
-                annotation("cr", 12)); // 10 + roundup(1001/10) == 10+2
+        assertThat(zipkinSpan(10, 1001, SpanType.CLIENT_OUTGOING).annotations())
+                .containsExactly(annotation("cs", 10), annotation("cr", 12)); // 10 + roundup(1001/10) == 10+2
 
-        assertThat(zipkinSpan(10, 999, SpanType.CLIENT_OUTGOING).annotations()).containsExactly(
-                annotation("cs", 10),
-                annotation("cr", 11)); // 10 + roundup(999/10) == 10+1
+        assertThat(zipkinSpan(10, 999, SpanType.CLIENT_OUTGOING).annotations())
+                .containsExactly(annotation("cs", 10), annotation("cr", 11)); // 10 + roundup(999/10) == 10+1
 
-        assertThat(zipkinSpan(10, 1001, SpanType.SERVER_INCOMING).annotations()).containsExactly(
-                annotation("sr", 10),
-                annotation("ss", 12)); // 10 + roundup(1001/10) == 10+2
+        assertThat(zipkinSpan(10, 1001, SpanType.SERVER_INCOMING).annotations())
+                .containsExactly(annotation("sr", 10), annotation("ss", 12)); // 10 + roundup(1001/10) == 10+2
 
-        assertThat(zipkinSpan(10, 999, SpanType.SERVER_INCOMING).annotations()).containsExactly(
-                annotation("sr", 10),
-                annotation("ss", 11)); // 10 + roundup(999/10) == 10+1
+        assertThat(zipkinSpan(10, 999, SpanType.SERVER_INCOMING).annotations())
+                .containsExactly(annotation("sr", 10), annotation("ss", 11)); // 10 + roundup(999/10) == 10+1
     }
 
     @Test
@@ -219,27 +218,31 @@ public final class AsyncSlf4jSpanObserverTest {
                 .type(SpanType.SERVER_INCOMING)
                 .putAllMetadata(spanMetadata)
                 .build();
-        AsyncSlf4jSpanObserver.ZipkinCompatSpan zipkinCompatSpan = AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(
-                span, DUMMY_ENDPOINT);
-        Map<String, String> annotationMap = zipkinCompatSpan.binaryAnnotations().stream().collect(Collectors.toMap(
-                annotation -> annotation.key(),
-                annotation -> annotation.value()));
+        AsyncSlf4jSpanObserver.ZipkinCompatSpan zipkinCompatSpan =
+                AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, DUMMY_ENDPOINT);
+        Map<String, String> annotationMap = zipkinCompatSpan.binaryAnnotations().stream()
+                .collect(Collectors.toMap(annotation -> annotation.key(), annotation -> annotation.value()));
         assertThat(annotationMap).isEqualTo(spanMetadata);
     }
 
     @Test
     public void testCompleteSpanAfterExecutorShutdown() {
         ExecutorService executor = MoreExecutors.newDirectExecutorService();
-        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
-                "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
+        Tracer.subscribe(
+                TEST_OBSERVER,
+                AsyncSlf4jSpanObserver.of("serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
         OpenSpan span1 = Tracer.startSpan("operation");
-        assertThat(Tracer.completeSpan()).isPresent().get()
+        assertThat(Tracer.completeSpan())
+                .isPresent()
+                .get()
                 .extracting("spanId", "operation")
                 .contains(span1.getSpanId(), span1.getOperation());
 
         OpenSpan span2 = Tracer.startSpan("operation");
         executor.shutdown();
-        assertThat(Tracer.completeSpan()).isPresent().get()
+        assertThat(Tracer.completeSpan())
+                .isPresent()
+                .get()
                 .extracting("spanId", "operation")
                 .contains(span2.getSpanId(), span2.getOperation());
     }
@@ -247,10 +250,13 @@ public final class AsyncSlf4jSpanObserverTest {
     @Test
     public void testFastCompleteSpanAfterExecutorShutdown() {
         ExecutorService executor = MoreExecutors.newDirectExecutorService();
-        Tracer.subscribe(TEST_OBSERVER, AsyncSlf4jSpanObserver.of(
-                "serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
+        Tracer.subscribe(
+                TEST_OBSERVER,
+                AsyncSlf4jSpanObserver.of("serviceName", Inet4Address.getLoopbackAddress(), logger, executor));
         OpenSpan span1 = Tracer.startSpan("operation");
-        assertThat(Tracer.completeSpan()).isPresent().get()
+        assertThat(Tracer.completeSpan())
+                .isPresent()
+                .get()
                 .extracting("spanId", "operation")
                 .contains(span1.getSpanId(), span1.getOperation());
 
@@ -274,5 +280,4 @@ public final class AsyncSlf4jSpanObserverTest {
     private static AsyncSlf4jSpanObserver.ZipkinCompatAnnotation annotation(String value, long timestamp) {
         return AsyncSlf4jSpanObserver.ZipkinCompatAnnotation.of(timestamp, value, DUMMY_ENDPOINT);
     }
-
 }

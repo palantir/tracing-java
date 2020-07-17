@@ -35,7 +35,6 @@ import com.palantir.tracing.api.TraceHttpHeaders;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
-import io.dropwizard.testing.junit.DropwizardAppRule;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -63,18 +62,23 @@ import org.slf4j.MDC;
 public final class TraceEnrichingFilterTest {
 
     @ClassRule
-    public static final DropwizardAppRule<Configuration> APP =
-            new DropwizardAppRule<>(TracingTestServer.class, "src/test/resources/test-server.yml");
+    @SuppressWarnings("deprecation")
+    public static final io.dropwizard.testing.junit.DropwizardAppRule<Configuration> APP =
+            new io.dropwizard.testing.junit.DropwizardAppRule<>(
+                    TracingTestServer.class, "src/test/resources/test-server.yml");
 
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
     @Mock
     private SpanObserver observer;
+
     @Mock
     private ContainerRequestContext request;
+
     @Mock
     private UriInfo uriInfo;
+
     @Mock
     private TraceSampler traceSampler;
 
@@ -105,7 +109,8 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withHeaderUsesTraceId() {
-        Response response = target.path("/trace").request()
+        Response response = target.path("/trace")
+                .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
                 .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
@@ -119,7 +124,8 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_respectsMethod() {
-        Response response = target.path("/trace").request()
+        Response response = target.path("/trace")
+                .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
                 .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
@@ -133,7 +139,8 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_doesNotIncludePathParams() {
-        Response response = target.path("/trace/no").request()
+        Response response = target.path("/trace/no")
+                .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
                 .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
@@ -187,24 +194,22 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withSamplingHeaderWithoutTraceIdDoesNotUseTraceSampler() {
-        target.path("/trace").request()
-                .header(TraceHttpHeaders.IS_SAMPLED, "0")
-                .get();
+        target.path("/trace").request().header(TraceHttpHeaders.IS_SAMPLED, "0").get();
         verify(traceSampler, never()).sample();
 
-        target.path("/trace").request()
-                .header(TraceHttpHeaders.IS_SAMPLED, "1")
-                .get();
+        target.path("/trace").request().header(TraceHttpHeaders.IS_SAMPLED, "1").get();
         verify(traceSampler, never()).sample();
 
-        target.path("/trace").request()
-                .get();
+        target.path("/trace").request().get();
         verify(traceSampler, times(1)).sample();
     }
 
     @Test
     public void testTraceState_withEmptyTraceIdGeneratesValidTraceResponseHeaders() {
-        Response response = target.path("/trace").request().header(TraceHttpHeaders.TRACE_ID, "").get();
+        Response response = target.path("/trace")
+                .request()
+                .header(TraceHttpHeaders.TRACE_ID, "")
+                .get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
@@ -220,6 +225,7 @@ public final class TraceEnrichingFilterTest {
         verify(request).setProperty(TraceEnrichingFilter.TRACE_ID_PROPERTY_NAME, "traceId");
         // Note: this will be set to a random value; we want to check whether the value is being set
         verify(request).setProperty(eq(TraceEnrichingFilter.SAMPLED_PROPERTY_NAME), anyBoolean());
+        verify(request).setProperty(eq(TraceEnrichingFilter.REQUEST_ID_PROPERTY_NAME), anyString());
     }
 
     @Test
@@ -233,8 +239,9 @@ public final class TraceEnrichingFilterTest {
     @Test
     public void testFilter_setsMdcIfTraceIdHeaderIsNotePresent() throws Exception {
         TraceEnrichingFilter.INSTANCE.filter(request);
-        assertThat(MDC.get(Tracers.TRACE_ID_KEY).length()).isEqualTo(16);
+        assertThat(MDC.get(Tracers.TRACE_ID_KEY)).hasSize(16);
         verify(request).setProperty(eq(TraceEnrichingFilter.TRACE_ID_PROPERTY_NAME), anyString());
+        verify(request).setProperty(eq(TraceEnrichingFilter.REQUEST_ID_PROPERTY_NAME), anyString());
     }
 
     public static class TracingTestServer extends Application<Configuration> {
@@ -271,8 +278,7 @@ public final class TraceEnrichingFilterTest {
 
         @Override
         public StreamingOutput getStreamingTraceOperation() {
-            return os -> {
-            };
+            return os -> {};
         }
     }
 

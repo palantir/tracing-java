@@ -21,6 +21,7 @@ import java.util.Optional;
 /**
  * Utility for tracking an operation that will be run asynchronously. It tracks the time it spent before
  * {@link #withTrace} is called.
+ *
  * <pre>
  * <code>
  * AsyncTracer asyncTracer = new AsyncTracer();
@@ -56,8 +57,8 @@ public final class AsyncTracer {
     }
 
     /**
-     * Create a new deferred tracer, optionally specifying an operation.
-     * If no operation is specified, will attempt to use the parent span's operation name.
+     * Create a new deferred tracer, optionally specifying an operation. If no operation is specified, will attempt to
+     * use the parent span's operation name.
      */
     public AsyncTracer(Optional<String> operation) {
         this.operation = operation.orElse(DEFAULT_OPERATION);
@@ -66,10 +67,7 @@ public final class AsyncTracer {
         Tracer.fastDiscardSpan(); // span will completed in the deferred execution
     }
 
-    /**
-     * Runs the given callable with the current trace at
-     * the time of construction of this {@link AsyncTracer}.
-     */
+    /** Runs the given callable with the current trace at the time of construction of this {@link AsyncTracer}. */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
         Trace originalTrace = Tracer.getAndClearTrace();
         Tracer.setTrace(deferredTrace);

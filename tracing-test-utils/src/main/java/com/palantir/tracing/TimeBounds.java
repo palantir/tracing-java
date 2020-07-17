@@ -23,28 +23,32 @@ import java.util.concurrent.TimeUnit;
 
 interface TimeBounds extends Comparable<TimeBounds> {
 
-    Comparator<TimeBounds> COMPARATOR = Comparator
-            .comparingLong(TimeBounds::startMicros)
-            .thenComparing(TimeBounds::endNanos);
+    Comparator<TimeBounds> COMPARATOR =
+            Comparator.comparingLong(TimeBounds::startMicros).thenComparing(TimeBounds::endNanos);
 
     long startMicros();
+
     long endNanos();
+
     default long startNanos() {
         return TimeUnit.NANOSECONDS.convert(startMicros(), TimeUnit.MICROSECONDS);
     }
+
     default long durationNanos() {
         return endNanos() - startNanos();
     }
+
     default long durationMicros() {
         return TimeUnit.MICROSECONDS.convert(durationNanos(), TimeUnit.NANOSECONDS);
     }
 
     static TimeBounds fromSpans(Collection<Span> spans) {
-        long earliestStartMicros = spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
+        long earliestStartMicros =
+                spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
         long latestEndNanos = spans.stream()
                 .mapToLong(span -> {
-                    long startTimeNanos = TimeUnit.NANOSECONDS.convert(
-                            span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
+                    long startTimeNanos =
+                            TimeUnit.NANOSECONDS.convert(span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
                     return startTimeNanos + span.getDurationNanoSeconds();
                 })
                 .max()

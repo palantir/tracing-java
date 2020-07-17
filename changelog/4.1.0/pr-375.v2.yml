@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description:
+    Add a new endpoint to support wrapping Callables with alternative trace ID.
+  links:
+  - https://github.com/palantir/tracing-java/pull/375

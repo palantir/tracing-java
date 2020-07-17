@@ -18,8 +18,10 @@ package com.palantir.tracing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.palantir.tracing.api.SpanType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,29 +35,25 @@ public class AsyncTracerTest {
 
     @Test
     public void doesNotLeakEnqueueSpan() {
-        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
+        Tracer.setTrace(Trace.of(true, "defaultTraceId", Optional.empty()));
         Trace originalTrace = getTrace();
         AsyncTracer deferredTracer = new AsyncTracer();
         assertThat(originalTrace.top()).isEmpty();
 
         deferredTracer.withTrace(() -> {
             Trace traceCopy = Tracer.copyTrace().get();
-            assertThat(traceCopy.pop())
-                    .isPresent()
-                    .hasValueSatisfying(span -> span.getSpanId().equals("async-run"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("async-run"));
             return null;
         });
     }
 
     @Test
     public void completesBothDeferredSpans() {
-        Tracer.initTrace(Observability.SAMPLE, "defaultTraceId");
-        Tracer.fastStartSpan("defaultSpan");
+        Tracer.initTraceWithSpan(Observability.SAMPLE, "defaultTraceId", "defaultSpan", SpanType.LOCAL);
         AsyncTracer asyncTracer = new AsyncTracer();
         List<String> observedSpans = new ArrayList<>();
-        Tracer.subscribe(
-                AsyncTracerTest.class.getName(),
-                span -> observedSpans.add(span.getOperation()));
+        Tracer.subscribe(AsyncTracerTest.class.getName(), span -> observedSpans.add(span.getOperation()));
 
         asyncTracer.withTrace(() -> null);
         Tracer.unsubscribe(AsyncTracerTest.class.getName());
@@ -64,8 +62,7 @@ public class AsyncTracerTest {
 
     @Test
     public void preservesState() {
-        Tracer.initTrace(Observability.UNDECIDED, "defaultTraceId");
-        Tracer.fastStartSpan("foo");
+        Tracer.initTraceWithSpan(Observability.UNDECIDED, "defaultTraceId", "foo", SpanType.LOCAL);
         Tracer.fastStartSpan("bar");
         Tracer.fastStartSpan("baz");
         Trace originalTrace = getTrace();
@@ -73,35 +70,26 @@ public class AsyncTracerTest {
 
         asyncTracer.withTrace(() -> {
             Trace traceCopy = Tracer.copyTrace().get();
-            assertThat(traceCopy.pop())
-                    .isPresent()
-                    .hasValueSatisfying(span -> span.getSpanId().equals("async-run"));
-            assertThat(traceCopy.pop())
-                    .isPresent()
-                    .hasValueSatisfying(span -> span.getSpanId().equals("baz"));
-            assertThat(traceCopy.pop())
-                    .isPresent()
-                    .hasValueSatisfying(span -> span.getSpanId().equals("bar"));
-            assertThat(traceCopy.pop())
-                    .isPresent()
-                    .hasValueSatisfying(span -> span.getSpanId().equals("foo"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("async-run"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("baz"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("bar"));
+            assertThat(traceCopy.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                    .equals("foo"));
             return null;
         });
 
-        assertThat(originalTrace.pop())
-                .isPresent()
-                .hasValueSatisfying(span -> span.getSpanId().equals("baz"));
-        assertThat(originalTrace.pop())
-                .isPresent()
-                .hasValueSatisfying(span -> span.getSpanId().equals("bar"));
-        assertThat(originalTrace.pop())
-                .isPresent()
-                .hasValueSatisfying(span -> span.getSpanId().equals("foo"));
+        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                .equals("baz"));
+        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                .equals("bar"));
+        assertThat(originalTrace.pop()).isPresent().hasValueSatisfying(span -> span.getSpanId()
+                .equals("foo"));
     }
 
-    /**
-     * Get reference to the current trace.
-     */
+    /** Get reference to the current trace. */
     private Trace getTrace() {
         Trace originalTrace = Tracer.getAndClearTrace();
         Tracer.setTrace(originalTrace);

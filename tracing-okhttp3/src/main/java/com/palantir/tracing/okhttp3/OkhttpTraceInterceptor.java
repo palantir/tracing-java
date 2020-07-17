@@ -27,6 +27,7 @@ import okhttp3.Response;
 
 /**
  * An OkHttp interceptor that adds Zipkin-style trace/span/parent-span headers to the HTTP request.
+ *
  * @deprecated prefer {@link com.palantir.tracing.OkhttpTraceInterceptor2}
  */
 @Deprecated
@@ -49,14 +50,17 @@ public enum OkhttpTraceInterceptor implements Interceptor {
 
         OpenSpan span = Tracer.startSpan(spanName, SpanType.CLIENT_OUTGOING);
         Request.Builder tracedRequest = request.newBuilder()
-                .addHeader(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                .addHeader(TraceHttpHeaders.SPAN_ID, span.getSpanId())
-                .addHeader(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
+                .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
+                .header(TraceHttpHeaders.SPAN_ID, span.getSpanId())
+                .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
         if (span.getParentSpanId().isPresent()) {
-            tracedRequest.header(TraceHttpHeaders.PARENT_SPAN_ID, span.getParentSpanId().get());
+            tracedRequest.header(
+                    TraceHttpHeaders.PARENT_SPAN_ID, span.getParentSpanId().get());
         }
         if (span.getOriginatingSpanId().isPresent()) {
-            tracedRequest.header(TraceHttpHeaders.ORIGINATING_SPAN_ID, span.getOriginatingSpanId().get());
+            tracedRequest.header(
+                    TraceHttpHeaders.ORIGINATING_SPAN_ID,
+                    span.getOriginatingSpanId().get());
         }
 
         Response response;
@@ -68,5 +72,4 @@ public enum OkhttpTraceInterceptor implements Interceptor {
 
         return response;
     }
-
 }

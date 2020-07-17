@@ -26,8 +26,9 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
- * Utility class for capturing the current trace at time of construction, and then
- * running callables at some later time with that captured trace.
+ * Utility class for capturing the current trace at time of construction, and then running callables at some later time
+ * with that captured trace.
+ *
  * <pre>
  * <code>
  * DeferredTracer deferredTracer = new DeferredTracer();
@@ -55,11 +56,17 @@ public final class DeferredTracer implements Serializable {
 
     @Nullable
     private final String traceId;
+
     private final boolean isObservable;
+
     @Nullable
     private final String operation;
+
     @Nullable
     private final String parentSpanId;
+
+    @Nullable
+    private final transient String requestId;
 
     /**
      * Deprecated.
@@ -86,21 +93,20 @@ public final class DeferredTracer implements Serializable {
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
             this.traceId = trace.getTraceId();
+            this.requestId = trace.getRequestId().orElse(null);
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
         } else {
             this.traceId = null;
+            this.requestId = null;
             this.isObservable = false;
             this.parentSpanId = null;
             this.operation = null;
         }
     }
 
-    /**
-     * Runs the given callable with the current trace at
-     * the time of construction of this {@link DeferredTracer}.
-     */
+    /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
         try (CloseableTrace ignored = withTrace()) {
             return inner.call();
@@ -116,15 +122,14 @@ public final class DeferredTracer implements Serializable {
 
         Optional<Trace> originalTrace = Tracer.copyTrace();
 
-        Tracer.setTrace(Trace.of(isObservable, traceId));
+        Tracer.setTrace(Trace.of(isObservable, traceId, Optional.ofNullable(requestId)));
         if (parentSpanId != null) {
             Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {
             Tracer.fastStartSpan(operation);
         }
 
-        return originalTrace.map(CLOSEABLE_TRACE_FUNCTION)
-                .orElse(DefaultCloseableTrace.INSTANCE);
+        return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
     }
 
     private enum NopCloseableTrace implements CloseableTrace {
@@ -146,6 +151,7 @@ public final class DeferredTracer implements Serializable {
         }
     }
 
+    @SuppressWarnings("UnnecessaryLambda") // this library is allocation sensitive
     private static final Function<Trace, CloseableTrace> CLOSEABLE_TRACE_FUNCTION = originalTrace -> () -> {
         DefaultCloseableTrace.INSTANCE.close();
         Tracer.setTrace(originalTrace);

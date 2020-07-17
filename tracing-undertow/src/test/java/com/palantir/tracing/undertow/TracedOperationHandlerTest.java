@@ -18,11 +18,14 @@ package com.palantir.tracing.undertow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -33,6 +36,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
@@ -42,6 +46,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 import org.slf4j.MDC;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -52,10 +57,13 @@ public class TracedOperationHandlerTest {
 
     @Mock
     private SpanObserver observer;
+
     @Mock
     private TraceSampler traceSampler;
+
     @Mock
     private HttpHandler delegate;
+
     private HttpServerExchange exchange = HttpServerExchanges.createStub();
     private String traceId;
 
@@ -99,7 +107,8 @@ public class TracedOperationHandlerTest {
     public void whenTraceIsInHeader_usesGivenTraceId() throws Exception {
         setRequestTraceId(traceId);
         handler.handleRequest(exchange);
-        assertThat(exchange.getResponseHeaders().getFirst(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
+        assertThat(exchange.getResponseHeaders().getFirst(TraceHttpHeaders.TRACE_ID))
+                .isEqualTo(traceId);
     }
 
     @Test
@@ -109,10 +118,37 @@ public class TracedOperationHandlerTest {
         setRequestSpanId(parentSpanId);
 
         handler.handleRequest(exchange);
-        verify(observer).consume(spanCaptor.capture());
-        Span span = spanCaptor.getValue();
-        assertThat(span.getParentSpanId()).contains(parentSpanId);
+        // Since we're not running a full request, the completion handler cannot execute normally.
+        exchange.getAttachment(UndertowTracing.REQUEST_SPAN).complete();
+        verify(observer, times(2)).consume(spanCaptor.capture());
+        List<Span> spans = spanCaptor.getAllValues();
+        assertThat(spans).hasSize(2);
+        Span span = spans.get(1);
+        assertThat(spans.get(0).getParentSpanId()).hasValue(span.getSpanId());
+        assertThat(span.getParentSpanId()).hasValue(parentSpanId);
         assertThat(span.getSpanId()).isNotEqualTo(parentSpanId);
+    }
+
+    @Test
+    public void whenParentSpanIsGiven_usesParentSpan_unsampled() throws Exception {
+        when(traceSampler.sample()).thenReturn(false);
+        setRequestTraceId(traceId);
+        String parentSpanId = Tracers.randomId();
+        setRequestSpanId(parentSpanId);
+
+        AtomicReference<String> capturedParentSpanId = new AtomicReference<>();
+        doAnswer((Answer<Void>) invocation -> {
+                    Tracer.maybeGetTraceMetadata()
+                            .flatMap(TraceMetadata::getOriginatingSpanId)
+                            .ifPresent(capturedParentSpanId::set);
+                    return null;
+                })
+                .when(delegate)
+                .handleRequest(any());
+
+        handler.handleRequest(exchange);
+
+        assertThat(capturedParentSpanId).hasValue(parentSpanId);
     }
 
     @Test
@@ -134,7 +170,7 @@ public class TracedOperationHandlerTest {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
         handler.handleRequest(exchange);
 
-        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT)).isEqualTo(true);
+        assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED)).isTrue();
     }
 
     @Test
@@ -142,7 +178,7 @@ public class TracedOperationHandlerTest {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "0");
         handler.handleRequest(exchange);
 
-        assertThat(exchange.getAttachment(TracedOperationHandler.IS_SAMPLED_ATTACHMENT)).isEqualTo(false);
+        assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED)).isFalse();
     }
 
     @Test

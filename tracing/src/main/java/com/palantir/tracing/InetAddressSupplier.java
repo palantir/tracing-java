@@ -19,14 +19,17 @@ package com.palantir.tracing;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Enumeration;
 import java.util.function.Supplier;
 
 // Taken from http://stackoverflow.com/questions/9481865/getting-the-ip-address-of-the-current-machine-using-java
-enum InetAddressSupplier implements Supplier<InetAddress>,
-        // Guava supplier for compatibility
-        com.google.common.base.Supplier<InetAddress> {
+enum InetAddressSupplier
+        implements
+                Supplier<InetAddress>,
+                // Guava supplier for compatibility
+                com.google.common.base.Supplier<InetAddress> {
     INSTANCE;
 
     @Override
@@ -34,11 +37,12 @@ enum InetAddressSupplier implements Supplier<InetAddress>,
         try {
             InetAddress candidateAddress = null;
             // Iterate all NICs (network interface cards)...
-            for (Enumeration ifaces = NetworkInterface.getNetworkInterfaces(); ifaces.hasMoreElements(); ) {
-                NetworkInterface iface = (NetworkInterface) ifaces.nextElement();
+            for (Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+                    ifaces.hasMoreElements(); ) {
+                NetworkInterface iface = ifaces.nextElement();
                 // Iterate all IP addresses assigned to each card...
-                for (Enumeration inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements(); ) {
-                    InetAddress inetAddr = (InetAddress) inetAddrs.nextElement();
+                for (Enumeration<InetAddress> inetAddrs = iface.getInetAddresses(); inetAddrs.hasMoreElements(); ) {
+                    InetAddress inetAddr = inetAddrs.nextElement();
                     if (!inetAddr.isLoopbackAddress()) {
                         if (inetAddr.isSiteLocalAddress()) {
                             // Found non-loopback site-local address. Return it immediately...
@@ -67,7 +71,7 @@ enum InetAddressSupplier implements Supplier<InetAddress>,
                 return Inet4Address.getByAddress(new byte[] {0, 0, 0, 0});
             }
             return jdkSuppliedAddress;
-        } catch (Exception e) {
+        } catch (RuntimeException | UnknownHostException | SocketException e) {
             try {
                 return Inet4Address.getByAddress(new byte[] {0, 0, 0, 0});
             } catch (UnknownHostException e1) {

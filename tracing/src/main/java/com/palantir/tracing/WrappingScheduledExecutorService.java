@@ -21,15 +21,16 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * An abstract {@code ScheduledExecutorService} that allows subclasses to
- * {@linkplain #wrapTask(Callable) wrap} tasks before they are submitted to the underlying executor.
+ * An abstract {@code ScheduledExecutorService} that allows subclasses to {@linkplain #wrapTask(Callable) wrap} tasks
+ * before they are submitted to the underlying executor.
+ *
  * <p>
+ *
  * <p>Note that task wrapping may occur even if the task is never executed.
  *
  * @author Luke Sandberg
  */
-abstract class WrappingScheduledExecutorService extends WrappingExecutorService
-        implements ScheduledExecutorService {
+abstract class WrappingScheduledExecutorService extends WrappingExecutorService implements ScheduledExecutorService {
     private final ScheduledExecutorService delegate;
 
     protected WrappingScheduledExecutorService(ScheduledExecutorService delegate) {
@@ -50,12 +51,18 @@ abstract class WrappingScheduledExecutorService extends WrappingExecutorService
     @Override
     public final ScheduledFuture<?> scheduleAtFixedRate(
             Runnable command, long initialDelay, long period, TimeUnit unit) {
-        return delegate.scheduleAtFixedRate(wrapTask(command), initialDelay, period, unit);
+        return delegate.scheduleAtFixedRate(wrapRecurring(command), initialDelay, period, unit);
     }
 
     @Override
     public final ScheduledFuture<?> scheduleWithFixedDelay(
             Runnable command, long initialDelay, long delay, TimeUnit unit) {
-        return delegate.scheduleWithFixedDelay(wrapTask(command), initialDelay, delay, unit);
+        return delegate.scheduleWithFixedDelay(wrapRecurring(command), initialDelay, delay, unit);
     }
+
+    /**
+     * Wraps a task that may be executed multiple times, perhaps using {@link #scheduleAtFixedRate(Runnable, long, long,
+     * TimeUnit)} or {@link #scheduleWithFixedDelay(Runnable, long, long, TimeUnit)}.
+     */
+    protected abstract Runnable wrapRecurring(Runnable runnable);
 }

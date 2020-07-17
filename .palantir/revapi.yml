@@ -1,0 +1,6 @@
+acceptedBreaks:
+  "4.5.2":
+    com.palantir.tracing:tracing:
+    - code: "java.method.addedToInterface"
+      new: "method java.util.Optional<java.lang.String> com.palantir.tracing.TraceMetadata::getRequestId()"
+      justification: "immutables are not for extension"

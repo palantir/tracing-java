@@ -18,19 +18,20 @@ buildscript {
     repositories {
         jcenter()
         maven { url "https://plugins.gradle.org/m2/" }
-        maven { url "http://palantir.bintray.com/releases" }
+        maven { url 'https://palantir.bintray.com/releases'}
     }
 
     dependencies {
-        classpath 'com.palantir.gradle.revapi:gradle-revapi:1.0.8'
-        classpath 'com.netflix.nebula:gradle-info-plugin:5.2.0'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:5.1.0'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4'
-        classpath 'com.netflix.nebula:nebula-publishing-plugin:14.1.1'
-        classpath 'com.palantir.baseline:gradle-baseline-java:2.29.0'
-        classpath 'com.palantir.gradle.gitversion:gradle-git-version:0.12.2'
-        classpath 'gradle.plugin.org.inferred:gradle-processors:3.1.0'
-        classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:1.12.4'
+        classpath 'com.palantir.javaformat:gradle-palantir-java-format:1.0.1'
+        classpath 'com.palantir.gradle.revapi:gradle-revapi:1.4.3'
+        classpath 'com.netflix.nebula:gradle-info-plugin:8.3.2'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:6.0.0'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.5'
+        classpath 'com.netflix.nebula:nebula-publishing-plugin:17.3.0'
+        classpath 'com.palantir.baseline:gradle-baseline-java:3.10.0'
+        classpath 'com.palantir.gradle.gitversion:gradle-git-version:0.12.3'
+        classpath 'gradle.plugin.org.inferred:gradle-processors:3.3.0'
+        classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:1.24.0'
         classpath "me.champeau.gradle:jmh-gradle-plugin:0.4.7"
     }
 }
@@ -41,10 +42,11 @@ apply plugin: 'com.palantir.consistent-versions'
 
 repositories {
     jcenter()
-    maven { url  "http://palantir.bintray.com/releases" }
+    maven { url  'https://palantir.bintray.com/releases'}
 }
 
 allprojects {
+    apply plugin: 'com.palantir.java-format'
     version System.env.CIRCLE_TAG ?: gitVersion()
     group 'com.palantir.tracing'
 }
@@ -55,7 +57,7 @@ subprojects {
 
     repositories {
         jcenter()
-        maven { url "http://palantir.bintray.com/releases" }
+        maven { url 'https://palantir.bintray.com/releases'}
     }
 
     sourceCompatibility = 1.8

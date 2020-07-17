@@ -46,8 +46,8 @@ final class SpanAnalyzer {
     private SpanAnalyzer() {}
 
     private static Stream<Span> depthFirstTraversalOrderedByStartTime(ImmutableGraph<Span> graph, Span parentSpan) {
-        Stream<Span> children = children(graph, parentSpan)
-                .flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
+        Stream<Span> children =
+                children(graph, parentSpan).flatMap(child -> depthFirstTraversalOrderedByStartTime(graph, child));
 
         return Stream.concat(Stream.of(parentSpan), children);
     }
@@ -110,17 +110,12 @@ final class SpanAnalyzer {
     }
 
     public static Map<String, Result> analyzeByTraceId(Collection<Span> spans) {
-        Map<String, List<Span>> spansByTraceId = spans.stream()
-                .collect(Collectors.groupingBy(Span::getTraceId));
+        Map<String, List<Span>> spansByTraceId = spans.stream().collect(Collectors.groupingBy(Span::getTraceId));
 
         return Maps.transformValues(spansByTraceId, SpanAnalyzer::analyze);
     }
 
-    static Stream<ComparisonFailure> compareSpansRecursively(
-            Result expected,
-            Result actual,
-            Span ex,
-            Span ac) {
+    static Stream<ComparisonFailure> compareSpansRecursively(Result expected, Result actual, Span ex, Span ac) {
         if (!ex.getOperation().equals(ac.getOperation())) {
             return Stream.of(ComparisonFailure.unequalOperation(ex, ac));
         }
@@ -144,34 +139,30 @@ final class SpanAnalyzer {
         if (!actualContainsOverlappingSpans) {
             return IntStream.range(0, sortedActualChildren.size())
                     .mapToObj(i -> compareSpansRecursively(
-                            expected,
-                            actual,
-                            sortedExpectedChildren.get(i),
-                            sortedActualChildren.get(i)))
+                            expected, actual, sortedExpectedChildren.get(i), sortedActualChildren.get(i)))
                     .flatMap(Function.identity());
         }
 
         if (!compatibleOverlappingSpans(expected, actual, sortedExpectedChildren, sortedActualChildren)) {
-            return Stream.of(ComparisonFailure.unequalChildren(
-                    ex, ac, sortedExpectedChildren, sortedActualChildren));
+            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
         }
         return Stream.empty();
     }
 
     /**
-     * When async spans are involved, there can be many overlapping children with the same operation name.
-     * We exhaustively check each possible pair, and require that each span in the 'expected' list lines up with
-     * something and each span in the 'actual' list also lines up with something.
+     * When async spans are involved, there can be many overlapping children with the same operation name. We
+     * exhaustively check each possible pair, and require that each span in the 'expected' list lines up with something
+     * and each span in the 'actual' list also lines up with something.
      *
-     * It's OK for some spans to be compatible with more than one span (as subtrees could be identical).
+     * <p>It's OK for some spans to be compatible with more than one span (as subtrees could be identical).
      */
-    private static boolean compatibleOverlappingSpans(
-            Result expected, Result actual, List<Span> ex, List<Span> ac) {
+    private static boolean compatibleOverlappingSpans(Result expected, Result actual, List<Span> ex, List<Span> ac) {
         boolean[][] compatibility = new boolean[ex.size()][ac.size()];
 
         for (int exIndex = 0; exIndex < ex.size(); exIndex++) {
             for (int acIndex = 0; acIndex < ac.size(); acIndex++) {
-                long numFailures = compareSpansRecursively(expected, actual, ex.get(exIndex), ac.get(acIndex)).count();
+                long numFailures = compareSpansRecursively(expected, actual, ex.get(exIndex), ac.get(acIndex))
+                        .count();
                 compatibility[exIndex][acIndex] = numFailures == 0;
             }
         }
@@ -226,15 +217,16 @@ final class SpanAnalyzer {
     @Value.Immutable
     interface Result {
         ImmutableGraph<Span> graph();
+
         Span root();
+
         Set<Span> collisions();
 
         TimeBounds bounds();
 
         @Value.Lazy
         default ImmutableList<Span> orderedSpans() {
-            return depthFirstTraversalOrderedByStartTime(graph(), root())
-                    .collect(ImmutableList.toImmutableList());
+            return depthFirstTraversalOrderedByStartTime(graph(), root()).collect(ImmutableList.toImmutableList());
         }
     }
 

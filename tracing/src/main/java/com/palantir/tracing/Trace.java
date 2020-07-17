@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkArgument;
+import static com.palantir.logsafe.Preconditions.checkNotNull;
 import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.base.Strings;
@@ -34,26 +35,29 @@ import java.util.Optional;
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
  * not thread-safe and is intended to be used in a thread-local context.
  *
- * There are two implementations of {@link Trace}: {@link Sampled} and {@link Unsampled}.
- * A {@link Sampled sampled trace} records each span in order to record tracing data, however in most scenarios
- * most traces will be {@link Unsampled}, which avoids creation of span objects, random span ID generation,
- * clock reads, etc. Instead, the {@link Unsampled unsampled} implementation tracks the number of 'active' spans
- * on the current thread so it can provide correct {@link Trace#isEmpty()} values allowing the {@link Tracer}
- * utility to reset thread state after the emulated root span has been completed.
+ * <p>There are two implementations of {@link Trace}: {@link Sampled} and {@link Unsampled}. A {@link Sampled sampled
+ * trace} records each span in order to record tracing data, however in most scenarios most traces will be
+ * {@link Unsampled}, which avoids creation of span objects, random span ID generation, clock reads, etc. Instead, the
+ * {@link Unsampled unsampled} implementation tracks the number of 'active' spans on the current thread so it can
+ * provide correct {@link Trace#isEmpty()} values allowing the {@link Tracer} utility to reset thread state after the
+ * emulated root span has been completed.
  */
 public abstract class Trace {
 
     private final String traceId;
 
-    private Trace(String traceId) {
+    private final Optional<String> requestId;
+
+    private Trace(String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
+        this.requestId = checkNotNull(requestId, "requestId");
     }
 
     /**
      * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
-     * when the current trace is empty.
-     * If the return value is not used, prefer {@link #fastStartSpan(String, String, SpanType)}}.
+     * when the current trace is empty. If the return value is not used, prefer {@link #fastStartSpan(String, String,
+     * SpanType)}}.
      */
     @CheckReturnValue
     final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
@@ -70,8 +74,8 @@ public abstract class Trace {
     }
 
     /**
-     * Opens a new span for this thread's call trace, labeled with the provided operation.
-     * If the return value is not used, prefer {@link #fastStartSpan(String, SpanType)}}.
+     * Opens a new span for this thread's call trace, labeled with the provided operation. If the return value is not
+     * used, prefer {@link #fastStartSpan(String, SpanType)}}.
      */
     @CheckReturnValue
     final OpenSpan startSpan(String operation, SpanType type) {
@@ -86,12 +90,7 @@ public abstract class Trace {
                     Optional.of(prevState.get().getSpanId()),
                     orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()));
         } else {
-            span = OpenSpan.of(
-                    operation,
-                    Tracers.randomId(),
-                    type,
-                    Optional.empty(),
-                    getOriginatingSpanId());
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty(), getOriginatingSpanId());
         }
 
         push(span);
@@ -105,14 +104,10 @@ public abstract class Trace {
         return right;
     }
 
-    /**
-     * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
-     */
+    /** Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}. */
     abstract void fastStartSpan(String operation, String parentSpanId, SpanType type);
 
-    /**
-     * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
-     */
+    /** Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}. */
     abstract void fastStartSpan(String operation, SpanType type);
 
     protected abstract void push(OpenSpan span);
@@ -124,16 +119,25 @@ public abstract class Trace {
     abstract boolean isEmpty();
 
     /**
-     * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon {@link
-     * Tracer#completeSpan span completion}.
+     * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon
+     * {@link Tracer#completeSpan span completion}.
      */
     abstract boolean isObservable();
 
-    /**
-     * The globally unique non-empty identifier for this call trace.
-     */
+    /** The globally unique non-empty identifier for this call trace. */
     final String getTraceId() {
         return traceId;
+    }
+
+    /**
+     * The request identifier of this trace.
+     *
+     * The request identifier is an implementation detail of this tracing library. A new identifier is generated
+     * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
+     * distinguish between requests with the same traceId.
+     */
+    final Optional<String> getRequestId() {
+        return requestId;
     }
 
     abstract Optional<String> getOriginatingSpanId();
@@ -141,21 +145,21 @@ public abstract class Trace {
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
-    static Trace of(boolean isObservable, String traceId) {
-        return isObservable ? new Sampled(traceId) : new Unsampled(traceId);
+    static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
+        return isObservable ? new Sampled(traceId, requestId) : new Unsampled(traceId, requestId);
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, String traceId) {
-            super(traceId);
+        private Sampled(ArrayDeque<OpenSpan> stack, String traceId, Optional<String> requestId) {
+            super(traceId, requestId);
             this.stack = stack;
         }
 
-        private Sampled(String traceId) {
-            this(new ArrayDeque<>(), traceId);
+        private Sampled(String traceId, Optional<String> requestId) {
+            this(new ArrayDeque<>(), traceId, requestId);
         }
 
         @Override
@@ -205,7 +209,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId());
+            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId());
         }
 
         @Override
@@ -220,16 +224,17 @@ public abstract class Trace {
          * This allows thread trace state to be cleared when all "started" spans have been "removed".
          */
         private int numberOfSpans;
+
         private Optional<String> originatingSpanId = Optional.empty();
 
-        private Unsampled(int numberOfSpans, String traceId) {
-            super(traceId);
+        private Unsampled(int numberOfSpans, String traceId, Optional<String> requestId) {
+            super(traceId, requestId);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId) {
-            this(0, traceId);
+        private Unsampled(String traceId, Optional<String> requestId) {
+            this(0, traceId, requestId);
         }
 
         @Override
@@ -289,20 +294,21 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId());
+            return new Unsampled(numberOfSpans, getTraceId(), getRequestId());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
         private void validateNumberOfSpans() {
             if (numberOfSpans < 0) {
-                throw new SafeIllegalStateException("Unexpected negative numberOfSpans",
-                        SafeArg.of("numberOfSpans", numberOfSpans));
+                throw new SafeIllegalStateException(
+                        "Unexpected negative numberOfSpans", SafeArg.of("numberOfSpans", numberOfSpans));
             }
         }
 
         @Override
         public String toString() {
-            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId() + "'}";
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId()
+                    + "', requestId='" + getRequestId().orElse(null) + "'}";
         }
     }
 }

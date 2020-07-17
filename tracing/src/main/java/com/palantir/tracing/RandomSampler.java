@@ -29,16 +29,31 @@ public final class RandomSampler implements TraceSampler {
 
     private final float rate;
 
+    /**
+     * Prefer the factory method {@link RandomSampler#create(float)}.
+     *
+     * @deprecated prefer the factory method
+     */
+    @Deprecated
     public RandomSampler(float rate) {
-        checkArgument(rate >= 0 && rate <= 1,
-                "Rate should be between 0 and 1",
-                SafeArg.of("rate", rate));
+        checkArgument(rate >= 0 && rate <= 1, "Rate should be between 0 and 1", SafeArg.of("rate", rate));
         this.rate = rate;
+    }
+
+    public static TraceSampler create(float rate) {
+        checkArgument(rate >= 0 && rate <= 1, "Rate should be between 0 and 1", SafeArg.of("rate", rate));
+        if (rate == 0) {
+            return NeverSampler.INSTANCE;
+        }
+
+        if (rate == 1) {
+            return AlwaysSampler.INSTANCE;
+        }
+        return new RandomSampler(rate);
     }
 
     @Override
     public boolean sample() {
         return ThreadLocalRandom.current().nextFloat() < rate;
     }
-
 }
