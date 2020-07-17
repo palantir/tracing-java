@@ -249,6 +249,7 @@ public final class TracerTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testCompleteSpanWithMetadataIncludesMetadata() {
         Map<String, String> metadata = ImmutableMap.of(
                 "key1", "value1",
@@ -275,6 +276,7 @@ public final class TracerTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testFastCompleteSpanWithMetadata() {
         Tracer.subscribe("1", observer1);
         Map<String, String> metadata = ImmutableMap.of("key", "value");
