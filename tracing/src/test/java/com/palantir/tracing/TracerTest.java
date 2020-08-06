@@ -34,15 +34,16 @@ import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.util.Sets;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.MDC;
 
+@RunWith(MockitoJUnitRunner.class)
 public final class TracerTest {
 
     @Mock
@@ -56,11 +57,6 @@ public final class TracerTest {
 
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
-
-    @Before
-    public void before() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @After
     public void after() {

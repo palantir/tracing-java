@@ -58,6 +58,6 @@ public class HtmlFormatterTest {
                 .layoutStrategy(strategy)
                 .build());
 
-        assertThat(file).hasSameContentAs(output);
+        assertThat(file).hasSameTextualContentAs(output);
     }
 }

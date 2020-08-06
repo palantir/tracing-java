@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.palantir.logsafe.UnsafeArg;
@@ -45,7 +44,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
     private static final ObjectMapper mapper = new ObjectMapper()
-            .registerModule(new GuavaModule())
             .registerModule(new Jdk8Module().configureAbsentsAsNulls(true))
             .registerModule(new AfterburnerModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
