@@ -27,9 +27,11 @@ import com.palantir.tracing.api.SpanType;
 import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 
+@RunWith(MockitoJUnitRunner.class)
 public final class AsyncSpanObserverTest {
 
     @Mock
@@ -39,7 +41,6 @@ public final class AsyncSpanObserverTest {
 
     @Before
     public void before() {
-        MockitoAnnotations.initMocks(this);
         scheduler = new DeterministicScheduler();
     }
 

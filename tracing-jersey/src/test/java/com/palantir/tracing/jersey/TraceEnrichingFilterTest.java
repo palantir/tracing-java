@@ -53,12 +53,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.MDC;
 
+@RunWith(MockitoJUnitRunner.class)
 public final class TraceEnrichingFilterTest {
 
     @ClassRule
@@ -86,7 +88,6 @@ public final class TraceEnrichingFilterTest {
 
     @Before
     public void before() {
-        MockitoAnnotations.initMocks(this);
         String endpointUri = "http://localhost:" + APP.getLocalPort();
         JerseyClientBuilder builder = new JerseyClientBuilder();
         Client client = builder.build();
@@ -97,8 +98,6 @@ public final class TraceEnrichingFilterTest {
         MDC.clear();
 
         when(request.getMethod()).thenReturn("GET");
-        when(uriInfo.getPath()).thenReturn("/foo");
-        when(request.getUriInfo()).thenReturn(uriInfo);
         when(traceSampler.sample()).thenReturn(true);
     }
 

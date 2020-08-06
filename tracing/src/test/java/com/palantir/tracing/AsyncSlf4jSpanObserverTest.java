@@ -23,7 +23,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -45,10 +44,11 @@ import org.jmock.lib.concurrent.DeterministicScheduler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.LoggerFactory;
 import zipkin.Annotation;
 import zipkin.BinaryAnnotation;
@@ -57,6 +57,7 @@ import zipkin.Endpoint;
 
 // CHECKSTYLE:ON
 
+@RunWith(MockitoJUnitRunner.class)
 public final class AsyncSlf4jSpanObserverTest {
 
     private static final String TEST_OBSERVER = "test";
@@ -77,11 +78,8 @@ public final class AsyncSlf4jSpanObserverTest {
 
     @Before
     public void before() {
-        MockitoAnnotations.initMocks(this);
-
         Tracer.setSampler(AlwaysSampler.INSTANCE);
 
-        when(appender.getName()).thenReturn("MOCK");
         logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class);
         logger.addAppender(appender);
 
