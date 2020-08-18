@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
  * with that captured trace.
  *
  * <pre>
- * <code>
+ * <code>{@code
  * DeferredTracer deferredTracer = new DeferredTracer();
  *
  * //...
@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
  * N.b. the captured trace is restored without the full stack of spans, and so it's not possible to complete spans
  * not started within the deferred context.
  *
- * </code>
+ * }</code>
  * </pre>
  */
 public final class DeferredTracer implements Serializable {

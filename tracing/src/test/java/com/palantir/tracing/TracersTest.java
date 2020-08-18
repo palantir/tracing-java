@@ -525,7 +525,7 @@ public final class TracersTest {
             throw new IllegalStateException();
         });
 
-        assertThatThrownBy(() -> wrappedCallable.call()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(wrappedCallable::call).isInstanceOf(IllegalStateException.class);
 
         assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
     }
@@ -596,7 +596,7 @@ public final class TracersTest {
         Callable<Void> wrappedCallable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.UNDECIDED, rawCallable);
 
-        assertThatThrownBy(() -> wrappedCallable.call()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(wrappedCallable::call).isInstanceOf(IllegalStateException.class);
         assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
     }
 
@@ -702,7 +702,7 @@ public final class TracersTest {
         };
         Runnable wrappedRunnable = Tracers.wrapWithNewTrace(rawRunnable);
 
-        assertThatThrownBy(() -> wrappedRunnable.run()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(wrappedRunnable::run).isInstanceOf(IllegalStateException.class);
 
         assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
     }
@@ -805,7 +805,7 @@ public final class TracersTest {
         };
         Runnable wrappedRunnable = Tracers.wrapWithAlternateTraceId("someTraceId", rawRunnable);
 
-        assertThatThrownBy(() -> wrappedRunnable.run()).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(wrappedRunnable::run).isInstanceOf(IllegalStateException.class);
         assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
     }
 

@@ -153,7 +153,7 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
                         "Expected children with operations %s but received %s",
                         t.expectedChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList()),
                         t.actualChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList())),
-                (ComparisonFailure.incompatibleStructure t) ->
+                (ComparisonFailure.incompatibleStructure _t) ->
                         String.format("Expected children to structured similarly"));
     }
 
