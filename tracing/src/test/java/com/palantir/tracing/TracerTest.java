@@ -157,11 +157,13 @@ public final class TracerTest {
         String traceId = Tracers.randomId();
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
         assertThat(Tracer.hasTraceId()).isFalse();
+        assertThat(Tracer.hasUnobservableTrace()).isFalse();
         Tracer.setTrace(Trace.of(false, traceId, Optional.empty()));
         // Unsampled trace should still apply thread state
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
         assertThat(Tracer.hasTraceId()).isTrue();
         assertThat(Tracer.getTraceId()).isEqualTo(traceId);
+        assertThat(Tracer.hasUnobservableTrace()).isTrue();
         Tracer.fastStartSpan("foo");
         Tracer.fastStartSpan("bar");
 
@@ -175,6 +177,7 @@ public final class TracerTest {
         Tracer.fastCompleteSpan();
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
         assertThat(Tracer.hasTraceId()).isFalse();
+        assertThat(Tracer.hasUnobservableTrace()).isFalse();
     }
 
     @Test
@@ -354,6 +357,36 @@ public final class TracerTest {
             Tracer.fastCompleteSpan();
         }
         assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @Test
+    public void testHasUnobservableTrace_observableTrace() {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+        assertThat(Tracer.hasTraceId()).isFalse();
+        assertThat(Tracer.hasUnobservableTrace()).isFalse();
+        Tracer.fastStartSpan("test");
+        try {
+            assertThat(Tracer.hasTraceId()).isTrue();
+            assertThat(Tracer.hasUnobservableTrace()).isFalse();
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
+        assertThat(Tracer.hasUnobservableTrace()).isFalse();
+    }
+
+    @Test
+    public void testHasUnobservableTrace_unobservableTrace() {
+        Tracer.setSampler(NeverSampler.INSTANCE);
+        assertThat(Tracer.hasTraceId()).isFalse();
+        assertThat(Tracer.hasUnobservableTrace()).isFalse();
+        Tracer.fastStartSpan("test");
+        try {
+            assertThat(Tracer.hasTraceId()).isTrue();
+            assertThat(Tracer.hasUnobservableTrace()).isTrue();
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
+        assertThat(Tracer.hasUnobservableTrace()).isFalse();
     }
 
     @Test
