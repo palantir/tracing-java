@@ -627,6 +627,16 @@ public final class Tracer {
         return trace != null && trace.isObservable();
     }
 
+    /**
+     * Returns true if there is an active trace which is not observable. This is equivalent to the result of
+     * {@code Tracer.hasTraceId() && !Tracer.isTraceObservable()}.
+     * This check is used frequently in hot paths to avoid unnecessary overhead in unsampled traces.
+     */
+    public static boolean hasUnobservableTrace() {
+        Trace trace = currentTrace.get();
+        return trace != null && !trace.isObservable();
+    }
+
     /** Returns an independent copy of this thread's {@link Trace}. */
     static Optional<Trace> copyTrace() {
         Trace trace = currentTrace.get();
