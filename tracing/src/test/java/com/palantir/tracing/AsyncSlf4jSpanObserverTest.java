@@ -80,7 +80,7 @@ public final class AsyncSlf4jSpanObserverTest {
     public void before() {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
 
-        logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class);
+        logger = (Logger) LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class);
         logger.addAppender(appender);
 
         originalLevel = logger.getLevel();
@@ -219,7 +219,9 @@ public final class AsyncSlf4jSpanObserverTest {
         AsyncSlf4jSpanObserver.ZipkinCompatSpan zipkinCompatSpan =
                 AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, DUMMY_ENDPOINT);
         Map<String, String> annotationMap = zipkinCompatSpan.binaryAnnotations().stream()
-                .collect(Collectors.toMap(annotation -> annotation.key(), annotation -> annotation.value()));
+                .collect(Collectors.toMap(
+                        AsyncSlf4jSpanObserver.ZipkinCompatBinaryAnnotation::key,
+                        AsyncSlf4jSpanObserver.ZipkinCompatBinaryAnnotation::value));
         assertThat(annotationMap).isEqualTo(spanMetadata);
     }
 

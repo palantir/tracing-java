@@ -270,14 +270,14 @@ public final class TraceEnrichingFilterTest {
 
         @Override
         public StreamingOutput getFailingStreamingTraceOperation() {
-            return os -> {
+            return _os -> {
                 throw new RuntimeException();
             };
         }
 
         @Override
         public StreamingOutput getStreamingTraceOperation() {
-            return os -> {};
+            return _os -> {};
         }
     }
 

@@ -289,11 +289,11 @@ public final class TracerTest {
 
     @Test
     public void testObserversThrow() {
-        Tracer.subscribe("0", span -> {
+        Tracer.subscribe("0", _span -> {
             throw new IllegalStateException("0");
         });
         Tracer.subscribe("1", observer1);
-        Tracer.subscribe("2", span -> {
+        Tracer.subscribe("2", _span -> {
             throw new IllegalStateException("2");
         });
         String operation = "operation";

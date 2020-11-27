@@ -33,6 +33,7 @@ enum InetAddressSupplier
     INSTANCE;
 
     @Override
+    @SuppressWarnings("JdkObsolete") // Enumeration
     public InetAddress get() {
         try {
             InetAddress candidateAddress = null;

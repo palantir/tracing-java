@@ -32,7 +32,7 @@ public final class JaxRsTracersTest {
         Tracer.getAndClearTrace();
 
         Tracer.fastStartSpan("outside");
-        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(_os -> {
             Tracer.fastStartSpan("inside"); // never completed
         });
         streamingOutput.write(new ByteArrayOutputStream());
@@ -45,7 +45,7 @@ public final class JaxRsTracersTest {
         Tracer.getAndClearTrace();
 
         Tracer.fastStartSpan("outside");
-        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(_os -> {
             Tracer.fastStartSpan("inside"); // never completed
         });
         streamingOutput.write(new ByteArrayOutputStream());
@@ -60,7 +60,7 @@ public final class JaxRsTracersTest {
         Tracer.getAndClearTrace();
 
         Tracer.fastStartSpan("before-construction");
-        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(_os -> {
             assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("streaming-output");
         });
         Tracer.fastStartSpan("after-construction");
@@ -73,7 +73,7 @@ public final class JaxRsTracersTest {
         Tracer.getAndClearTrace();
 
         Tracer.fastStartSpan("before-construction");
-        StreamingOutput streamingOutput = JaxRsTracers.wrap(os -> {
+        StreamingOutput streamingOutput = JaxRsTracers.wrap(_os -> {
             assertThat(Tracer.hasTraceId()).isTrue();
             Tracer.fastCompleteSpan();
             assertThat(Tracer.hasTraceId()).isFalse();

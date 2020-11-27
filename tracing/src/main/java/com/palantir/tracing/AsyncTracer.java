@@ -23,7 +23,7 @@ import java.util.Optional;
  * {@link #withTrace} is called.
  *
  * <pre>
- * <code>
+ * <code>{@code
  * AsyncTracer asyncTracer = new AsyncTracer();
  *
  * //...
@@ -35,7 +35,7 @@ import java.util.Optional;
  *     return null;
  * });
  *
- * </code>
+ * }</code>
  * </pre>
  *
  * @deprecated prefer {@link DetachedSpan#start}, which gives you much more granular control.

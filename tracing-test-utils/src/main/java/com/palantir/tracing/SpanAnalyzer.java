@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -95,10 +94,7 @@ final class SpanAnalyzer {
         spans.stream()
                 .filter(span -> !span.getSpanId().equals(rootSpan.getSpanId()))
                 .forEach(span -> graph.putEdge(
-                        span,
-                        span.getParentSpanId()
-                                .flatMap(parentSpanId -> Optional.ofNullable(spansBySpanId.get(parentSpanId)))
-                                .orElse(fakeRootSpan)));
+                        span, span.getParentSpanId().map(spansBySpanId::get).orElse(fakeRootSpan)));
         ImmutableGraph<Span> spanGraph = graph.build();
 
         return ImmutableResult.builder()

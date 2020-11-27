@@ -137,7 +137,7 @@ public class TracedOperationHandlerTest {
         setRequestSpanId(parentSpanId);
 
         AtomicReference<String> capturedParentSpanId = new AtomicReference<>();
-        doAnswer((Answer<Void>) invocation -> {
+        doAnswer((Answer<Void>) _invocation -> {
                     Tracer.maybeGetTraceMetadata()
                             .flatMap(TraceMetadata::getOriginatingSpanId)
                             .ifPresent(capturedParentSpanId::set);
@@ -202,7 +202,7 @@ public class TracedOperationHandlerTest {
     public void populatesSlf4jMdc() throws Exception {
         setRequestTraceId(traceId);
         AtomicReference<String> mdcTraceValue = new AtomicReference<>();
-        new TracedOperationHandler(exc -> mdcTraceValue.set(MDC.get(Tracers.TRACE_ID_KEY)), "GET /traced")
+        new TracedOperationHandler(_exc -> mdcTraceValue.set(MDC.get(Tracers.TRACE_ID_KEY)), "GET /traced")
                 .handleRequest(exchange);
         assertThat(mdcTraceValue).hasValue(traceId);
         // Value should be cleared when the handler returns
