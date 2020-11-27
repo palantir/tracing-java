@@ -219,7 +219,9 @@ public final class AsyncSlf4jSpanObserverTest {
         AsyncSlf4jSpanObserver.ZipkinCompatSpan zipkinCompatSpan =
                 AsyncSlf4jSpanObserver.ZipkinCompatSpan.fromSpan(span, DUMMY_ENDPOINT);
         Map<String, String> annotationMap = zipkinCompatSpan.binaryAnnotations().stream()
-                .collect(Collectors.toMap(AsyncSlf4jSpanObserver.ZipkinCompatBinaryAnnotation::key, AsyncSlf4jSpanObserver.ZipkinCompatBinaryAnnotation::value));
+                .collect(Collectors.toMap(
+                        AsyncSlf4jSpanObserver.ZipkinCompatBinaryAnnotation::key,
+                        AsyncSlf4jSpanObserver.ZipkinCompatBinaryAnnotation::value));
         assertThat(annotationMap).isEqualTo(spanMetadata);
     }
 
