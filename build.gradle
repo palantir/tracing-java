@@ -78,3 +78,5 @@ subprojects {
         }
     })
 }
+
+println "HELLO '${File.separator}' world"
