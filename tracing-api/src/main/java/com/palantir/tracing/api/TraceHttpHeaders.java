@@ -21,7 +21,7 @@ public interface TraceHttpHeaders {
     String TRACE_ID = "X-B3-TraceId";
     String PARENT_SPAN_ID = "X-B3-ParentSpanId";
     String SPAN_ID = "X-B3-SpanId";
-    String IS_SAMPLED = "X-B3-Sampled"; // Boolean (either “1” or “0”, can be absent)
+    String IS_SAMPLED = "X-B3-Sampled"; // Boolean (either "1" or "0", can be absent)
 
     /**
      * Conceptually, a trace is a stack of spans. In implementation, this is actually many stacks, in many servers,
