@@ -97,7 +97,7 @@ final class SpanAnalyzer {
                 .forEach(span -> graph.putEdge(
                         span,
                         span.getParentSpanId()
-                                .map(parentSpanId -> spansBySpanId.get(parentSpanId))
+                                .map(spansBySpanId::get)
                                 .orElse(fakeRootSpan)));
         ImmutableGraph<Span> spanGraph = graph.build();
 

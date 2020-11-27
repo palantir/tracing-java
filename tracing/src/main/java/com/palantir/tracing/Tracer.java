@@ -311,6 +311,7 @@ public final class Tracer {
         private final Optional<String> requestId;
         private final OpenSpan openSpan;
 
+        @SuppressWarnings("ImmutablesBuilderMissingInitialization") // OpenSpan#builder sets these
         SampledDetachedSpan(
                 String operation,
                 SpanType type,

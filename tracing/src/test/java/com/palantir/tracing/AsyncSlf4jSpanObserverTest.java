@@ -80,7 +80,7 @@ public final class AsyncSlf4jSpanObserverTest {
     public void before() {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
 
-        logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class);
+        logger = (Logger) LoggerFactory.getLogger(AsyncSlf4jSpanObserver.class);
         logger.addAppender(appender);
 
         originalLevel = logger.getLevel();
