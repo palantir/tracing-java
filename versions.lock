@@ -32,8 +32,8 @@ org.immutables:value:2.8.8 (1 constraints: 14051536)
 org.jboss.logging:jboss-logging:3.3.2.Final (2 constraints: 7022d9d6)
 org.jboss.xnio:xnio-api:3.3.8.Final (2 constraints: 6f1a4d45)
 org.jboss.xnio:xnio-nio:3.3.8.Final (1 constraints: c40da530)
-org.openjdk.jmh:jmh-core:1.26 (2 constraints: f315f1d8)
-org.openjdk.jmh:jmh-generator-annprocess:1.26 (1 constraints: dd04f930)
+org.openjdk.jmh:jmh-core:1.27 (2 constraints: f51523d9)
+org.openjdk.jmh:jmh-generator-annprocess:1.27 (1 constraints: de04fa30)
 org.slf4j:slf4j-api:1.7.30 (25 constraints: a36b2b1f)
 
 [Test dependencies]
