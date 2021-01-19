@@ -120,7 +120,7 @@ public final class DeferredTracer implements Serializable {
             return NopCloseableTrace.INSTANCE;
         }
 
-        Optional<Trace> originalTrace = Tracer.copyTrace();
+        Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
         Tracer.setTrace(Trace.of(isObservable, traceId, Optional.ofNullable(requestId)));
         if (parentSpanId != null) {
