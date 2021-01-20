@@ -657,6 +657,8 @@ public final class Tracer {
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
         setTraceRequestId(trace.getRequestId());
+
+        logSettingTrace(trace);
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {
@@ -675,6 +677,12 @@ public final class Tracer {
         } else {
             // Ensure MDC state is cleared when there is no request identifier
             MDC.remove(Tracers.REQUEST_ID_KEY);
+        }
+    }
+
+    private static void logSettingTrace(Trace trace) {
+        if (log.isDebugEnabled()) {
+            log.debug("Setting trace", SafeArg.of("trace", trace));
         }
     }
 
@@ -697,7 +705,9 @@ public final class Tracer {
     }
 
     private static void logClearingTrace() {
-        log.debug("Clearing current trace", SafeArg.of("maybeTrace", Optional.ofNullable(currentTrace.get())));
+        if (log.isDebugEnabled()) {
+            log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
+        }
         if (log.isTraceEnabled()) {
             log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
         }
