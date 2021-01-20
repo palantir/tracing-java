@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: DeferredTracer avoids an unnecessary deep copy of the current trace
+  links:
+  - https://github.com/palantir/tracing-java/pull/676
