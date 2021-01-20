@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add debug logging when clearing a thread's trace
+  links:
+  - https://github.com/palantir/tracing-java/pull/678
