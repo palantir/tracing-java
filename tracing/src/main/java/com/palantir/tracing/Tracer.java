@@ -658,7 +658,7 @@ public final class Tracer {
         setTraceSampledMdcIfObservable(trace.isObservable());
         setTraceRequestId(trace.getRequestId());
 
-        logSettingTrace(trace);
+        logSettingTrace();
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {
@@ -680,10 +680,8 @@ public final class Tracer {
         }
     }
 
-    private static void logSettingTrace(Trace trace) {
-        if (log.isDebugEnabled()) {
-            log.debug("Setting trace", SafeArg.of("trace", trace));
-        }
+    private static void logSettingTrace() {
+        log.debug("Setting trace");
     }
 
     private static Trace getOrCreateCurrentTrace() {
@@ -707,9 +705,9 @@ public final class Tracer {
     private static void logClearingTrace() {
         if (log.isDebugEnabled()) {
             log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
-        }
-        if (log.isTraceEnabled()) {
-            log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
+            if (log.isTraceEnabled()) {
+                log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
+            }
         }
     }
 }
