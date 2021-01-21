@@ -657,6 +657,8 @@ public final class Tracer {
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
         setTraceRequestId(trace.getRequestId());
+
+        logSettingTrace();
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {
@@ -678,6 +680,10 @@ public final class Tracer {
         }
     }
 
+    private static void logSettingTrace() {
+        log.debug("Setting trace");
+    }
+
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
@@ -689,9 +695,19 @@ public final class Tracer {
 
     @VisibleForTesting
     static void clearCurrentTrace() {
+        logClearingTrace();
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
         MDC.remove(Tracers.REQUEST_ID_KEY);
+    }
+
+    private static void logClearingTrace() {
+        if (log.isDebugEnabled()) {
+            log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
+            if (log.isTraceEnabled()) {
+                log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
+            }
+        }
     }
 }
