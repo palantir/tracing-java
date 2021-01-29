@@ -164,6 +164,22 @@ public final class Tracers {
     }
 
     /**
+     * Wraps the given {@link Supplier} such that it uses the thread-local {@link Trace tracing state} at the time of
+     * it's construction during its {@link Supplier#get() execution}.
+     */
+    public static <V> Supplier<V> wrapSupplier(Supplier<V> delegate) {
+        return new TracingAwareSupplier<>(Optional.empty(), delegate);
+    }
+
+    /**
+     * Like {@link #wrap(Supplier)}, but using the given {@link String operation} is used to create a span for the
+     * execution.
+     */
+    public static <V> Supplier<V> wrapSupplier(String operation, Supplier<V> delegate) {
+        return new TracingAwareSupplier<>(Optional.of(operation), delegate);
+    }
+
+    /**
      * Wraps the given {@link Callable} such that it uses the thread-local {@link Trace tracing state} at the time of
      * it's construction during its {@link Callable#call() execution}.
      */
@@ -450,6 +466,34 @@ public final class Tracers {
         } else {
             // Ignoring returned value, used to clear trace only
             Tracer.getAndClearTraceIfPresent();
+        }
+    }
+
+    /**
+     * Wraps a given supplier such that its execution operates with the {@link Trace thread-local Trace} of the thread
+     * that constructs the {@link TracingAwareSupplier} instance rather than the thread that executes the supplier.
+     *
+     * <p>The constructor is typically called by a tracing-aware executor service on the same thread on which a user
+     * creates {@link Supplier delegate}, and the {@link #get()} method is executed on an arbitrary (likely different)
+     * thread with different {@link Trace tracing state}. In order to execute the task with the original (and
+     * intuitively expected) tracing state, we remember the original state and set it for the duration of the
+     * {@link #get() execution}.
+     */
+    @SuppressWarnings("deprecation")
+    private static class TracingAwareSupplier<V> implements Supplier<V> {
+        private final Supplier<V> delegate;
+        private final DeferredTracer deferredTracer;
+
+        TracingAwareSupplier(Optional<String> operation, Supplier<V> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer(operation);
+        }
+
+        @Override
+        public V get() {
+            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+                return delegate.get();
+            }
         }
     }
 
