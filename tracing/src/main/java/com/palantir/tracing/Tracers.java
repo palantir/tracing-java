@@ -165,7 +165,7 @@ public final class Tracers {
 
     /**
      * Wraps the given {@link Callable} such that it uses the thread-local {@link Trace tracing state} at the time of
-     * it's construction during its {@link Callable#call() execution}.
+     * its construction during its {@link Callable#call() execution}.
      */
     public static <V> Callable<V> wrap(Callable<V> delegate) {
         return new TracingAwareCallable<>(Optional.empty(), delegate);
@@ -181,7 +181,7 @@ public final class Tracers {
 
     /**
      * Wraps the given {@link Runnable} such that it uses the thread-local {@link Trace tracing state} at the time of
-     * it's construction during its {@link Runnable#run()} execution}.
+     * its construction during its {@link Runnable#run()} execution}.
      */
     public static Runnable wrap(Runnable delegate) {
         return new TracingAwareRunnable(Optional.empty(), delegate);
@@ -197,18 +197,11 @@ public final class Tracers {
 
     /**
      * Wraps the given {@link Supplier} such that it uses the thread-local {@link Trace tracing state} at the time of
-     * it's construction during its {@link Supplier#get() execution}.
-     */
-    public static <V> Supplier<V> wrapSupplier(Supplier<V> delegate) {
-        return new TracingAwareSupplier<>(Optional.empty(), delegate);
-    }
-
-    /**
-     * Like {@link #wrapSupplier(Supplier)}, but using the given {@link String operation} is used to create a span for
-     * the execution.
+     * its construction during its {@link Supplier#get() execution}. It uses the given {@link String operation} is
+     * used to create a span for the execution.
      */
     public static <V> Supplier<V> wrapSupplier(String operation, Supplier<V> delegate) {
-        return new TracingAwareSupplier<>(Optional.of(operation), delegate);
+        return new TracingAwareSupplier<>(operation, delegate);
     }
 
     /**
@@ -484,7 +477,7 @@ public final class Tracers {
         private final Supplier<V> delegate;
         private final DeferredTracer deferredTracer;
 
-        TracingAwareSupplier(Optional<String> operation, Supplier<V> delegate) {
+        TracingAwareSupplier(String operation, Supplier<V> delegate) {
             this.delegate = delegate;
             this.deferredTracer = new DeferredTracer(operation);
         }
