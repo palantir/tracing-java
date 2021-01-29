@@ -164,22 +164,6 @@ public final class Tracers {
     }
 
     /**
-     * Wraps the given {@link Supplier} such that it uses the thread-local {@link Trace tracing state} at the time of
-     * it's construction during its {@link Supplier#get() execution}.
-     */
-    public static <V> Supplier<V> wrapSupplier(Supplier<V> delegate) {
-        return new TracingAwareSupplier<>(Optional.empty(), delegate);
-    }
-
-    /**
-     * Like {@link #wrapSupplier(Supplier)}, but using the given {@link String operation} is used to create a span for the
-     * execution.
-     */
-    public static <V> Supplier<V> wrapSupplier(String operation, Supplier<V> delegate) {
-        return new TracingAwareSupplier<>(Optional.of(operation), delegate);
-    }
-
-    /**
      * Wraps the given {@link Callable} such that it uses the thread-local {@link Trace tracing state} at the time of
      * it's construction during its {@link Callable#call() execution}.
      */
@@ -209,6 +193,22 @@ public final class Tracers {
      */
     public static Runnable wrap(String operation, Runnable delegate) {
         return new TracingAwareRunnable(Optional.of(operation), delegate);
+    }
+
+    /**
+     * Wraps the given {@link Supplier} such that it uses the thread-local {@link Trace tracing state} at the time of
+     * it's construction during its {@link Supplier#get() execution}.
+     */
+    public static <V> Supplier<V> wrapSupplier(Supplier<V> delegate) {
+        return new TracingAwareSupplier<>(Optional.empty(), delegate);
+    }
+
+    /**
+     * Like {@link #wrapSupplier(Supplier)}, but using the given {@link String operation} is used to create a span for
+     * the execution.
+     */
+    public static <V> Supplier<V> wrapSupplier(String operation, Supplier<V> delegate) {
+        return new TracingAwareSupplier<>(Optional.of(operation), delegate);
     }
 
     /**
