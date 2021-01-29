@@ -172,7 +172,7 @@ public final class Tracers {
     }
 
     /**
-     * Like {@link #wrap(Supplier)}, but using the given {@link String operation} is used to create a span for the
+     * Like {@link #wrapSupplier(Supplier)}, but using the given {@link String operation} is used to create a span for the
      * execution.
      */
     public static <V> Supplier<V> wrapSupplier(String operation, Supplier<V> delegate) {
