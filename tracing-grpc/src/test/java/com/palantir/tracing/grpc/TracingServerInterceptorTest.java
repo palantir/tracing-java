@@ -62,7 +62,7 @@ public class TracingServerInterceptorTest {
     private static final SimpleServiceGrpc.SimpleServiceImplBase SERVICE =
             new SimpleServiceGrpc.SimpleServiceImplBase() {
                 @Override
-                public void unaryRpc(SimpleRequest request, StreamObserver<SimpleResponse> responseObserver) {
+                public void unaryRpc(SimpleRequest _request, StreamObserver<SimpleResponse> responseObserver) {
                     Tracer.fastStartSpan("handler");
                     Tracer.fastCompleteSpan();
                     responseObserver.onNext(SimpleResponse.newBuilder().build());
@@ -77,7 +77,7 @@ public class TracingServerInterceptorTest {
 
                     return new StreamObserver<SimpleRequest>() {
                         @Override
-                        public void onNext(SimpleRequest value) {
+                        public void onNext(SimpleRequest _value) {
                             Tracer.fastStartSpan("observer");
                             Tracer.fastCompleteSpan();
                         }

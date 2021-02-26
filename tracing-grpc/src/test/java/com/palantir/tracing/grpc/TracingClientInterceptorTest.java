@@ -57,7 +57,7 @@ public class TracingClientInterceptorTest {
     private static final SimpleServiceGrpc.SimpleServiceImplBase SERVICE =
             new SimpleServiceGrpc.SimpleServiceImplBase() {
                 @Override
-                public void unaryRpc(SimpleRequest request, StreamObserver<SimpleResponse> responseObserver) {
+                public void unaryRpc(SimpleRequest _request, StreamObserver<SimpleResponse> responseObserver) {
                     responseObserver.onNext(SimpleResponse.newBuilder().build());
                     responseObserver.onCompleted();
                 }
