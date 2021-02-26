@@ -29,4 +29,7 @@ dependencies {
 
     testImplementation 'io.grpc:grpc-testing'
     testImplementation 'io.grpc:grpc-testing-proto'
+
+    compileOnly "org.immutables:value::annotations"
+    testCompileOnly "org.immutables:value::annotations"
 }
