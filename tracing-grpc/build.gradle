@@ -19,7 +19,10 @@ apply plugin: 'com.palantir.revapi'
 
 dependencies {
     api project(':tracing')
-    api 'io.grpc:grpc-api'
+    api('io.grpc:grpc-api') {
+        // gRPC pulls in the android version of guava, which we don't want
+        exclude group: 'com.google.guava', module: 'guava'
+    }
 
     implementation project(':tracing-api')
 
@@ -27,8 +30,12 @@ dependencies {
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
 
-    testImplementation 'io.grpc:grpc-testing'
-    testImplementation 'io.grpc:grpc-testing-proto'
+    testImplementation('io.grpc:grpc-testing') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    testImplementation('io.grpc:grpc-testing-proto') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
 
     compileOnly "org.immutables:value::annotations"
     testCompileOnly "org.immutables:value::annotations"
