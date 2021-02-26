@@ -8,6 +8,7 @@
 
 - **com.palantir.tracing:tracing** - The key `Tracer` class, which stores trace information in a ThreadLocal.  Also includes classes for convenient integration with SLF4J and executor services.
 - **com.palantir.tracing:tracing-api** - constants and pure data objects
+- **com.palantir.tracing:tracing-grpc** - `TracingClientInterceptor`, which adds appropriate headers to outgoing gRPC requests and `TracingServerInterceptor`, which reads headers from incoming gRPC requests.
 - **com.palantir.tracing:tracing-jaxrs** - utilities to wrap `StreamingOutput` responses with a new trace.
 - **com.palantir.tracing:tracing-okhttp3** - `OkhttpTraceInterceptor`, which adds the appropriate headers to outgoing requests.
 - **com.palantir.tracing:tracing-jersey** - `TraceEnrichingFilter`, a jaxrs filter which reads headers from incoming requests and writes headers to outgoing responses.  A traceId is stored in the jaxrs request context under the key `com.palantir.tracing.traceId`.
