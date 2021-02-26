@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Added a library to propagate traces through gRPC calls.
+  links:
+  - https://github.com/palantir/tracing-java/pull/690
