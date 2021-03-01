@@ -31,7 +31,4 @@ dependencies {
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
-
-    compileOnly "org.immutables:value::annotations"
-    testCompileOnly "org.immutables:value::annotations"
 }
