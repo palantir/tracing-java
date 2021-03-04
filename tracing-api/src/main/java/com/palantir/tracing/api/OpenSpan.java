@@ -26,7 +26,7 @@ import org.immutables.value.Value;
  * {@link Span} object.
  */
 @Value.Immutable
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+@ImmutablesStyle
 public abstract class OpenSpan {
     private static final Clock CLOCK = Clock.systemUTC();
 

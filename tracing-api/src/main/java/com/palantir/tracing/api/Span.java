@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 
 /** A value class representing a completed Span, see {@link OpenSpan} for a description of the fields. */
 @Value.Immutable
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+@ImmutablesStyle
 public abstract class Span {
 
     public abstract String getTraceId();

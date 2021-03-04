@@ -1,5 +1,5 @@
 /*
- * (c) Copyright 2018 Palantir Technologies Inc. All rights reserved.
+ * (c) Copyright 2021 Palantir Technologies Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-apply from: "${rootDir}/gradle/publish-jar.gradle"
-apply plugin: 'com.palantir.revapi'
+package com.palantir.tracing;
 
-dependencies {
-    compile project(":tracing")
-    compile "com.squareup.okhttp3:okhttp"
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.immutables.value.Value;
 
-    implementation project(':tracing-api')
-
-    testImplementation "junit:junit"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.mockito:mockito-core"
-}
+@Target({ElementType.PACKAGE, ElementType.TYPE})
+@Retention(RetentionPolicy.SOURCE)
+@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+@interface ImmutablesStyle {}

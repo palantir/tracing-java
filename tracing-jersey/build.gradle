@@ -30,7 +30,4 @@ dependencies {
     testImplementation "org.assertj:assertj-core"
     testImplementation "org.hamcrest:hamcrest-all"
     testImplementation "org.mockito:mockito-core"
-
-    compileOnly "org.immutables:value::annotations"
-    testCompileOnly "org.immutables:value::annotations"
 }

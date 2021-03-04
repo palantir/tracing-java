@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 
 /** Ids necessary to write headers onto network requests. */
 @Value.Immutable
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+@ImmutablesStyle
 public interface TraceMetadata {
 
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#TRACE_ID}. */

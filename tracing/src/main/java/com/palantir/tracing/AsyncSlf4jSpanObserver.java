@@ -58,7 +58,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
     @JsonSerialize(as = ImmutableZipkinCompatSpan.class)
     @Value.Immutable
-    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @ImmutablesStyle
     abstract static class ZipkinCompatSpan {
 
         abstract String getTraceId();
@@ -141,7 +141,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
     @JsonSerialize(as = ImmutableZipkinCompatAnnotation.class)
     @Value.Immutable
-    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @ImmutablesStyle
     abstract static class ZipkinCompatAnnotation {
         abstract long timestamp(); // epoch microseconds
 
@@ -160,7 +160,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
     @JsonSerialize(as = ImmutableZipkinCompatBinaryAnnotation.class)
     @Value.Immutable
-    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @ImmutablesStyle
     abstract static class ZipkinCompatBinaryAnnotation {
 
         abstract String key();
@@ -180,7 +180,7 @@ public final class AsyncSlf4jSpanObserver extends AsyncSpanObserver {
 
     @JsonSerialize(as = ImmutableZipkinCompatEndpoint.class)
     @Value.Immutable
-    @Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE)
+    @ImmutablesStyle
     @JsonInclude(JsonInclude.Include.NON_NULL)
     abstract static class ZipkinCompatEndpoint {
         abstract String serviceName();
