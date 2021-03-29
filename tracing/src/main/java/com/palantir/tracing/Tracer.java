@@ -67,7 +67,7 @@ public final class Tracer {
     private static volatile Consumer<Span> compositeObserver = _span -> {};
 
     // Thread-safe since stateless
-    private static volatile TraceSampler sampler = RandomSampler.create(0.01f);
+    private static volatile TraceSampler sampler = RandomSampler.create(0.005f);
 
     /** Creates a new trace, but does not set it as the current trace. */
     private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
