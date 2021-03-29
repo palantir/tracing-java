@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Decrease default sample rate from 1% to .05% to match internal tools
+  links:
+  - https://github.com/palantir/tracing-java/pull/698
