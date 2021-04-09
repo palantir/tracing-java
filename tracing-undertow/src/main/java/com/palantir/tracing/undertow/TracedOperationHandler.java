@@ -18,11 +18,13 @@ package com.palantir.tracing.undertow;
 
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 
+import com.google.common.collect.ImmutableMap;
 import com.palantir.tracing.CloseableSpan;
 import com.palantir.tracing.DetachedSpan;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import java.util.Map;
 
 /**
  * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding
@@ -44,17 +46,23 @@ public final class TracedOperationHandler implements HttpHandler {
     public static final AttachmentKey<Boolean> IS_SAMPLED_ATTACHMENT = TracingAttachments.IS_SAMPLED;
 
     private final String operation;
+    private final Map<String, String> metadata;
     private final HttpHandler delegate;
 
-    public TracedOperationHandler(HttpHandler delegate, String operation) {
+    public TracedOperationHandler(HttpHandler delegate, String operation, Map<String, String> metadata) {
         this.delegate = checkNotNull(delegate, "A delegate HttpHandler is required");
         this.operation = "Undertow: " + checkNotNull(operation, "Operation name is required");
+        this.metadata = checkNotNull(metadata, "Metadata map is required");
+    }
+
+    public TracedOperationHandler(HttpHandler delegate, String operation) {
+        this(delegate, operation, ImmutableMap.of());
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         DetachedSpan detachedSpan = UndertowTracing.getOrInitializeRequestTrace(exchange);
-        try (CloseableSpan ignored = detachedSpan.childSpan(operation)) {
+        try (CloseableSpan ignored = detachedSpan.childSpan(operation, metadata)) {
             delegate.handleRequest(exchange);
         }
     }

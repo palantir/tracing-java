@@ -18,6 +18,7 @@ package com.palantir.tracing.undertow;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.DetachedSpan;
@@ -31,6 +32,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -101,12 +103,26 @@ final class UndertowTracing {
             try {
                 DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
                 if (detachedSpan != null) {
-                    detachedSpan.complete();
+                    detachedSpan.complete(statusMetadata(exchange.getStatusCode()));
                 }
             } finally {
                 nextListener.proceed();
             }
         }
+    }
+
+    private static final ImmutableMap<String, String> METADATA_200 = ImmutableMap.of("status", "200");
+    private static final ImmutableMap<String, String> METADATA_204 = ImmutableMap.of("status", "204");
+
+    private static Map<String, String> statusMetadata(int statusCode) {
+        // handle common cases quickly
+        switch (statusCode) {
+            case 200:
+                return METADATA_200;
+            case 204:
+                return METADATA_204;
+        }
+        return ImmutableMap.of("status", Integer.toString(statusCode));
     }
 
     /**

@@ -17,13 +17,14 @@
 package com.palantir.tracing;
 
 import com.palantir.tracing.api.SpanType;
+import java.util.Map;
 
 /**
  * Wraps the {@link Tracer} methods in a closeable resource to enable the usage of the try-with-resources pattern.
  *
  * <p>Usage: try (CloseableTracer trace = CloseableTracer.start("traceName")) { [...] }
  */
-public final class CloseableTracer implements AutoCloseable {
+public class CloseableTracer implements AutoCloseable {
     private static final CloseableTracer INSTANCE = new CloseableTracer();
 
     private CloseableTracer() {}
@@ -33,6 +34,13 @@ public final class CloseableTracer implements AutoCloseable {
      */
     public static CloseableTracer startSpan(String operation) {
         return startSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
+     * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     */
+    public static CloseableTracer startSpan(String operation, Map<String, String> metadata) {
+        return startSpan(operation, metadata, SpanType.LOCAL);
     }
 
     /**
@@ -46,8 +54,35 @@ public final class CloseableTracer implements AutoCloseable {
         return INSTANCE;
     }
 
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation.
+     *
+     * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
+     */
+    public static CloseableTracer startSpan(String operation, Map<String, String> metadata, SpanType spanType) {
+        Tracer.fastStartSpan(operation, spanType);
+        if (metadata.isEmpty() || !Tracer.isTraceObservable()) {
+            return INSTANCE;
+        }
+        return new TaggedCloseableTracer(metadata);
+    }
+
     @Override
     public void close() {
         Tracer.fastCompleteSpan();
+    }
+
+    private static final class TaggedCloseableTracer extends CloseableTracer {
+        private final Map<String, String> metadata;
+
+        TaggedCloseableTracer(Map<String, String> metadata) {
+            this.metadata = metadata;
+        }
+
+        @Override
+        public void close() {
+            Tracer.fastCompleteSpan(metadata);
+        }
     }
 }

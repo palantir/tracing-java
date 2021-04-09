@@ -16,11 +16,12 @@
 
 package com.palantir.tracing;
 
-import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.SpanType;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -168,7 +169,7 @@ public final class Tracers {
      * it's construction during its {@link Callable#call() execution}.
      */
     public static <V> Callable<V> wrap(Callable<V> delegate) {
-        return new TracingAwareCallable<>(Optional.empty(), delegate);
+        return new AnonymousTracingAwareCallable<>(delegate);
     }
 
     /**
@@ -176,7 +177,15 @@ public final class Tracers {
      * execution.
      */
     public static <V> Callable<V> wrap(String operation, Callable<V> delegate) {
-        return new TracingAwareCallable<>(Optional.of(operation), delegate);
+        return new TracingAwareCallable<>(operation, ImmutableMap.of(), delegate);
+    }
+
+    /**
+     * Like {@link #wrap(String, Callable)}, but using the given {@link String metadata} is used to create a span for
+     * the execution.
+     */
+    public static <V> Callable<V> wrap(String operation, Map<String, String> metadata, Callable<V> delegate) {
+        return new TracingAwareCallable<>(operation, metadata, delegate);
     }
 
     /**
@@ -184,61 +193,88 @@ public final class Tracers {
      * it's construction during its {@link Runnable#run()} execution}.
      */
     public static Runnable wrap(Runnable delegate) {
-        return new TracingAwareRunnable(Optional.empty(), delegate);
+        return new AnonymousTracingAwareRunnable(delegate);
     }
 
     /**
-     * Like {@link #wrap(Runnable)}, but using the given {@link String operation} is used to create a span for the
+     * Like {@link #wrap(Runnable)}, but the given {@link String operation} is used to create a span for the
      * execution.
      */
     public static Runnable wrap(String operation, Runnable delegate) {
-        return new TracingAwareRunnable(Optional.of(operation), delegate);
+        return wrap(operation, ImmutableMap.of(), delegate);
     }
 
     /**
-     * Traces the the execution of the
-     *
-     * <pre>delegateFactory</pre>
-     *
-     * , completing a span when the returned {@link ListenableFuture#isDone() ListenableFuture is done}.
-     *
-     * <p>Example usage:
-     *
+     * Like {@link #wrap(String, Runnable)}, but using the given {@link String operation} and
+     * {@link Map metadata} is used to create a span for the
+     * execution.
+     */
+    public static Runnable wrap(String operation, Map<String, String> metadata, Runnable delegate) {
+        return new TracingAwareRunnable(operation, metadata, delegate);
+    }
+
+    /**
+     * Traces the the execution of the {@code delegateFactory}, completing a span when the returned
+     * {@link ListenableFuture#isDone() ListenableFuture is done}.
+     * <p>
+     * Example usage:
      * <pre>{@code
      * ListenableFuture<Result> future = Tracers.wrapListenableFuture(
      *     "remote operation",
      *     () -> retrofitClient.doRequest());
      * }</pre>
      *
-     * Note that this function is not named
-     *
-     * <pre>wrap</pre>
-     *
-     * in order to avoid conflicting with potential utility methods for {@link Supplier suppliers}.
+     * Note that this function is not named {@code wrap} in order to avoid conflicting with potential utility methods
+     * for {@link Supplier suppliers}.
      */
-    @Beta
     public static <T, U extends ListenableFuture<T>> U wrapListenableFuture(
             String operation, Supplier<U> delegateFactory) {
+        return wrapListenableFuture(operation, ImmutableMap.of(), delegateFactory);
+    }
+
+    public static <T, U extends ListenableFuture<T>> U wrapListenableFuture(
+            String operation, Map<String, String> metadata, Supplier<U> delegateFactory) {
         DetachedSpan span = DetachedSpan.start(operation);
         U result = null;
         // n.b. This span is required to apply tracing thread state to an initial request. Otherwise if there is
         // no active trace, the detached span would not be associated with work initiated by delegateFactory.
         try (CloseableSpan ignored =
                 // This could be more efficient using https://github.com/palantir/tracing-java/issues/177
-                span.childSpan(operation + " initial")) {
+                span.childSpan(operation + " initial", metadata)) {
             result = Preconditions.checkNotNull(delegateFactory.get(), "Expected a ListenableFuture");
         } finally {
             if (result != null) {
                 // In the successful case we add a listener in the finally block to prevent confusing traces
                 // when delegateFactory returns a completed future. This way the detached span cannot complete
                 // prior to its child.
-                result.addListener(span::complete, MoreExecutors.directExecutor());
+                result.addListener(new ListenableFutureSpanListener(span, metadata), MoreExecutors.directExecutor());
             } else {
                 // Complete the detached span, even if the delegateFactory throws.
-                span.complete();
+                span.complete(metadata);
             }
         }
         return result;
+    }
+
+    private static final class ListenableFutureSpanListener implements Runnable {
+
+        private final DetachedSpan span;
+        private final Map<String, String> metadata;
+
+        ListenableFutureSpanListener(DetachedSpan span, Map<String, String> metadata) {
+            this.span = span;
+            this.metadata = metadata;
+        }
+
+        @Override
+        public void run() {
+            span.complete(metadata);
+        }
+
+        @Override
+        public String toString() {
+            return "ListenableFutureSpanListener{span=" + span + ", metadata=" + metadata + '}';
+        }
     }
 
     /**
@@ -463,14 +499,30 @@ public final class Tracers {
      * intuitively expected) tracing state, we remember the original state and set it for the duration of the
      * {@link #call() execution}.
      */
-    @SuppressWarnings("deprecation")
     private static class TracingAwareCallable<V> implements Callable<V> {
         private final Callable<V> delegate;
         private final DeferredTracer deferredTracer;
 
-        TracingAwareCallable(Optional<String> operation, Callable<V> delegate) {
+        TracingAwareCallable(String operation, Map<String, String> metadata, Callable<V> delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer(operation);
+            this.deferredTracer = new DeferredTracer(operation, metadata);
+        }
+
+        @Override
+        public V call() throws Exception {
+            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+                return delegate.call();
+            }
+        }
+    }
+
+    private static class AnonymousTracingAwareCallable<V> implements Callable<V> {
+        private final Callable<V> delegate;
+        private final DeferredTracer deferredTracer;
+
+        AnonymousTracingAwareCallable(Callable<V> delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer("DeferredTracer(unnamed operation)");
         }
 
         @Override
@@ -485,14 +537,30 @@ public final class Tracers {
      * Wraps a given runnable such that its execution operates with the {@link Trace thread-local Trace} of the thread
      * that constructs the {@link TracingAwareRunnable} instance rather than the thread that executes the runnable.
      */
-    @SuppressWarnings("deprecation")
     private static class TracingAwareRunnable implements Runnable {
         private final Runnable delegate;
-        private DeferredTracer deferredTracer;
+        private final DeferredTracer deferredTracer;
 
-        TracingAwareRunnable(Optional<String> operation, Runnable delegate) {
+        TracingAwareRunnable(String operation, Map<String, String> metadata, Runnable delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer(operation);
+            this.deferredTracer = new DeferredTracer(operation, metadata);
+        }
+
+        @Override
+        public void run() {
+            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+                delegate.run();
+            }
+        }
+    }
+
+    private static class AnonymousTracingAwareRunnable implements Runnable {
+        private final Runnable delegate;
+        private final DeferredTracer deferredTracer;
+
+        AnonymousTracingAwareRunnable(Runnable delegate) {
+            this.delegate = delegate;
+            this.deferredTracer = new DeferredTracer("DeferredTracer(unnamed operation)");
         }
 
         @Override

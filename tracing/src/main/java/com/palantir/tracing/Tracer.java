@@ -330,12 +330,12 @@ public final class Tracer {
 
         @Override
         @MustBeClosed
-        public CloseableSpan childSpan(String operationName, SpanType type) {
+        public CloseableSpan childSpan(String operationName, Map<String, String> tags, SpanType type) {
             warnIfCompleted("startSpanOnCurrentThread");
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId, requestId));
             Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace, tags);
         }
 
         @Override
@@ -346,8 +346,13 @@ public final class Tracer {
 
         @Override
         public void complete() {
+            complete(Collections.emptyMap());
+        }
+
+        @Override
+        public void complete(Map<String, String> metadata) {
             if (completed.compareAndSet(false, true)) {
-                Tracer.notifyObservers(toSpan(openSpan, Collections.emptyMap(), traceId));
+                Tracer.notifyObservers(toSpan(openSpan, metadata, traceId));
             }
         }
 
@@ -389,7 +394,7 @@ public final class Tracer {
         }
 
         @Override
-        public CloseableSpan childSpan(String operationName, SpanType type) {
+        public CloseableSpan childSpan(String operationName, Map<String, String> metadata, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId, requestId));
             if (parentSpanId.isPresent()) {
@@ -397,7 +402,7 @@ public final class Tracer {
             } else {
                 Tracer.fastStartSpan(operationName, type);
             }
-            return TraceRestoringCloseableSpan.of(maybeCurrentTrace);
+            return TraceRestoringCloseableSpan.of(maybeCurrentTrace, metadata);
         }
 
         @Override
@@ -407,6 +412,11 @@ public final class Tracer {
 
         @Override
         public void complete() {
+            // nop
+        }
+
+        @Override
+        public void complete(Map<String, String> _metadata) {
             // nop
         }
 
@@ -422,19 +432,27 @@ public final class Tracer {
         private static final CloseableSpan DEFAULT_TOKEN = Tracer::fastCompleteSpan;
 
         private final Trace original;
+        private final Map<String, String> metadata;
 
-        static CloseableSpan of(@Nullable Trace original) {
-            return original == null ? DEFAULT_TOKEN : new TraceRestoringCloseableSpan(original);
+        static CloseableSpan of(@Nullable Trace original, Map<String, String> metadata) {
+            if (original != null || (metadata != null && !metadata.isEmpty())) {
+                return new TraceRestoringCloseableSpan(original, metadata);
+            }
+            return DEFAULT_TOKEN;
         }
 
-        TraceRestoringCloseableSpan(Trace original) {
+        TraceRestoringCloseableSpan(@Nullable Trace original, Map<String, String> metadata) {
             this.original = Preconditions.checkNotNull(original, "Expected an original trace instance");
+            this.metadata = metadata;
         }
 
         @Override
         public void close() {
-            DEFAULT_TOKEN.close();
-            Tracer.setTrace(original);
+            Tracer.fastCompleteSpan(metadata);
+            Trace originalTrace = original;
+            if (originalTrace != null) {
+                Tracer.setTrace(originalTrace);
+            }
         }
     }
 
@@ -458,10 +476,7 @@ public final class Tracer {
 
     /**
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
-     *
-     * @deprecated Use {@link #fastCompleteSpan()}
      */
-    @Deprecated
     public static void fastCompleteSpan(Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace != null) {
