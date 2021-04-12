@@ -135,4 +135,10 @@ public interface DetachedSpan {
      * not throw either in order to avoid confusing failures.
      */
     void complete(Map<String, String> metadata);
+
+    /**
+     * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
+     * not throw either in order to avoid confusing failures.
+     */
+    <T> void complete(TagRecorder<T> tag, T state);
 }

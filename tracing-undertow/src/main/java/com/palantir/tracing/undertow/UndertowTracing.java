@@ -18,12 +18,12 @@ package com.palantir.tracing.undertow;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
+import com.palantir.tracing.TagRecorder;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
@@ -32,7 +32,6 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -103,7 +102,7 @@ final class UndertowTracing {
             try {
                 DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
                 if (detachedSpan != null) {
-                    detachedSpan.complete(statusMetadata(exchange.getStatusCode()));
+                    detachedSpan.complete(UndertowTagRecorder.INSTANCE, exchange);
                 }
             } finally {
                 nextListener.proceed();
@@ -111,18 +110,24 @@ final class UndertowTracing {
         }
     }
 
-    private static final ImmutableMap<String, String> METADATA_200 = ImmutableMap.of("status", "200");
-    private static final ImmutableMap<String, String> METADATA_204 = ImmutableMap.of("status", "204");
+    private enum UndertowTagRecorder implements TagRecorder<HttpServerExchange> {
+        INSTANCE;
 
-    private static Map<String, String> statusMetadata(int statusCode) {
-        // handle common cases quickly
-        switch (statusCode) {
-            case 200:
-                return METADATA_200;
-            case 204:
-                return METADATA_204;
+        @Override
+        public <T> void record(TagAdapter<T> sink, T target, HttpServerExchange exchange) {
+            sink.tag(target, "status", statusString(exchange.getStatusCode()));
         }
-        return ImmutableMap.of("status", Integer.toString(statusCode));
+
+        static String statusString(int statusCode) {
+            // handle common cases quickly
+            switch (statusCode) {
+                case 200:
+                    return "200";
+                case 204:
+                    return "204";
+            }
+            return Integer.toString(statusCode);
+        }
     }
 
     /**

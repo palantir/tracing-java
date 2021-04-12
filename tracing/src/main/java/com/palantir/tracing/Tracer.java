@@ -351,8 +351,13 @@ public final class Tracer {
 
         @Override
         public void complete(Map<String, String> metadata) {
+            complete(MapTagRecorder.INSTANCE, metadata);
+        }
+
+        @Override
+        public <T> void complete(TagRecorder<T> tagRecorder, T data) {
             if (completed.compareAndSet(false, true)) {
-                Tracer.notifyObservers(toSpan(openSpan, MapTagProducer.INSTANCE, metadata, traceId));
+                Tracer.notifyObservers(toSpan(openSpan, tagRecorder, data, traceId));
             }
         }
 
@@ -417,6 +422,11 @@ public final class Tracer {
 
         @Override
         public void complete(Map<String, String> _metadata) {
+            // nop
+        }
+
+        @Override
+        public <T> void complete(TagRecorder<T> _tag, T _state) {
             // nop
         }
 
@@ -487,7 +497,7 @@ public final class Tracer {
         }
     }
 
-    public static <T> void fastCompleteSpan(TagProducer<T> tag, T state) {
+    public static <T> void fastCompleteSpan(TagRecorder<T> tag, T state) {
         Trace trace = currentTrace.get();
         if (trace != null) {
             Optional<OpenSpan> span = popCurrentSpan(trace);
@@ -500,12 +510,12 @@ public final class Tracer {
     private static void completeSpanAndNotifyObservers(
             Optional<OpenSpan> openSpan, Map<String, String> metadata, String traceId) {
         if (openSpan.isPresent()) {
-            Tracer.notifyObservers(toSpan(openSpan.get(), MapTagProducer.INSTANCE, metadata, traceId));
+            Tracer.notifyObservers(toSpan(openSpan.get(), MapTagRecorder.INSTANCE, metadata, traceId));
         }
     }
 
     private static <T> void completeSpanAndNotifyObservers(
-            Optional<OpenSpan> openSpan, TagProducer<T> tag, T state, String traceId) {
+            Optional<OpenSpan> openSpan, TagRecorder<T> tag, T state, String traceId) {
         if (openSpan.isPresent()) {
             Tracer.notifyObservers(toSpan(openSpan.get(), tag, state, traceId));
         }
@@ -534,7 +544,7 @@ public final class Tracer {
             return Optional.empty();
         }
         Optional<Span> maybeSpan = popCurrentSpan(trace)
-                .map(openSpan -> toSpan(openSpan, MapTagProducer.INSTANCE, metadata, trace.getTraceId()));
+                .map(openSpan -> toSpan(openSpan, MapTagRecorder.INSTANCE, metadata, trace.getTraceId()));
 
         // Notify subscribers iff trace is observable
         if (maybeSpan.isPresent() && trace.isObservable()) {
@@ -557,7 +567,7 @@ public final class Tracer {
         return span;
     }
 
-    private static <T> Span toSpan(OpenSpan openSpan, TagProducer<T> tag, T state, String traceId) {
+    private static <T> Span toSpan(OpenSpan openSpan, TagRecorder<T> tag, T state, String traceId) {
         Span.Builder builder = Span.builder()
                 .traceId(traceId)
                 .spanId(openSpan.getSpanId())
@@ -566,29 +576,29 @@ public final class Tracer {
                 .operation(openSpan.getOperation())
                 .startTimeMicroSeconds(openSpan.getStartTimeMicroSeconds())
                 .durationNanoSeconds(System.nanoTime() - openSpan.getStartClockNanoSeconds());
-        tag.tag(DefaultTagAdapter.INSTANCE, builder, state);
+        tag.record(DefaultTagAdapter.INSTANCE, builder, state);
         return builder.build();
     }
 
-    private enum MapTagProducer implements TagProducer<Map<String, String>> {
+    private enum MapTagRecorder implements TagRecorder<Map<String, String>> {
         INSTANCE;
 
         @Override
-        public <T> void tag(TagAdapter<T> sink, T target, Map<String, String> state) {
-            sink.apply(state, target);
+        public <T> void record(TagAdapter<T> sink, T target, Map<String, String> state) {
+            sink.tag(target, state);
         }
     }
 
-    private enum DefaultTagAdapter implements TagProducer.TagAdapter<Span.Builder> {
+    private enum DefaultTagAdapter implements TagRecorder.TagAdapter<Span.Builder> {
         INSTANCE;
 
         @Override
-        public void apply(String key, String value, Span.Builder target) {
+        public void tag(Span.Builder target, String key, String value) {
             target.putMetadata(key, value);
         }
 
         @Override
-        public void apply(Map<String, String> tags, Span.Builder target) {
+        public void tag(Span.Builder target, Map<String, String> tags) {
             target.putAllMetadata(tags);
         }
     }
