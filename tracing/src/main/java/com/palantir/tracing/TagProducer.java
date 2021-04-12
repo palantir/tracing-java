@@ -16,15 +16,21 @@
 
 package com.palantir.tracing;
 
+import java.util.Map;
+
 public interface TagProducer<S> {
 
     <T> void tag(TagSink<T> sink, TagAdapter<T> tagAdapter, T target, S state);
 
     interface TagAdapter<T> {
         void addTag(T object, String key, String value);
+
+        void addTags(T object, Map<String, String> tags);
     }
 
     interface TagSink<T> {
         void apply(String key, String value, TagAdapter<T> tagger, T target);
+
+        void apply(Map<String, String> tags, TagAdapter<T> tagger, T target);
     }
 }

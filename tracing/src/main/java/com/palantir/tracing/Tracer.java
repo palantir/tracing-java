@@ -575,7 +575,7 @@ public final class Tracer {
 
         @Override
         public <T> void tag(TagSink<T> sink, TagAdapter<T> tagAdapter, T target, Map<String, String> state) {
-            state.forEach((key, value) -> sink.apply(key, value, tagAdapter, target));
+            sink.apply(state, tagAdapter, target);
         }
     }
 
@@ -586,6 +586,11 @@ public final class Tracer {
         public void apply(String key, String value, TagProducer.TagAdapter<Span.Builder> tagger, Span.Builder target) {
             tagger.addTag(target, key, value);
         }
+
+        @Override
+        public void apply(Map<String, String> tags, TagProducer.TagAdapter<Span.Builder> tagger, Span.Builder target) {
+            tagger.addTags(target, tags);
+        }
     }
 
     private enum SpanBuilderTagAdapter implements TagProducer.TagAdapter<Span.Builder> {
@@ -594,6 +599,11 @@ public final class Tracer {
         @Override
         public void addTag(Span.Builder object, String key, String value) {
             object.putMetadata(key, value);
+        }
+
+        @Override
+        public void addTags(Span.Builder object, Map<String, String> tags) {
+            object.putAllMetadata(tags);
         }
     }
 
