@@ -566,7 +566,7 @@ public final class Tracer {
                 .operation(openSpan.getOperation())
                 .startTimeMicroSeconds(openSpan.getStartTimeMicroSeconds())
                 .durationNanoSeconds(System.nanoTime() - openSpan.getStartClockNanoSeconds());
-        tag.tag(DefaultTagSink.INSTANCE, SpanBuilderTagAdapter.INSTANCE, builder, state);
+        tag.tag(DefaultTagAdapter.INSTANCE, builder, state);
         return builder.build();
     }
 
@@ -574,36 +574,22 @@ public final class Tracer {
         INSTANCE;
 
         @Override
-        public <T> void tag(TagSink<T> sink, TagAdapter<T> tagAdapter, T target, Map<String, String> state) {
-            sink.apply(state, tagAdapter, target);
+        public <T> void tag(TagAdapter<T> sink, T target, Map<String, String> state) {
+            sink.apply(state, target);
         }
     }
 
-    private enum DefaultTagSink implements TagProducer.TagSink<Span.Builder> {
+    private enum DefaultTagAdapter implements TagProducer.TagAdapter<Span.Builder> {
         INSTANCE;
 
         @Override
-        public void apply(String key, String value, TagProducer.TagAdapter<Span.Builder> tagger, Span.Builder target) {
-            tagger.addTag(target, key, value);
+        public void apply(String key, String value, Span.Builder target) {
+            target.putMetadata(key, value);
         }
 
         @Override
-        public void apply(Map<String, String> tags, TagProducer.TagAdapter<Span.Builder> tagger, Span.Builder target) {
-            tagger.addTags(target, tags);
-        }
-    }
-
-    private enum SpanBuilderTagAdapter implements TagProducer.TagAdapter<Span.Builder> {
-        INSTANCE;
-
-        @Override
-        public void addTag(Span.Builder object, String key, String value) {
-            object.putMetadata(key, value);
-        }
-
-        @Override
-        public void addTags(Span.Builder object, Map<String, String> tags) {
-            object.putAllMetadata(tags);
+        public void apply(Map<String, String> tags, Span.Builder target) {
+            target.putAllMetadata(tags);
         }
     }
 
