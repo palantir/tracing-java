@@ -346,12 +346,7 @@ public final class Tracer {
 
         @Override
         public void complete() {
-            complete(Collections.emptyMap());
-        }
-
-        @Override
-        public void complete(Map<String, String> metadata) {
-            complete(MapTagRecorder.INSTANCE, metadata);
+            complete(NoTagRecorder.INSTANCE, NoTagRecorder.INSTANCE);
         }
 
         @Override
@@ -417,11 +412,6 @@ public final class Tracer {
 
         @Override
         public void complete() {
-            // nop
-        }
-
-        @Override
-        public void complete(Map<String, String> _metadata) {
             // nop
         }
 

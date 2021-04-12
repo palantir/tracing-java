@@ -250,7 +250,7 @@ public final class Tracers {
                 result.addListener(new ListenableFutureSpanListener(span, metadata), MoreExecutors.directExecutor());
             } else {
                 // Complete the detached span, even if the delegateFactory throws.
-                span.complete(metadata);
+                span.complete(MapTagRecorder.INSTANCE, metadata);
             }
         }
         return result;
@@ -268,7 +268,7 @@ public final class Tracers {
 
         @Override
         public void run() {
-            span.complete(metadata);
+            span.complete(MapTagRecorder.INSTANCE, metadata);
         }
 
         @Override
