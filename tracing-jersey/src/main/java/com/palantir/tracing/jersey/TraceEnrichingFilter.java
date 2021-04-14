@@ -18,10 +18,10 @@ package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
 import com.palantir.tracing.Observability;
+import com.palantir.tracing.TagRecorder;
 import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
-import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
@@ -97,10 +97,10 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
             throws IOException {
         MultivaluedMap<String, Object> headers = responseContext.getHeaders();
-        Optional<Span> maybeSpan = Tracer.completeSpan();
-        if (maybeSpan.isPresent()) {
-            Span span = maybeSpan.get();
-            headers.putSingle(TraceHttpHeaders.TRACE_ID, span.getTraceId());
+        if (Tracer.hasTraceId()) {
+            String traceId = Tracer.getTraceId();
+            Tracer.fastCompleteSpan(ContainerResponseContextTagRecorder.INSTANCE, responseContext);
+            headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);
         } else {
             // When the filter is called twice (e.g. an exception is thrown in a streaming call),
             // the current trace will be empty. To allow clients to still get the trace ID corresponding to
@@ -118,6 +118,15 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
             return Observability.UNDECIDED;
         } else {
             return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
+        }
+    }
+
+    private enum ContainerResponseContextTagRecorder implements TagRecorder<ContainerResponseContext> {
+        INSTANCE;
+
+        @Override
+        public <T> void record(TagAdapter<T> sink, T target, ContainerResponseContext state) {
+            sink.tag(target, "status", Integer.toString(state.getStatus()));
         }
     }
 }

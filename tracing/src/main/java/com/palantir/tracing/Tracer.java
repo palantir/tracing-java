@@ -506,13 +506,7 @@ public final class Tracer {
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
      */
     public static void fastCompleteSpan(Map<String, String> metadata) {
-        Trace trace = currentTrace.get();
-        if (trace != null) {
-            Optional<OpenSpan> span = popCurrentSpan(trace);
-            if (trace.isObservable()) {
-                completeSpanAndNotifyObservers(span, metadata, trace.getTraceId());
-            }
-        }
+        fastCompleteSpan(MapTagRecorder.INSTANCE, metadata);
     }
 
     public static <T> void fastCompleteSpan(TagRecorder<? super T> tag, T state) {
@@ -522,13 +516,6 @@ public final class Tracer {
             if (trace.isObservable()) {
                 completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
             }
-        }
-    }
-
-    private static void completeSpanAndNotifyObservers(
-            Optional<OpenSpan> openSpan, Map<String, String> metadata, String traceId) {
-        if (openSpan.isPresent()) {
-            Tracer.notifyObservers(toSpan(openSpan.get(), MapTagRecorder.INSTANCE, metadata, traceId));
         }
     }
 
