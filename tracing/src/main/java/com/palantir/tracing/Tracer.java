@@ -335,7 +335,8 @@ public final class Tracer {
 
         @Override
         @MustBeClosed
-        public <T> CloseableSpan childSpan(String operationName, TagRecorder<T> recorder, T data, SpanType type) {
+        public <T> CloseableSpan childSpan(
+                String operationName, TagRecorder<? super T> recorder, T data, SpanType type) {
             warnIfCompleted("startSpanOnCurrentThread");
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(true, traceId, requestId));
@@ -355,7 +356,7 @@ public final class Tracer {
         }
 
         @Override
-        public <T> void complete(TagRecorder<T> tagRecorder, T data) {
+        public <T> void complete(TagRecorder<? super T> tagRecorder, T data) {
             if (NOT_COMPLETE == completedUpdater.getAndSet(this, COMPLETE)) {
                 Tracer.notifyObservers(toSpan(openSpan, tagRecorder, data, traceId));
             }
@@ -399,7 +400,8 @@ public final class Tracer {
         }
 
         @Override
-        public <T> CloseableSpan childSpan(String operationName, TagRecorder<T> _recorder, T _data, SpanType type) {
+        public <T> CloseableSpan childSpan(
+                String operationName, TagRecorder<? super T> _recorder, T _data, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
             setTrace(Trace.of(false, traceId, requestId));
             if (parentSpanId.isPresent()) {
@@ -423,7 +425,7 @@ public final class Tracer {
         }
 
         @Override
-        public <T> void complete(TagRecorder<T> _tag, T _state) {
+        public <T> void complete(TagRecorder<? super T> _tag, T _state) {
             // nop
         }
 
@@ -454,17 +456,17 @@ public final class Tracer {
     private static final class TraceRestoringCloseableSpanWithMetadata<T> implements CloseableSpan {
 
         private final Trace original;
-        private final TagRecorder<T> recorder;
+        private final TagRecorder<? super T> recorder;
         private final T data;
 
-        static <T> CloseableSpan of(@Nullable Trace original, TagRecorder<T> recorder, T data) {
+        static <T> CloseableSpan of(@Nullable Trace original, TagRecorder<? super T> recorder, T data) {
             if (original != null || !recorder.isEmpty(data)) {
                 return new TraceRestoringCloseableSpanWithMetadata<>(original, recorder, data);
             }
             return DEFAULT_CLOSEABLE_SPAN;
         }
 
-        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagRecorder<T> recorder, T data) {
+        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagRecorder<? super T> recorder, T data) {
             this.original = original;
             this.recorder = recorder;
             this.data = data;
@@ -511,7 +513,7 @@ public final class Tracer {
         }
     }
 
-    public static <T> void fastCompleteSpan(TagRecorder<T> tag, T state) {
+    public static <T> void fastCompleteSpan(TagRecorder<? super T> tag, T state) {
         Trace trace = currentTrace.get();
         if (trace != null) {
             Optional<OpenSpan> span = popCurrentSpan(trace);
@@ -529,7 +531,7 @@ public final class Tracer {
     }
 
     private static <T> void completeSpanAndNotifyObservers(
-            Optional<OpenSpan> openSpan, TagRecorder<T> tag, T state, String traceId) {
+            Optional<OpenSpan> openSpan, TagRecorder<? super T> tag, T state, String traceId) {
         if (openSpan.isPresent()) {
             Tracer.notifyObservers(toSpan(openSpan.get(), tag, state, traceId));
         }
@@ -581,7 +583,7 @@ public final class Tracer {
         return span;
     }
 
-    private static <T> Span toSpan(OpenSpan openSpan, TagRecorder<T> tag, T state, String traceId) {
+    private static <T> Span toSpan(OpenSpan openSpan, TagRecorder<? super T> tag, T state, String traceId) {
         Span.Builder builder = Span.builder()
                 .traceId(traceId)
                 .spanId(openSpan.getSpanId())

@@ -18,13 +18,12 @@ package com.palantir.tracing.undertow;
 
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 
-import com.google.common.collect.ImmutableMap;
 import com.palantir.tracing.CloseableSpan;
 import com.palantir.tracing.DetachedSpan;
+import com.palantir.tracing.TagRecorder;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import java.util.Map;
 
 /**
  * Extracts Zipkin-style trace information from the given HTTP request and sets up a corresponding
@@ -46,23 +45,36 @@ public final class TracedOperationHandler implements HttpHandler {
     public static final AttachmentKey<Boolean> IS_SAMPLED_ATTACHMENT = TracingAttachments.IS_SAMPLED;
 
     private final String operation;
-    private final Map<String, String> metadata;
+    private final TagRecorder<? super HttpServerExchange> recorder;
     private final HttpHandler delegate;
 
-    public TracedOperationHandler(HttpHandler delegate, String operation, Map<String, String> metadata) {
+    public TracedOperationHandler(
+            HttpHandler delegate, String operation, TagRecorder<? super HttpServerExchange> recorder) {
         this.delegate = checkNotNull(delegate, "A delegate HttpHandler is required");
         this.operation = "Undertow: " + checkNotNull(operation, "Operation name is required");
-        this.metadata = checkNotNull(metadata, "Metadata map is required");
+        this.recorder = checkNotNull(recorder, "TagRecorder map is required");
     }
 
     public TracedOperationHandler(HttpHandler delegate, String operation) {
-        this(delegate, operation, ImmutableMap.of());
+        this(delegate, operation, NoTagRecorder.INSTANCE);
+    }
+
+    private enum NoTagRecorder implements TagRecorder<Object> {
+        INSTANCE;
+
+        @Override
+        public <T> void record(TagAdapter<T> _sink, T _target, Object _state) {}
+
+        @Override
+        public boolean isEmpty(Object _state) {
+            return true;
+        }
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         DetachedSpan detachedSpan = UndertowTracing.getOrInitializeRequestTrace(exchange);
-        try (CloseableSpan ignored = detachedSpan.childSpan(operation, metadata)) {
+        try (CloseableSpan ignored = detachedSpan.childSpan(operation, recorder, exchange)) {
             delegate.handleRequest(exchange);
         }
     }

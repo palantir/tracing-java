@@ -60,7 +60,8 @@ public class CloseableTracer implements AutoCloseable {
      *
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
-    public static <T> CloseableTracer startSpan(String operation, TagRecorder<T> recorder, T data, SpanType spanType) {
+    public static <T> CloseableTracer startSpan(
+            String operation, TagRecorder<? super T> recorder, T data, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
         if (!Tracer.isTraceObservable() || recorder.isEmpty(data)) {
             return INSTANCE;
@@ -74,10 +75,10 @@ public class CloseableTracer implements AutoCloseable {
     }
 
     private static final class TaggedCloseableTracer<T> extends CloseableTracer {
-        private final TagRecorder<T> recorder;
+        private final TagRecorder<? super T> recorder;
         private final T data;
 
-        TaggedCloseableTracer(TagRecorder<T> recorder, T data) {
+        TaggedCloseableTracer(TagRecorder<? super T> recorder, T data) {
             this.recorder = recorder;
             this.data = data;
         }

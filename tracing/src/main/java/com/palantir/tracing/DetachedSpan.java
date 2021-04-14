@@ -84,7 +84,7 @@ public interface DetachedSpan {
     }
 
     @MustBeClosed
-    default <T> CloseableSpan childSpan(String operationName, TagRecorder<T> recorder, T data) {
+    default <T> CloseableSpan childSpan(String operationName, TagRecorder<? super T> recorder, T data) {
         return childSpan(operationName, recorder, data, SpanType.LOCAL);
     }
 
@@ -97,7 +97,7 @@ public interface DetachedSpan {
     }
 
     @MustBeClosed
-    <T> CloseableSpan childSpan(String operationName, TagRecorder<T> recorder, T data, SpanType type);
+    <T> CloseableSpan childSpan(String operationName, TagRecorder<? super T> recorder, T data, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead of
@@ -152,5 +152,5 @@ public interface DetachedSpan {
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
      * not throw either in order to avoid confusing failures.
      */
-    <T> void complete(TagRecorder<T> tagRecorder, T data);
+    <T> void complete(TagRecorder<? super T> tagRecorder, T data);
 }

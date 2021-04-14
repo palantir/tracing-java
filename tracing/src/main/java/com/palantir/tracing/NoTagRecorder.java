@@ -17,14 +17,14 @@
 package com.palantir.tracing;
 
 /** Internal no-op tag recorder. */
-enum NoTagRecorder implements TagRecorder<NoTagRecorder> {
+enum NoTagRecorder implements TagRecorder<Object> {
     INSTANCE;
 
     @Override
-    public <T> void record(TagAdapter<T> _sink, T _target, NoTagRecorder _state) {}
+    public <T> void record(TagAdapter<T> _sink, T _target, Object _state) {}
 
     @Override
-    public boolean isEmpty(NoTagRecorder _state) {
+    public boolean isEmpty(Object _state) {
         return true;
     }
 }
