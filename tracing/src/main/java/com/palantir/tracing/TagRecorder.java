@@ -32,6 +32,10 @@ public interface TagRecorder<S> {
     /** Implementations add tags based on {@code state}. */
     <T> void record(TagAdapter<T> sink, T target, S state);
 
+    default boolean isEmpty(S state) {
+        return false;
+    }
+
     /** Tag adapter object which insulates the implementation of the underlying data structure from callers. */
     interface TagAdapter<T> {
         void tag(T target, String key, String value);

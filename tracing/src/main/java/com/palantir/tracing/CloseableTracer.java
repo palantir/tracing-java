@@ -40,7 +40,7 @@ public class CloseableTracer implements AutoCloseable {
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      */
     public static CloseableTracer startSpan(String operation, Map<String, String> metadata) {
-        return startSpan(operation, metadata, SpanType.LOCAL);
+        return startSpan(operation, MapTagRecorder.INSTANCE, metadata, SpanType.LOCAL);
     }
 
     /**
@@ -60,12 +60,12 @@ public class CloseableTracer implements AutoCloseable {
      *
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
-    public static CloseableTracer startSpan(String operation, Map<String, String> metadata, SpanType spanType) {
+    public static <T> CloseableTracer startSpan(String operation, TagRecorder<T> recorder, T data, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
-        if (metadata.isEmpty() || !Tracer.isTraceObservable()) {
+        if (!Tracer.isTraceObservable() || recorder.isEmpty(data)) {
             return INSTANCE;
         }
-        return new TaggedCloseableTracer(metadata);
+        return new TaggedCloseableTracer(recorder, data);
     }
 
     @Override
@@ -73,16 +73,18 @@ public class CloseableTracer implements AutoCloseable {
         Tracer.fastCompleteSpan();
     }
 
-    private static final class TaggedCloseableTracer extends CloseableTracer {
-        private final Map<String, String> metadata;
+    private static final class TaggedCloseableTracer<T> extends CloseableTracer {
+        private final TagRecorder<T> recorder;
+        private final T data;
 
-        TaggedCloseableTracer(Map<String, String> metadata) {
-            this.metadata = metadata;
+        TaggedCloseableTracer(TagRecorder<T> recorder, T data) {
+            this.recorder = recorder;
+            this.data = data;
         }
 
         @Override
         public void close() {
-            Tracer.fastCompleteSpan(metadata);
+            Tracer.fastCompleteSpan(recorder, data);
         }
     }
 }

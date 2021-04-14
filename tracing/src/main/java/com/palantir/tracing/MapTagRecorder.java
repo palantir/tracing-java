@@ -26,4 +26,9 @@ enum MapTagRecorder implements TagRecorder<Map<String, String>> {
     public <T> void record(TagAdapter<T> sink, T target, Map<String, String> state) {
         sink.tag(target, state);
     }
+
+    @Override
+    public boolean isEmpty(Map<String, String> state) {
+        return state == null || state.isEmpty();
+    }
 }

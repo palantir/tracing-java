@@ -22,4 +22,9 @@ enum NoTagRecorder implements TagRecorder<NoTagRecorder> {
 
     @Override
     public <T> void record(TagAdapter<T> _sink, T _target, NoTagRecorder _state) {}
+
+    @Override
+    public boolean isEmpty(NoTagRecorder _state) {
+        return true;
+    }
 }

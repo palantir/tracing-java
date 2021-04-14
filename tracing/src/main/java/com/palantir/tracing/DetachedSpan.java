@@ -83,11 +83,21 @@ public interface DetachedSpan {
         return childSpan(operationName, metadata, SpanType.LOCAL);
     }
 
+    @MustBeClosed
+    default <T> CloseableSpan childSpan(String operationName, TagRecorder<T> recorder, T data) {
+        return childSpan(operationName, recorder, data, SpanType.LOCAL);
+    }
+
     /**
      * Equivalent to {@link #childSpan(String, SpanType)}, but using {@link Map metadata} tags.
      */
     @MustBeClosed
-    CloseableSpan childSpan(String operationName, Map<String, String> metadata, SpanType type);
+    default CloseableSpan childSpan(String operationName, Map<String, String> metadata, SpanType type) {
+        return childSpan(operationName, MapTagRecorder.INSTANCE, metadata, type);
+    }
+
+    @MustBeClosed
+    <T> CloseableSpan childSpan(String operationName, TagRecorder<T> recorder, T data, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead of
@@ -129,6 +139,14 @@ public interface DetachedSpan {
      * not throw either in order to avoid confusing failures.
      */
     void complete();
+
+    /**
+     * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
+     * not throw either in order to avoid confusing failures.
+     */
+    default void complete(Map<String, String> metadata) {
+        complete(MapTagRecorder.INSTANCE, metadata);
+    }
 
     /**
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
