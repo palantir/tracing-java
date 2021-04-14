@@ -32,7 +32,7 @@ public interface TagRecorder<S> {
     /** Implementations add tags based on {@code data}. */
     <T> void record(TagAdapter<T> sink, T target, S data);
 
-    default boolean isEmpty(S _state) {
+    default boolean isEmpty(S _data) {
         return false;
     }
 

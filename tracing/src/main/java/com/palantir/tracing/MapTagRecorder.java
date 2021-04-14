@@ -28,7 +28,7 @@ enum MapTagRecorder implements TagRecorder<Map<String, String>> {
     }
 
     @Override
-    public boolean isEmpty(Map<String, String> data) {
-        return data == null || data.isEmpty();
+    public boolean isEmpty(Map<String, String> _data) {
+        return _data == null || _data.isEmpty();
     }
 }
