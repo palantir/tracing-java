@@ -385,6 +385,37 @@ public final class Tracer {
                         SafeArg.of("detachedSpan", this));
             }
         }
+
+        private static final class TraceRestoringCloseableSpanWithMetadata<T> implements CloseableSpan {
+
+            @Nullable
+            private final Trace original;
+
+            private final TagRecorder<? super T> recorder;
+            private final T data;
+
+            static <T> CloseableSpan of(@Nullable Trace original, TagRecorder<? super T> recorder, T data) {
+                if (original != null || !recorder.isEmpty(data)) {
+                    return new TraceRestoringCloseableSpanWithMetadata<>(original, recorder, data);
+                }
+                return DEFAULT_CLOSEABLE_SPAN;
+            }
+
+            TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagRecorder<? super T> recorder, T data) {
+                this.original = original;
+                this.recorder = recorder;
+                this.data = data;
+            }
+
+            @Override
+            public void close() {
+                Tracer.fastCompleteSpan(recorder, data);
+                Trace originalTrace = original;
+                if (originalTrace != null) {
+                    Tracer.setTrace(originalTrace);
+                }
+            }
+        }
     }
 
     private static final class UnsampledDetachedSpan implements DetachedSpan {
@@ -450,35 +481,6 @@ public final class Tracer {
         public void close() {
             Tracer.fastCompleteSpan();
             Tracer.setTrace(original);
-        }
-    }
-
-    private static final class TraceRestoringCloseableSpanWithMetadata<T> implements CloseableSpan {
-
-        private final Trace original;
-        private final TagRecorder<? super T> recorder;
-        private final T data;
-
-        static <T> CloseableSpan of(@Nullable Trace original, TagRecorder<? super T> recorder, T data) {
-            if (original != null || !recorder.isEmpty(data)) {
-                return new TraceRestoringCloseableSpanWithMetadata<>(original, recorder, data);
-            }
-            return DEFAULT_CLOSEABLE_SPAN;
-        }
-
-        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagRecorder<? super T> recorder, T data) {
-            this.original = original;
-            this.recorder = recorder;
-            this.data = data;
-        }
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan(recorder, data);
-            Trace originalTrace = original;
-            if (originalTrace != null) {
-                Tracer.setTrace(originalTrace);
-            }
         }
     }
 

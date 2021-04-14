@@ -66,7 +66,7 @@ public class CloseableTracer implements AutoCloseable {
         if (!Tracer.isTraceObservable() || recorder.isEmpty(data)) {
             return INSTANCE;
         }
-        return new TaggedCloseableTracer(recorder, data);
+        return new TaggedCloseableTracer<>(recorder, data);
     }
 
     @Override
