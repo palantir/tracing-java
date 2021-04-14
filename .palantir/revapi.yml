@@ -2,12 +2,12 @@ acceptedBreaks:
   "4.13.0":
     com.palantir.tracing:tracing:
     - code: "java.method.addedToInterface"
-      new: "method com.palantir.tracing.CloseableSpan com.palantir.tracing.DetachedSpan::childSpan(java.lang.String,\
-        \ java.util.Map<java.lang.String, java.lang.String>, com.palantir.tracing.api.SpanType)"
+      new: "method <T> com.palantir.tracing.CloseableSpan com.palantir.tracing.DetachedSpan::childSpan(java.lang.String,\
+        \ com.palantir.tracing.TagRecorder<? super T>, T, com.palantir.tracing.api.SpanType)"
       justification: "new methods on provided interfaces"
     - code: "java.method.addedToInterface"
-      new: "method void com.palantir.tracing.DetachedSpan::complete(java.util.Map<java.lang.String,\
-        \ java.lang.String>)"
+      new: "method <T> void com.palantir.tracing.DetachedSpan::complete(com.palantir.tracing.TagRecorder<?\
+        \ super T>, T)"
       justification: "new methods on provided interfaces"
   "4.5.2":
     com.palantir.tracing:tracing:
