@@ -474,8 +474,8 @@ public final class TracerTest {
         detached.complete(
                 new TagRecorder<String>() {
                     @Override
-                    public <T> void record(TagAdapter<T> sink, T target, String state) {
-                        sink.tag(target, "foo", state);
+                    public <T> void record(TagAdapter<T> sink, T target, String data) {
+                        sink.tag(target, "foo", data);
                     }
                 },
                 "bar");
@@ -522,8 +522,8 @@ public final class TracerTest {
                     operation2,
                     new TagRecorder<String>() {
                         @Override
-                        public <T> void record(TagAdapter<T> sink, T target, String state) {
-                            sink.tag(target, "foo", state);
+                        public <T> void record(TagAdapter<T> sink, T target, String data) {
+                            sink.tag(target, "foo", data);
                         }
                     },
                     "bar")) {

@@ -125,8 +125,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         INSTANCE;
 
         @Override
-        public <T> void record(TagAdapter<T> sink, T target, ContainerResponseContext state) {
-            sink.tag(target, "status", Integer.toString(state.getStatus()));
+        public <T> void record(TagAdapter<T> sink, T target, ContainerResponseContext data) {
+            sink.tag(target, "status", Integer.toString(data.getStatus()));
         }
     }
 }

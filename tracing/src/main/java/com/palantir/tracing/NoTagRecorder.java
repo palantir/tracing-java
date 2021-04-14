@@ -21,10 +21,10 @@ enum NoTagRecorder implements TagRecorder<Object> {
     INSTANCE;
 
     @Override
-    public <T> void record(TagAdapter<T> _sink, T _target, Object _state) {}
+    public <T> void record(TagAdapter<T> _sink, T _target, Object _data) {}
 
     @Override
-    public boolean isEmpty(Object _state) {
+    public boolean isEmpty(Object _data) {
         return true;
     }
 }

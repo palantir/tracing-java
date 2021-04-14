@@ -91,8 +91,8 @@ public final class CloseableTracerTest {
                     "foo",
                     new TagRecorder<String>() {
                         @Override
-                        public <T> void record(TagAdapter<T> sink, T target, String state) {
-                            sink.tag(target, "key", state);
+                        public <T> void record(TagAdapter<T> sink, T target, String data) {
+                            sink.tag(target, "key", data);
                         }
                     },
                     "value")) {

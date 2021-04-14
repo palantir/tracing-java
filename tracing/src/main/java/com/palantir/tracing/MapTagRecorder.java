@@ -23,12 +23,12 @@ enum MapTagRecorder implements TagRecorder<Map<String, String>> {
     INSTANCE;
 
     @Override
-    public <T> void record(TagAdapter<T> sink, T target, Map<String, String> state) {
-        sink.tag(target, state);
+    public <T> void record(TagAdapter<T> sink, T target, Map<String, String> data) {
+        sink.tag(target, data);
     }
 
     @Override
-    public boolean isEmpty(Map<String, String> state) {
-        return state == null || state.isEmpty();
+    public boolean isEmpty(Map<String, String> data) {
+        return data == null || data.isEmpty();
     }
 }
