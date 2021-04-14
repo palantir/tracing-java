@@ -16,7 +16,6 @@
 
 package com.palantir.tracing;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
 import java.util.Map;
@@ -72,7 +71,7 @@ public interface DetachedSpan {
      */
     @MustBeClosed
     default CloseableSpan childSpan(String operationName, SpanType type) {
-        return childSpan(operationName, ImmutableMap.of(), type);
+        return childSpan(operationName, NoTagRecorder.INSTANCE, NoTagRecorder.INSTANCE, type);
     }
 
     /**
