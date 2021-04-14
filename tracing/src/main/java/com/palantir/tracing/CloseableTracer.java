@@ -56,6 +56,16 @@ public class CloseableTracer implements AutoCloseable {
 
     /**
      * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation. Equivalent to {@link #startSpan(String, TagRecorder, Object, SpanType)} with {@link SpanType#LOCAL}.
+     *
+     * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
+     */
+    public static <T> CloseableTracer startSpan(String operation, TagRecorder<? super T> recorder, T data) {
+        return startSpan(operation, recorder, data, SpanType.LOCAL);
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
      * operation.
      *
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.

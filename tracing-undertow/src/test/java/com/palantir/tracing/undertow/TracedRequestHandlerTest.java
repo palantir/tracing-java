@@ -109,6 +109,7 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo("1234");
+        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
     }
 
     @Test
@@ -136,6 +137,7 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
+        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
     }
 
     @Test
@@ -152,5 +154,6 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
+        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
     }
 }

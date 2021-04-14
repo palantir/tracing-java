@@ -60,12 +60,42 @@ public final class CloseableTracerTest {
     }
 
     @Test
-    public void supportsMetadata() {
+    public void supportsMetadata_map() {
         SpanObserver observer = Mockito.mock(SpanObserver.class);
-        String name = "CloseableTracerTest#supportsMetadata";
+        String name = "CloseableTracerTest#supportsMetadata_map";
         Tracer.subscribe(name, observer);
         try {
             try (CloseableTracer tracer = CloseableTracer.startSpan("foo", ImmutableMap.of("key", "value"))) {
+                OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+                assertThat(openSpan.getOperation()).isEqualTo("foo");
+                assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
+            }
+            assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+            ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);
+            Mockito.verify(observer).consume(captor.capture());
+            Span emitted = captor.getValue();
+            assertThat(emitted.getOperation()).isEqualTo("foo");
+            assertThat(emitted.getMetadata()).containsEntry("key", "value");
+        } finally {
+            Tracer.unsubscribe(name);
+        }
+    }
+
+    @Test
+    public void supportsMetadata_recorder() {
+        SpanObserver observer = Mockito.mock(SpanObserver.class);
+        String name = "CloseableTracerTest#supportsMetadata_recorder";
+        Tracer.subscribe(name, observer);
+        try {
+            try (CloseableTracer tracer = CloseableTracer.startSpan(
+                    "foo",
+                    new TagRecorder<String>() {
+                        @Override
+                        public <T> void record(TagAdapter<T> sink, T target, String state) {
+                            sink.tag(target, "key", state);
+                        }
+                    },
+                    "value")) {
                 OpenSpan openSpan = Tracer.copyTrace().get().top().get();
                 assertThat(openSpan.getOperation()).isEqualTo("foo");
                 assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
