@@ -178,10 +178,11 @@ public final class DeferredTracer implements Serializable {
         @Override
         public void close() {
             Tracer.fastCompleteSpan(metadata);
-            if (Tracer.hasTraceId()) {
+            if (originalTrace.isPresent()) {
+                Tracer.setTrace(originalTrace.get());
+            } else if (Tracer.hasTraceId()) {
                 Tracer.getAndClearTrace();
             }
-            originalTrace.ifPresent(Tracer::setTrace);
         }
     }
 
