@@ -82,17 +82,17 @@ public final class CloseableTracerTest {
     }
 
     @Test
-    public void supportsMetadata_recorder() {
+    public void supportsMetadata_translator() {
         SpanObserver observer = Mockito.mock(SpanObserver.class);
-        String name = "CloseableTracerTest#supportsMetadata_recorder";
+        String name = "CloseableTracerTest#supportsMetadata_translator";
         Tracer.subscribe(name, observer);
         try {
             try (CloseableTracer tracer = CloseableTracer.startSpan(
                     "foo",
-                    new TagRecorder<String>() {
+                    new TagTranslator<String>() {
                         @Override
-                        public <T> void record(TagAdapter<T> sink, T target, String data) {
-                            sink.tag(target, "key", data);
+                        public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+                            adapter.tag(target, "key", data);
                         }
                     },
                     "value")) {

@@ -18,7 +18,7 @@ package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
 import com.palantir.tracing.Observability;
-import com.palantir.tracing.TagRecorder;
+import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -43,7 +43,9 @@ import org.glassfish.jersey.server.model.Resource;
 public final class TraceEnrichingFilter implements ContainerRequestFilter, ContainerResponseFilter {
     public static final TraceEnrichingFilter INSTANCE = new TraceEnrichingFilter();
 
-    /** This is the name of the trace id property we set on {@link ContainerRequestContext}. */
+    /**
+     * This is the name of the trace id property we set on {@link ContainerRequestContext}.
+     */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
 
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
@@ -99,7 +101,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         MultivaluedMap<String, Object> headers = responseContext.getHeaders();
         if (Tracer.hasTraceId()) {
             String traceId = Tracer.getTraceId();
-            Tracer.fastCompleteSpan(ContainerResponseContextTagRecorder.INSTANCE, responseContext);
+            Tracer.fastCompleteSpan(ContainerResponseContextTagTranslator.INSTANCE, responseContext);
             headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);
         } else {
             // When the filter is called twice (e.g. an exception is thrown in a streaming call),
@@ -121,12 +123,12 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         }
     }
 
-    private enum ContainerResponseContextTagRecorder implements TagRecorder<ContainerResponseContext> {
+    private enum ContainerResponseContextTagTranslator implements TagTranslator<ContainerResponseContext> {
         INSTANCE;
 
         @Override
-        public <T> void record(TagAdapter<T> sink, T target, ContainerResponseContext data) {
-            sink.tag(target, "status", Integer.toString(data.getStatus()));
+        public <T> void translate(TagAdapter<T> adapter, T target, ContainerResponseContext data) {
+            adapter.tag(target, "status", Integer.toString(data.getStatus()));
         }
     }
 }

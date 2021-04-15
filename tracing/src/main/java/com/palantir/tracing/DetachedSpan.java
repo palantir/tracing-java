@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.CheckReturnValue;
 
-/** Span which is not bound to thread state, and can be completed on any other thread. */
+/**
+ * Span which is not bound to thread state, and can be completed on any other thread.
+ */
 public interface DetachedSpan {
 
     /**
@@ -71,7 +73,7 @@ public interface DetachedSpan {
      */
     @MustBeClosed
     default CloseableSpan childSpan(String operationName, SpanType type) {
-        return childSpan(operationName, NoTagRecorder.INSTANCE, NoTagRecorder.INSTANCE, type);
+        return childSpan(operationName, NoTagTranslator.INSTANCE, NoTagTranslator.INSTANCE, type);
     }
 
     /**
@@ -83,8 +85,8 @@ public interface DetachedSpan {
     }
 
     @MustBeClosed
-    default <T> CloseableSpan childSpan(String operationName, TagRecorder<? super T> recorder, T data) {
-        return childSpan(operationName, recorder, data, SpanType.LOCAL);
+    default <T> CloseableSpan childSpan(String operationName, TagTranslator<? super T> translator, T data) {
+        return childSpan(operationName, translator, data, SpanType.LOCAL);
     }
 
     /**
@@ -92,11 +94,11 @@ public interface DetachedSpan {
      */
     @MustBeClosed
     default CloseableSpan childSpan(String operationName, Map<String, String> metadata, SpanType type) {
-        return childSpan(operationName, MapTagRecorder.INSTANCE, metadata, type);
+        return childSpan(operationName, MapTagTranslator.INSTANCE, metadata, type);
     }
 
     @MustBeClosed
-    <T> CloseableSpan childSpan(String operationName, TagRecorder<? super T> recorder, T data, SpanType type);
+    <T> CloseableSpan childSpan(String operationName, TagTranslator<? super T> translator, T data, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead of
@@ -120,7 +122,9 @@ public interface DetachedSpan {
         return completeAndStartChild(operationName, SpanType.LOCAL);
     }
 
-    /** Starts a child {@link DetachedSpan} using this instance as the parent. */
+    /**
+     * Starts a child {@link DetachedSpan} using this instance as the parent.
+     */
     @CheckReturnValue
     DetachedSpan childDetachedSpan(String operation, SpanType type);
 
@@ -144,12 +148,12 @@ public interface DetachedSpan {
      * not throw either in order to avoid confusing failures.
      */
     default void complete(Map<String, String> metadata) {
-        complete(MapTagRecorder.INSTANCE, metadata);
+        complete(MapTagTranslator.INSTANCE, metadata);
     }
 
     /**
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
      * not throw either in order to avoid confusing failures.
      */
-    <T> void complete(TagRecorder<? super T> tagRecorder, T data);
+    <T> void complete(TagTranslator<? super T> tagTranslator, T data);
 }

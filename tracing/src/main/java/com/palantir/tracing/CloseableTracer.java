@@ -40,7 +40,7 @@ public class CloseableTracer implements AutoCloseable {
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      */
     public static CloseableTracer startSpan(String operation, Map<String, String> metadata) {
-        return startSpan(operation, MapTagRecorder.INSTANCE, metadata, SpanType.LOCAL);
+        return startSpan(operation, MapTagTranslator.INSTANCE, metadata, SpanType.LOCAL);
     }
 
     /**
@@ -56,12 +56,12 @@ public class CloseableTracer implements AutoCloseable {
 
     /**
      * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
-     * operation. Equivalent to {@link #startSpan(String, TagRecorder, Object, SpanType)} with {@link SpanType#LOCAL}.
+     * operation. Equivalent to {@link #startSpan(String, TagTranslator, Object, SpanType)} with {@link SpanType#LOCAL}.
      *
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
-    public static <T> CloseableTracer startSpan(String operation, TagRecorder<? super T> recorder, T data) {
-        return startSpan(operation, recorder, data, SpanType.LOCAL);
+    public static <T> CloseableTracer startSpan(String operation, TagTranslator<? super T> translator, T data) {
+        return startSpan(operation, translator, data, SpanType.LOCAL);
     }
 
     /**
@@ -71,12 +71,12 @@ public class CloseableTracer implements AutoCloseable {
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
     public static <T> CloseableTracer startSpan(
-            String operation, TagRecorder<? super T> recorder, T data, SpanType spanType) {
+            String operation, TagTranslator<? super T> translator, T data, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
-        if (!Tracer.isTraceObservable() || recorder.isEmpty(data)) {
+        if (!Tracer.isTraceObservable() || translator.isEmpty(data)) {
             return INSTANCE;
         }
-        return new TaggedCloseableTracer<>(recorder, data);
+        return new TaggedCloseableTracer<>(translator, data);
     }
 
     @Override
@@ -85,17 +85,17 @@ public class CloseableTracer implements AutoCloseable {
     }
 
     private static final class TaggedCloseableTracer<T> extends CloseableTracer {
-        private final TagRecorder<? super T> recorder;
+        private final TagTranslator<? super T> translator;
         private final T data;
 
-        TaggedCloseableTracer(TagRecorder<? super T> recorder, T data) {
-            this.recorder = recorder;
+        TaggedCloseableTracer(TagTranslator<? super T> translator, T data) {
+            this.translator = translator;
             this.data = data;
         }
 
         @Override
         public void close() {
-            Tracer.fastCompleteSpan(recorder, data);
+            Tracer.fastCompleteSpan(translator, data);
         }
     }
 }

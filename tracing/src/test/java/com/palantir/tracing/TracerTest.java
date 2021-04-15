@@ -467,15 +467,15 @@ public final class TracerTest {
     }
 
     @Test
-    public void testDetached_metadata_recorder() {
+    public void testDetached_metadata_translator() {
         assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.subscribe("1", observer1);
         DetachedSpan detached = DetachedSpan.start("operation");
         detached.complete(
-                new TagRecorder<String>() {
+                new TagTranslator<String>() {
                     @Override
-                    public <T> void record(TagAdapter<T> sink, T target, String data) {
-                        sink.tag(target, "foo", data);
+                    public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+                        adapter.tag(target, "foo", data);
                     }
                 },
                 "bar");
@@ -510,7 +510,7 @@ public final class TracerTest {
     }
 
     @Test
-    public void testDetachedTraceAppliedToThreadState_metadata_recorder() {
+    public void testDetachedTraceAppliedToThreadState_metadata_translator() {
         assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.subscribe("1", observer1);
         String operation1 = "operation";
@@ -520,10 +520,10 @@ public final class TracerTest {
             assertThat(Tracer.hasTraceId()).isFalse();
             try (CloseableSpan ignored = detached.childSpan(
                     operation2,
-                    new TagRecorder<String>() {
+                    new TagTranslator<String>() {
                         @Override
-                        public <T> void record(TagAdapter<T> sink, T target, String data) {
-                            sink.tag(target, "foo", data);
+                        public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+                            adapter.tag(target, "foo", data);
                         }
                     },
                     "bar")) {

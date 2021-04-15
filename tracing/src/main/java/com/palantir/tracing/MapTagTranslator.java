@@ -16,15 +16,21 @@
 
 package com.palantir.tracing;
 
-/** Internal no-op tag recorder. */
-enum NoTagRecorder implements TagRecorder<Object> {
+import java.util.Map;
+
+/**
+ * Internal tag translator for {@link Map maps}.
+ */
+enum MapTagTranslator implements TagTranslator<Map<String, String>> {
     INSTANCE;
 
     @Override
-    public <T> void record(TagAdapter<T> _sink, T _target, Object _data) {}
+    public <T> void translate(TagAdapter<T> adapter, T target, Map<String, String> data) {
+        adapter.tag(target, data);
+    }
 
     @Override
-    public boolean isEmpty(Object _data) {
-        return true;
+    public boolean isEmpty(Map<String, String> data) {
+        return data == null || data.isEmpty();
     }
 }

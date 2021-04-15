@@ -20,7 +20,7 @@ import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.palantir.tracing.CloseableSpan;
 import com.palantir.tracing.DetachedSpan;
-import com.palantir.tracing.TagRecorder;
+import com.palantir.tracing.TagTranslator;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
@@ -45,25 +45,25 @@ public final class TracedOperationHandler implements HttpHandler {
     public static final AttachmentKey<Boolean> IS_SAMPLED_ATTACHMENT = TracingAttachments.IS_SAMPLED;
 
     private final String operation;
-    private final TagRecorder<? super HttpServerExchange> recorder;
+    private final TagTranslator<? super HttpServerExchange> translator;
     private final HttpHandler delegate;
 
     public TracedOperationHandler(
-            HttpHandler delegate, String operation, TagRecorder<? super HttpServerExchange> recorder) {
+            HttpHandler delegate, String operation, TagTranslator<? super HttpServerExchange> translator) {
         this.delegate = checkNotNull(delegate, "A delegate HttpHandler is required");
-        this.operation = "Undertow: " + checkNotNull(operation, "Operation name is required");
-        this.recorder = checkNotNull(recorder, "TagRecorder map is required");
+        this.operation = checkNotNull(operation, "Operation name is required");
+        this.translator = checkNotNull(translator, "TagTranslator is required");
     }
 
     public TracedOperationHandler(HttpHandler delegate, String operation) {
-        this(delegate, operation, NoTagRecorder.INSTANCE);
+        this(delegate, "Undertow: " + checkNotNull(operation, "Operation name is required"), NoTagTranslator.INSTANCE);
     }
 
-    private enum NoTagRecorder implements TagRecorder<Object> {
+    private enum NoTagTranslator implements TagTranslator<Object> {
         INSTANCE;
 
         @Override
-        public <T> void record(TagAdapter<T> _sink, T _target, Object _data) {}
+        public <T> void translate(TagAdapter<T> _adapter, T _target, Object _data) {}
 
         @Override
         public boolean isEmpty(Object _data) {
@@ -74,7 +74,7 @@ public final class TracedOperationHandler implements HttpHandler {
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         DetachedSpan detachedSpan = UndertowTracing.getOrInitializeRequestTrace(exchange);
-        try (CloseableSpan ignored = detachedSpan.childSpan(operation, recorder, exchange)) {
+        try (CloseableSpan ignored = detachedSpan.childSpan(operation, translator, exchange)) {
             delegate.handleRequest(exchange);
         }
     }

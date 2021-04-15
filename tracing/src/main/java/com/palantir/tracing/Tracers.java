@@ -29,9 +29,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
-/** Utility methods for making {@link ExecutorService} and {@link Runnable} instances tracing-aware. */
+/**
+ * Utility methods for making {@link ExecutorService} and {@link Runnable} instances tracing-aware.
+ */
 public final class Tracers {
-    /** The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
+    /**
+     * The key under which trace ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}.
+     */
     public static final String TRACE_ID_KEY = "traceId";
     /**
      * The key under which trace sampling state are inserted into SLF4J {@link org.slf4j.MDC MDCs}. If present, the
@@ -39,7 +43,9 @@ public final class Tracers {
      */
     public static final String TRACE_SAMPLED_KEY = "_sampled";
 
-    /** The key under which tracing request ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}. */
+    /**
+     * The key under which tracing request ids are inserted into SLF4J {@link org.slf4j.MDC MDCs}.
+     */
     public static final String REQUEST_ID_KEY = "_requestId";
 
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
@@ -49,7 +55,9 @@ public final class Tracers {
 
     private Tracers() {}
 
-    /** Returns a random ID suitable for span and trace IDs. */
+    /**
+     * Returns a random ID suitable for span and trace IDs.
+     */
     public static String randomId() {
         return longToPaddedHex(ThreadLocalRandom.current().nextLong());
     }
@@ -223,7 +231,7 @@ public final class Tracers {
      *     "remote operation",
      *     () -> retrofitClient.doRequest());
      * }</pre>
-     *
+     * <p>
      * Note that this function is not named {@code wrap} in order to avoid conflicting with potential utility methods
      * for {@link Supplier suppliers}.
      */
@@ -250,7 +258,7 @@ public final class Tracers {
                 result.addListener(new ListenableFutureSpanListener(span, metadata), MoreExecutors.directExecutor());
             } else {
                 // Complete the detached span, even if the delegateFactory throws.
-                span.complete(MapTagRecorder.INSTANCE, metadata);
+                span.complete(MapTagTranslator.INSTANCE, metadata);
             }
         }
         return result;
@@ -268,7 +276,7 @@ public final class Tracers {
 
         @Override
         public void run() {
-            span.complete(MapTagRecorder.INSTANCE, metadata);
+            span.complete(MapTagTranslator.INSTANCE, metadata);
         }
 
         @Override

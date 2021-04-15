@@ -25,18 +25,31 @@ import java.util.Map;
  * lambdas and has minimal overhead in both the sampled and unsampled cases. This allows unsampled spans
  * to result in zero allocation.
  *
- * @param <S> Stateful object type, an instance of which is passed through method calls with the {@link TagRecorder}.
+ * @param <S> Stateful object type, an instance of which is passed through method calls with the {@link TagTranslator}.
  */
-public interface TagRecorder<S> {
+public interface TagTranslator<S> {
 
-    /** Implementations add tags based on {@code data}. */
-    <T> void record(TagAdapter<T> sink, T target, S data);
+    /**
+     * Implementations add tags based on {@code data}.
+     *
+     * <pre>{@code
+     * enum FirstElementTagTranslator implements TagTranslator<List<String>> {
+     *     INSTANCE;
+     *     <T> void translate(TagAdapter<T> adapter, T target, List<String> data) {
+     *         adapter.tag(target, "firstElement", data.get(0));
+     *     }
+     * }
+     * }</pre>
+     */
+    <T> void translate(TagAdapter<T> adapter, T target, S data);
 
     default boolean isEmpty(S _data) {
         return false;
     }
 
-    /** Tag adapter object which insulates the implementation of the underlying data structure from callers. */
+    /**
+     * Tag adapter object which insulates the implementation of the underlying data structure from callers.
+     */
     interface TagAdapter<T> {
         void tag(T target, String key, String value);
 

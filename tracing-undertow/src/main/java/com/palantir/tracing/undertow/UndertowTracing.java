@@ -23,7 +23,7 @@ import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
-import com.palantir.tracing.TagRecorder;
+import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
@@ -47,13 +47,17 @@ final class UndertowTracing {
 
     // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated
     // here because we expect the two handler implementations to be sufficient.
-    /** Detached span object representing the entire request including asynchronous components. */
+    /**
+     * Detached span object representing the entire request including asynchronous components.
+     */
     @VisibleForTesting
     static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
 
     private static final String OPERATION_NAME = "Undertow Request";
 
-    /** Apply detached tracing state to the provided {@link HttpServerExchange request}. */
+    /**
+     * Apply detached tracing state to the provided {@link HttpServerExchange request}.
+     */
     static DetachedSpan getOrInitializeRequestTrace(HttpServerExchange exchange) {
         DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
         if (detachedSpan == null) {
@@ -102,7 +106,7 @@ final class UndertowTracing {
             try {
                 DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
                 if (detachedSpan != null) {
-                    detachedSpan.complete(UndertowTagRecorder.INSTANCE, exchange);
+                    detachedSpan.complete(UndertowTagTranslator.INSTANCE, exchange);
                 }
             } finally {
                 nextListener.proceed();
@@ -110,12 +114,12 @@ final class UndertowTracing {
         }
     }
 
-    private enum UndertowTagRecorder implements TagRecorder<HttpServerExchange> {
+    private enum UndertowTagTranslator implements TagTranslator<HttpServerExchange> {
         INSTANCE;
 
         @Override
-        public <T> void record(TagAdapter<T> sink, T target, HttpServerExchange exchange) {
-            sink.tag(target, "status", statusString(exchange.getStatusCode()));
+        public <T> void translate(TagAdapter<T> adapter, T target, HttpServerExchange exchange) {
+            adapter.tag(target, "status", statusString(exchange.getStatusCode()));
         }
 
         static String statusString(int statusCode) {
