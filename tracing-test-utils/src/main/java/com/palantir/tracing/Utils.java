@@ -25,31 +25,30 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 final class Utils {
+    private static final ImmutableMap<TimeUnit, TimeUnit> LARGER_UNIT = ImmutableMap.<TimeUnit, TimeUnit>builder()
+            .put(TimeUnit.NANOSECONDS, TimeUnit.MICROSECONDS)
+            .put(TimeUnit.MICROSECONDS, TimeUnit.MILLISECONDS)
+            .put(TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
+            .build();
+
+    private static final ImmutableMap<TimeUnit, String> ABBREVIATION = ImmutableMap.<TimeUnit, String>builder()
+            .put(TimeUnit.NANOSECONDS, "ns")
+            .put(TimeUnit.MICROSECONDS, "micros")
+            .put(TimeUnit.MILLISECONDS, "ms")
+            .put(TimeUnit.SECONDS, "s")
+            .build();
 
     public static float percent(long numerator, long denominator) {
         return 100f * numerator / denominator;
     }
 
-    public static String renderDuration(float amount, TimeUnit timeUnit) {
-        ImmutableMap<TimeUnit, TimeUnit> largerUnit = ImmutableMap.<TimeUnit, TimeUnit>builder()
-                .put(TimeUnit.NANOSECONDS, TimeUnit.MICROSECONDS)
-                .put(TimeUnit.MICROSECONDS, TimeUnit.MILLISECONDS)
-                .put(TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
-                .build();
-
-        ImmutableMap<TimeUnit, String> abbreviation = ImmutableMap.<TimeUnit, String>builder()
-                .put(TimeUnit.NANOSECONDS, "ns")
-                .put(TimeUnit.MICROSECONDS, "micros")
-                .put(TimeUnit.MILLISECONDS, "ms")
-                .put(TimeUnit.SECONDS, "s")
-                .build();
-
-        TimeUnit bigger = largerUnit.get(timeUnit);
+    public static String renderDuration(double amount, TimeUnit timeUnit) {
+        TimeUnit bigger = LARGER_UNIT.get(timeUnit);
         if (amount >= 1000 && bigger != null) {
             return renderDuration(amount / 1000, bigger);
         }
 
-        return String.format("%.2f %s", amount, abbreviation.get(timeUnit));
+        return String.format("%.2f %s", amount, ABBREVIATION.get(timeUnit));
     }
 
     private Utils() {}
