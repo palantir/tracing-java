@@ -18,10 +18,13 @@ package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.SpanType;
+import java.util.Map;
 import java.util.Optional;
 import javax.annotation.CheckReturnValue;
 
-/** Span which is not bound to thread state, and can be completed on any other thread. */
+/**
+ * Span which is not bound to thread state, and can be completed on any other thread.
+ */
 public interface DetachedSpan {
 
     /**
@@ -69,7 +72,33 @@ public interface DetachedSpan {
      * instead of thread state.
      */
     @MustBeClosed
-    CloseableSpan childSpan(String operationName, SpanType type);
+    default CloseableSpan childSpan(String operationName, SpanType type) {
+        return childSpan(operationName, NoTagTranslator.INSTANCE, NoTagTranslator.INSTANCE, type);
+    }
+
+    /**
+     * Equivalent to {@link #childSpan(String, Map, SpanType)} using a {@link SpanType#LOCAL span}.
+     */
+    @MustBeClosed
+    default CloseableSpan childSpan(String operationName, Map<String, String> metadata) {
+        return childSpan(operationName, metadata, SpanType.LOCAL);
+    }
+
+    @MustBeClosed
+    default <T> CloseableSpan childSpan(String operationName, TagTranslator<? super T> translator, T data) {
+        return childSpan(operationName, translator, data, SpanType.LOCAL);
+    }
+
+    /**
+     * Equivalent to {@link #childSpan(String, SpanType)}, but using {@link Map metadata} tags.
+     */
+    @MustBeClosed
+    default CloseableSpan childSpan(String operationName, Map<String, String> metadata, SpanType type) {
+        return childSpan(operationName, MapTagTranslator.INSTANCE, metadata, type);
+    }
+
+    @MustBeClosed
+    <T> CloseableSpan childSpan(String operationName, TagTranslator<? super T> translator, T data, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead of
@@ -93,7 +122,9 @@ public interface DetachedSpan {
         return completeAndStartChild(operationName, SpanType.LOCAL);
     }
 
-    /** Starts a child {@link DetachedSpan} using this instance as the parent. */
+    /**
+     * Starts a child {@link DetachedSpan} using this instance as the parent.
+     */
     @CheckReturnValue
     DetachedSpan childDetachedSpan(String operation, SpanType type);
 
@@ -111,4 +142,18 @@ public interface DetachedSpan {
      * not throw either in order to avoid confusing failures.
      */
     void complete();
+
+    /**
+     * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
+     * not throw either in order to avoid confusing failures.
+     */
+    default void complete(Map<String, String> metadata) {
+        complete(MapTagTranslator.INSTANCE, metadata);
+    }
+
+    /**
+     * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
+     * not throw either in order to avoid confusing failures.
+     */
+    <T> void complete(TagTranslator<? super T> tagTranslator, T data);
 }

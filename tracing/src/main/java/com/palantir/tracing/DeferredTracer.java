@@ -16,11 +16,13 @@
 
 package com.palantir.tracing;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
 import java.io.Closeable;
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -63,6 +65,9 @@ public final class DeferredTracer implements Serializable {
     private final String operation;
 
     @Nullable
+    private final Map<String, String> metadata;
+
+    @Nullable
     private final String parentSpanId;
 
     @Nullable
@@ -88,7 +93,7 @@ public final class DeferredTracer implements Serializable {
         this(operation.orElse(DEFAULT_OPERATION));
     }
 
-    public DeferredTracer(String operation) {
+    public DeferredTracer(String operation, Map<String, String> metadata) {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
@@ -97,13 +102,19 @@ public final class DeferredTracer implements Serializable {
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
+            this.metadata = metadata;
         } else {
             this.traceId = null;
             this.requestId = null;
             this.isObservable = false;
             this.parentSpanId = null;
             this.operation = null;
+            this.metadata = null;
         }
+    }
+
+    public DeferredTracer(String operation) {
+        this(operation, ImmutableMap.of());
     }
 
     /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
@@ -129,7 +140,11 @@ public final class DeferredTracer implements Serializable {
             Tracer.fastStartSpan(operation);
         }
 
-        return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
+        if (isObservable && metadata != null && !metadata.isEmpty()) {
+            return new TaggedCloseableTrace(originalTrace, metadata);
+        } else {
+            return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
+        }
     }
 
     private enum NopCloseableTrace implements CloseableTrace {
@@ -146,6 +161,26 @@ public final class DeferredTracer implements Serializable {
         public void close() {
             Tracer.fastCompleteSpan();
             if (Tracer.hasTraceId()) {
+                Tracer.getAndClearTrace();
+            }
+        }
+    }
+
+    private static final class TaggedCloseableTrace implements CloseableTrace {
+        private final Map<String, String> metadata;
+        private final Optional<Trace> originalTrace;
+
+        TaggedCloseableTrace(Optional<Trace> originalTrace, Map<String, String> metadata) {
+            this.metadata = metadata;
+            this.originalTrace = originalTrace;
+        }
+
+        @Override
+        public void close() {
+            Tracer.fastCompleteSpan(metadata);
+            if (originalTrace.isPresent()) {
+                Tracer.setTrace(originalTrace.get());
+            } else if (Tracer.hasTraceId()) {
                 Tracer.getAndClearTrace();
             }
         }

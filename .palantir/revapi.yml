@@ -1,4 +1,14 @@
 acceptedBreaks:
+  "4.13.0":
+    com.palantir.tracing:tracing:
+    - code: "java.method.addedToInterface"
+      new: "method <T> com.palantir.tracing.CloseableSpan com.palantir.tracing.DetachedSpan::childSpan(java.lang.String,\
+        \ com.palantir.tracing.TagTranslator<? super T>, T, com.palantir.tracing.api.SpanType)"
+      justification: "new methods on provided interfaces"
+    - code: "java.method.addedToInterface"
+      new: "method <T> void com.palantir.tracing.DetachedSpan::complete(com.palantir.tracing.TagTranslator<?\
+        \ super T>, T)"
+      justification: "new methods on provided interfaces"
   "4.5.2":
     com.palantir.tracing:tracing:
     - code: "java.method.addedToInterface"

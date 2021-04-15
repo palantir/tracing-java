@@ -455,6 +455,93 @@ public final class TracerTest {
     }
 
     @Test
+    public void testDetached_metadata_map() {
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.subscribe("1", observer1);
+        DetachedSpan detached = DetachedSpan.start("operation");
+        detached.complete(ImmutableMap.of("foo", "bar"));
+        Tracer.unsubscribe("1");
+        verify(observer1).consume(spanCaptor.capture());
+        Span span = spanCaptor.getValue();
+        assertThat(span.getMetadata()).containsEntry("foo", "bar");
+    }
+
+    @Test
+    public void testDetached_metadata_translator() {
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.subscribe("1", observer1);
+        DetachedSpan detached = DetachedSpan.start("operation");
+        detached.complete(
+                new TagTranslator<String>() {
+                    @Override
+                    public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+                        adapter.tag(target, "foo", data);
+                    }
+                },
+                "bar");
+        Tracer.unsubscribe("1");
+        verify(observer1).consume(spanCaptor.capture());
+        Span span = spanCaptor.getValue();
+        assertThat(span.getMetadata()).containsEntry("foo", "bar");
+    }
+
+    @Test
+    public void testDetachedTraceAppliedToThreadState_metadata_map() {
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.subscribe("1", observer1);
+        String operation1 = "operation";
+        String operation2 = "attached";
+        DetachedSpan detached = DetachedSpan.start(operation1);
+        try {
+            assertThat(Tracer.hasTraceId()).isFalse();
+            try (CloseableSpan ignored = detached.childSpan(operation2, ImmutableMap.of("foo", "bar"))) {
+                assertThat(Tracer.hasTraceId()).isTrue();
+            }
+            verify(observer1).consume(spanCaptor.capture());
+            Span span = spanCaptor.getValue();
+            assertThat(span.getOperation()).isEqualTo(operation2);
+            assertThat(Tracer.hasTraceId()).isFalse();
+            assertThat(span.getMetadata()).containsEntry("foo", "bar");
+        } finally {
+            detached.complete();
+        }
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.unsubscribe("1");
+    }
+
+    @Test
+    public void testDetachedTraceAppliedToThreadState_metadata_translator() {
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.subscribe("1", observer1);
+        String operation1 = "operation";
+        String operation2 = "attached";
+        DetachedSpan detached = DetachedSpan.start(operation1);
+        try {
+            assertThat(Tracer.hasTraceId()).isFalse();
+            try (CloseableSpan ignored = detached.childSpan(
+                    operation2,
+                    new TagTranslator<String>() {
+                        @Override
+                        public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+                            adapter.tag(target, "foo", data);
+                        }
+                    },
+                    "bar")) {
+                assertThat(Tracer.hasTraceId()).isTrue();
+            }
+            verify(observer1).consume(spanCaptor.capture());
+            Span span = spanCaptor.getValue();
+            assertThat(span.getOperation()).isEqualTo(operation2);
+            assertThat(Tracer.hasTraceId()).isFalse();
+            assertThat(span.getMetadata()).containsEntry("foo", "bar");
+        } finally {
+            detached.complete();
+        }
+        assertThat(Tracer.hasTraceId()).isFalse();
+        Tracer.unsubscribe("1");
+    }
+
+    @Test
     public void testDetachedTraceRestoresTrace() {
         assertThat(Tracer.hasTraceId()).isFalse();
         DetachedSpan detached = DetachedSpan.start("detached");

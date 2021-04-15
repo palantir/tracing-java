@@ -18,10 +18,10 @@ package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
 import com.palantir.tracing.Observability;
+import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
-import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
@@ -43,7 +43,9 @@ import org.glassfish.jersey.server.model.Resource;
 public final class TraceEnrichingFilter implements ContainerRequestFilter, ContainerResponseFilter {
     public static final TraceEnrichingFilter INSTANCE = new TraceEnrichingFilter();
 
-    /** This is the name of the trace id property we set on {@link ContainerRequestContext}. */
+    /**
+     * This is the name of the trace id property we set on {@link ContainerRequestContext}.
+     */
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
 
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
@@ -97,10 +99,10 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
             throws IOException {
         MultivaluedMap<String, Object> headers = responseContext.getHeaders();
-        Optional<Span> maybeSpan = Tracer.completeSpan();
-        if (maybeSpan.isPresent()) {
-            Span span = maybeSpan.get();
-            headers.putSingle(TraceHttpHeaders.TRACE_ID, span.getTraceId());
+        if (Tracer.hasTraceId()) {
+            String traceId = Tracer.getTraceId();
+            Tracer.fastCompleteSpan(ContainerResponseContextTagTranslator.INSTANCE, responseContext);
+            headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);
         } else {
             // When the filter is called twice (e.g. an exception is thrown in a streaming call),
             // the current trace will be empty. To allow clients to still get the trace ID corresponding to
@@ -118,6 +120,15 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
             return Observability.UNDECIDED;
         } else {
             return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
+        }
+    }
+
+    private enum ContainerResponseContextTagTranslator implements TagTranslator<ContainerResponseContext> {
+        INSTANCE;
+
+        @Override
+        public <T> void translate(TagAdapter<T> adapter, T target, ContainerResponseContext data) {
+            adapter.tag(target, "status", Integer.toString(data.getStatus()));
         }
     }
 }

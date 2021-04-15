@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Wire tag metadata throughout tracing-java
+  links:
+  - https://github.com/palantir/tracing-java/pull/711
