@@ -30,7 +30,8 @@ import java.util.Map;
 public interface TagTranslator<S> {
 
     /**
-     * Implementations add tags based on {@code data}.
+     * Implementations may add tags based on {@code data}. Tags are applied using
+     * {@link TagAdapter#tag(Object, String, String)} with the provided {@code target}.
      *
      * <pre>{@code
      * enum FirstElementTagTranslator implements TagTranslator<List<String>> {
@@ -43,6 +44,12 @@ public interface TagTranslator<S> {
      */
     <T> void translate(TagAdapter<T> adapter, T target, S data);
 
+    /**
+     * May return {@code true} if the input data will not produce any tags. This allows
+     * the tracing framework to avoid tracking additional data unnecessarily, but is not
+     * required to implement. It is always safe to return {@code false} even if
+     * {@link #translate(TagAdapter, Object, Object)} may not produce any tags.
+     */
     default boolean isEmpty(S _data) {
         return false;
     }
