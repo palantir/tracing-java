@@ -59,21 +59,12 @@ public final class TracedOperationHandler implements HttpHandler {
         this(delegate, "Undertow: " + checkNotNull(operation, "Operation name is required"), NoTagTranslator.INSTANCE);
     }
 
-    private enum NoTagTranslator implements TagTranslator<Object> {
-        INSTANCE;
-
-        @Override
-        public <T> void translate(TagAdapter<T> _adapter, T _target, Object _data) {}
-
-        @Override
-        public boolean isEmpty(Object _data) {
-            return true;
-        }
-    }
-
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        DetachedSpan detachedSpan = UndertowTracing.getOrInitializeRequestTrace(exchange);
+        // The configured tags apply to this handler, not the full request span. We expect the full request span to
+        // be initialized prior to traced operations.
+        DetachedSpan detachedSpan =
+                UndertowTracing.getOrInitializeRequestTrace(exchange, StatusCodeTagTranslator.INSTANCE);
         try (CloseableSpan ignored = detachedSpan.childSpan(operation, translator, exchange)) {
             delegate.handleRequest(exchange);
         }

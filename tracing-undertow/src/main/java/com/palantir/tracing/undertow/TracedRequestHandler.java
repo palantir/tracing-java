@@ -16,7 +16,9 @@
 
 package com.palantir.tracing.undertow;
 
+import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.DetachedSpan;
+import com.palantir.tracing.TagTranslator;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
@@ -32,14 +34,20 @@ import io.undertow.server.HttpServerExchange;
 public final class TracedRequestHandler implements HttpHandler {
 
     private final HttpHandler delegate;
+    private final TagTranslator<? super HttpServerExchange> translator;
+
+    public TracedRequestHandler(HttpHandler delegate, TagTranslator<? super HttpServerExchange> translator) {
+        this.delegate = Preconditions.checkNotNull(delegate, "HttpHandler is required");
+        this.translator = Preconditions.checkNotNull(translator, "TagTranslator is required");
+    }
 
     public TracedRequestHandler(HttpHandler delegate) {
-        this.delegate = delegate;
+        this(delegate, StatusCodeTagTranslator.INSTANCE);
     }
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        UndertowTracing.getOrInitializeRequestTrace(exchange);
+        UndertowTracing.getOrInitializeRequestTrace(exchange, translator);
         delegate.handleRequest(exchange);
     }
 

@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.api.Span;
@@ -28,6 +29,7 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -63,15 +65,27 @@ public class TracedRequestHandlerTest {
 
     private CountDownLatch traceReportedLatch;
 
+    private volatile TagTranslator<? super HttpServerExchange> translator;
+
     @Before
     public void before() {
         Tracer.subscribe("TracedRequestHandlerTest", observer);
         Tracer.setSampler(traceSampler);
+        translator = StatusCodeTagTranslator.INSTANCE;
 
         traceReportedLatch = new CountDownLatch(1);
         port = portSelector.incrementAndGet();
-        HttpHandler nextHandler = new TracedRequestHandler(exchange -> exchange.getResponseHeaders()
-                .put(HttpString.tryFromString("requestId"), exchange.getAttachment(TracingAttachments.REQUEST_ID)));
+        HttpHandler nextHandler = new TracedRequestHandler(
+                exchange -> exchange.getResponseHeaders()
+                        .put(
+                                HttpString.tryFromString("requestId"),
+                                exchange.getAttachment(TracingAttachments.REQUEST_ID)),
+                new TagTranslator<HttpServerExchange>() {
+                    @Override
+                    public <T> void translate(TagAdapter<T> adapter, T target, HttpServerExchange data) {
+                        translator.translate(adapter, target, data);
+                    }
+                });
         server = Undertow.builder()
                 .addHttpListener(port, null)
                 .setHandler(exchange -> {
@@ -155,5 +169,28 @@ public class TracedRequestHandlerTest {
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
         assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
+    }
+
+    @Test
+    public void testCustomTags() throws Exception {
+        translator = new TagTranslator<HttpServerExchange>() {
+            @Override
+            public <T> void translate(TagAdapter<T> adapter, T target, HttpServerExchange _data) {
+                adapter.tag(target, "foo", "bar");
+            }
+        };
+        HttpURLConnection con = connection();
+        con.setRequestProperty(TraceHttpHeaders.IS_SAMPLED, "1");
+        con.setRequestProperty(TraceHttpHeaders.TRACE_ID, "1234");
+        assertThat(con.getResponseCode()).isEqualTo(200);
+        assertThat(con.getHeaderField(TraceHttpHeaders.TRACE_ID)).isEqualTo("1234");
+        assertThat(con.getHeaderField("requestId")).isNotEmpty();
+        assertThat(traceReportedLatch.await(5, TimeUnit.SECONDS)).isTrue();
+        verifyNoMoreInteractions(traceSampler);
+        verify(observer).consume(spanCaptor.capture());
+        Span span = spanCaptor.getValue();
+        assertThat(span.getOperation()).isEqualTo("Undertow Request");
+        assertThat(span.getTraceId()).isEqualTo("1234");
+        assertThat(span.getMetadata()).doesNotContainKey("status").containsEntry("foo", "bar");
     }
 }
