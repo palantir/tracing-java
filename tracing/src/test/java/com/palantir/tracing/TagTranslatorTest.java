@@ -29,7 +29,7 @@ public class TagTranslatorTest {
         AtomicInteger stringTranslatorCalled = new AtomicInteger();
         TagTranslator<String> translator1 = new TagTranslator<String>() {
             @Override
-            public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+            public <T> void translate(TagAdapter<T> _adapter, T _target, String _data) {
                 stringTranslatorCalled.incrementAndGet();
             }
 

@@ -16,6 +16,8 @@
 
 package com.palantir.tracing;
 
+import com.palantir.logsafe.Preconditions;
+
 /**
  * Default implementation of {@link TagTranslator} used by {@link TagTranslator#andThen(TagTranslator)}.
  */
@@ -25,8 +27,8 @@ final class CompositeTagTranslator<S> implements TagTranslator<S> {
     private final TagTranslator<? super S> second;
 
     CompositeTagTranslator(TagTranslator<? super S> first, TagTranslator<? super S> second) {
-        this.first = first;
-        this.second = second;
+        this.first = Preconditions.checkNotNull(first, "First TagTranslator is required");
+        this.second = Preconditions.checkNotNull(second, "Second TagTranslator is required");
     }
 
     @Override
