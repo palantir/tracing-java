@@ -50,8 +50,13 @@ public interface TagTranslator<S> {
      * required to implement. It is always safe to return {@code false} even if
      * {@link #translate(TagAdapter, Object, Object)} may not produce any tags.
      */
-    default boolean isEmpty(S _data) {
+    default boolean isEmpty(@SuppressWarnings("unused") S data) {
         return false;
+    }
+
+    /** Returns a new composed {@link TagTranslator}. */
+    default TagTranslator<S> andThen(TagTranslator<? super S> after) {
+        return new CompositeTagTranslator<>(this, after);
     }
 
     /**
