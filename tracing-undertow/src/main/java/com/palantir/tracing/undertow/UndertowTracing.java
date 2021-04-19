@@ -33,12 +33,16 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Internal utility functionality shared between {@link TracedOperationHandler} and {@link TracedRequestHandler}.
  * Intentionally package private.
  */
 final class UndertowTracing {
+
+    private static final Logger log = LoggerFactory.getLogger(UndertowTracing.class);
 
     // Tracing header definitions
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
@@ -53,39 +57,50 @@ final class UndertowTracing {
     @VisibleForTesting
     static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
 
+    private static final AttachmentKey<TagTranslator<? super HttpServerExchange>> TAG_TRANSLATOR_ATTACHMENT_KEY =
+            AttachmentKey.create(TagTranslator.class);
+
     private static final String OPERATION_NAME = "Undertow Request";
 
     /**
      * Apply detached tracing state to the provided {@link HttpServerExchange request}.
      */
-    static DetachedSpan getOrInitializeRequestTrace(HttpServerExchange exchange) {
+    static DetachedSpan getOrInitializeRequestTrace(
+            HttpServerExchange exchange, TagTranslator<? super HttpServerExchange> translator) {
         DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
         if (detachedSpan == null) {
-            return initializeRequestTrace(exchange);
+            return initializeRequestTrace(exchange, translator);
         }
         return detachedSpan;
     }
 
-    private static DetachedSpan initializeRequestTrace(HttpServerExchange exchange) {
+    private static DetachedSpan initializeRequestTrace(
+            HttpServerExchange exchange, TagTranslator<? super HttpServerExchange> translator) {
         HeaderMap requestHeaders = exchange.getRequestHeaders();
         String maybeTraceId = requestHeaders.getFirst(TRACE_ID);
         boolean newTraceId = maybeTraceId == null;
         String traceId = newTraceId ? Tracers.randomId() : maybeTraceId;
         DetachedSpan detachedSpan = detachedSpan(newTraceId, traceId, requestHeaders);
-        setExchangeState(exchange, detachedSpan, traceId);
+        setExchangeState(exchange, detachedSpan, traceId, translator);
         return detachedSpan;
     }
 
-    private static void setExchangeState(HttpServerExchange exchange, DetachedSpan detachedSpan, String traceId) {
+    private static void setExchangeState(
+            HttpServerExchange exchange,
+            DetachedSpan detachedSpan,
+            String traceId,
+            TagTranslator<? super HttpServerExchange> translator) {
         // Populate response before proceeding since later operations might commit the response.
         exchange.getResponseHeaders().put(TRACE_ID, traceId);
-        exchange.putAttachment(TracingAttachments.IS_SAMPLED, InternalTracers.isSampled(detachedSpan));
+        boolean isSampled = InternalTracers.isSampled(detachedSpan);
+        exchange.putAttachment(TracingAttachments.IS_SAMPLED, isSampled);
         Optional<String> requestId = InternalTracers.getRequestId(detachedSpan);
         if (!requestId.isPresent()) {
             throw new SafeIllegalStateException("No requestId is set", SafeArg.of("span", detachedSpan));
         }
         exchange.putAttachment(TracingAttachments.REQUEST_ID, requestId.get());
         exchange.putAttachment(REQUEST_SPAN, detachedSpan);
+        exchange.putAttachment(TAG_TRANSLATOR_ATTACHMENT_KEY, translator);
         exchange.addExchangeCompleteListener(DetachedTraceCompletionListener.INSTANCE);
     }
 
@@ -106,31 +121,19 @@ final class UndertowTracing {
             try {
                 DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
                 if (detachedSpan != null) {
-                    detachedSpan.complete(UndertowTagTranslator.INSTANCE, exchange);
+                    detachedSpan.complete(tagTranslator(exchange), exchange);
                 }
+            } catch (Throwable t) {
+                log.error("Failed to complete the request tracing span", t);
             } finally {
                 nextListener.proceed();
             }
         }
-    }
 
-    private enum UndertowTagTranslator implements TagTranslator<HttpServerExchange> {
-        INSTANCE;
-
-        @Override
-        public <T> void translate(TagAdapter<T> adapter, T target, HttpServerExchange exchange) {
-            adapter.tag(target, "status", statusString(exchange.getStatusCode()));
-        }
-
-        static String statusString(int statusCode) {
-            // handle common cases quickly
-            switch (statusCode) {
-                case 200:
-                    return "200";
-                case 204:
-                    return "204";
-            }
-            return Integer.toString(statusCode);
+        static TagTranslator<? super HttpServerExchange> tagTranslator(HttpServerExchange exchange) {
+            TagTranslator<? super HttpServerExchange> translator =
+                    exchange.getAttachment(TAG_TRANSLATOR_ATTACHMENT_KEY);
+            return translator == null ? StatusCodeTagTranslator.INSTANCE : translator;
         }
     }
 

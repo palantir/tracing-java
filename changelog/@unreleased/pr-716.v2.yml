@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Undertow SERVER_INCOMING spans may be configured
+  links:
+  - https://github.com/palantir/tracing-java/pull/716
