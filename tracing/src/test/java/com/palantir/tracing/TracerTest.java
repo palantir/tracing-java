@@ -273,7 +273,7 @@ public final class TracerTest {
             Tracer.fastCompleteSpan(
                     new TagTranslator<String>() {
                         @Override
-                        public <T> void translate(TagAdapter<T> adapter, T target, String data) {
+                        public <T> void translate(TagAdapter<T> adapter, T target, String _data) {
                             adapter.tag(target, "foo", null);
                             adapter.tag(target, null, "bar");
                             adapter.tag(target, "baz", "bang");
