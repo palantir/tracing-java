@@ -27,6 +27,7 @@ import com.palantir.tracing.Tracer;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TraceTags;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
