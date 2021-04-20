@@ -604,7 +604,9 @@ public final class Tracer {
 
         @Override
         public void tag(Span.Builder target, String key, String value) {
-            target.putMetadata(key, value);
+            if (key != null && value != null) {
+                target.putMetadata(key, value);
+            }
         }
 
         @Override
