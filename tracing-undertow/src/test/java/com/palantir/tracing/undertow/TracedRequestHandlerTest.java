@@ -27,6 +27,7 @@ import com.palantir.tracing.Tracer;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TraceTags;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -123,7 +124,8 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo("1234");
-        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
+        assertThat(span.getMetadata())
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(con.getResponseCode()));
     }
 
     @Test
@@ -151,7 +153,8 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
-        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
+        assertThat(span.getMetadata())
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(con.getResponseCode()));
     }
 
     @Test
@@ -168,7 +171,8 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
-        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(con.getResponseCode()));
+        assertThat(span.getMetadata())
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(con.getResponseCode()));
     }
 
     @Test
@@ -191,6 +195,8 @@ public class TracedRequestHandlerTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Undertow Request");
         assertThat(span.getTraceId()).isEqualTo("1234");
-        assertThat(span.getMetadata()).doesNotContainKey("status").containsEntry("foo", "bar");
+        assertThat(span.getMetadata())
+                .doesNotContainKey(TraceTags.HTTP_STATUS_CODE)
+                .containsEntry("foo", "bar");
     }
 }

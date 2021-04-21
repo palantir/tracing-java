@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add an API describing common/standard tags based on DD APM
+  links:
+  - https://github.com/palantir/tracing-java/pull/719

@@ -32,6 +32,7 @@ import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TraceTags;
 import io.dropwizard.Application;
 import io.dropwizard.Configuration;
 import io.dropwizard.setup.Environment;
@@ -160,7 +161,8 @@ public final class TraceEnrichingFilterTest {
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Jersey: GET /trace");
-        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(response.getStatus()));
+        assertThat(span.getMetadata())
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getStatus()));
     }
 
     @Test
@@ -172,7 +174,8 @@ public final class TraceEnrichingFilterTest {
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Jersey: POST /trace");
-        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(response.getStatus()));
+        assertThat(span.getMetadata())
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getStatus()));
     }
 
     @Test
@@ -184,7 +187,8 @@ public final class TraceEnrichingFilterTest {
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Jersey: GET /failing-trace");
-        assertThat(span.getMetadata()).containsEntry("status", Integer.toString(response.getStatus()));
+        assertThat(span.getMetadata())
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getStatus()));
     }
 
     @Test

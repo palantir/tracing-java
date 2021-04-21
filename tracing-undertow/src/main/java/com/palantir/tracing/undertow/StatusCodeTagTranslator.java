@@ -17,6 +17,7 @@
 package com.palantir.tracing.undertow;
 
 import com.palantir.tracing.TagTranslator;
+import com.palantir.tracing.api.TraceTags;
 import io.undertow.server.HttpServerExchange;
 
 /**
@@ -28,7 +29,7 @@ enum StatusCodeTagTranslator implements TagTranslator<HttpServerExchange> {
 
     @Override
     public <T> void translate(TagAdapter<T> adapter, T target, HttpServerExchange exchange) {
-        adapter.tag(target, "status", statusString(exchange.getStatusCode()));
+        adapter.tag(target, TraceTags.HTTP_STATUS_CODE, statusString(exchange.getStatusCode()));
     }
 
     static String statusString(int statusCode) {

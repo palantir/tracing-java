@@ -24,6 +24,7 @@ import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TraceTags;
 import java.io.IOException;
 import java.util.Optional;
 import javax.annotation.Priority;
@@ -128,7 +129,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
         @Override
         public <T> void translate(TagAdapter<T> adapter, T target, ContainerResponseContext data) {
-            adapter.tag(target, "status", Integer.toString(data.getStatus()));
+            adapter.tag(target, TraceTags.HTTP_STATUS_CODE, Integer.toString(data.getStatus()));
         }
     }
 }
