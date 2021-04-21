@@ -9,6 +9,11 @@ acceptedBreaks:
       new: "method <T> void com.palantir.tracing.DetachedSpan::complete(com.palantir.tracing.TagTranslator<?\
         \ super T>, T)"
       justification: "new methods on provided interfaces"
+  "4.18.0":
+    com.palantir.tracing:tracing-api:
+    - code: "java.field.removedWithConstant"
+      old: "field com.palantir.tracing.api.TraceTags.HTTP_URL_HOST"
+      justification: "HTTP_URL_HOST should have been commented when it was added"
   "4.5.2":
     com.palantir.tracing:tracing:
     - code: "java.method.addedToInterface"
