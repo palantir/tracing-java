@@ -27,6 +27,8 @@ import com.palantir.tracing.api.TraceHttpHeaders;
 import com.palantir.tracing.api.TraceTags;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -60,10 +62,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     // Handles incoming request
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        String path = Optional.ofNullable(uriInfo)
-                .map(ExtendedUriInfo::getMatchedModelResource)
-                .map(Resource::getPath)
-                .orElse("(unknown)");
+        String path = getPathTemplate();
 
         String operation = "Jersey: " + requestContext.getMethod() + " " + path;
         // The following strings are all nullable
@@ -102,7 +101,15 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         MultivaluedMap<String, Object> headers = responseContext.getHeaders();
         if (Tracer.hasTraceId()) {
             String traceId = Tracer.getTraceId();
-            Tracer.fastCompleteSpan(ContainerResponseContextTagTranslator.INSTANCE, responseContext);
+            Tracer.fastCompleteSpan(FunctionalTagTranslator.INSTANCE, sink -> {
+                sink.accept(TraceTags.HTTP_STATUS_CODE, Integer.toString(responseContext.getStatus()));
+                sink.accept(TraceTags.HTTP_URL_PATH_TEMPLATE, getPathTemplate());
+                sink.accept(TraceTags.HTTP_METHOD, requestContext.getMethod());
+                Object requestId = requestContext.getProperty(REQUEST_ID_PROPERTY_NAME);
+                if (requestId instanceof String) {
+                    sink.accept(TraceTags.HTTP_REQUEST_ID, (String) requestId);
+                }
+            });
             headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);
         } else {
             // When the filter is called twice (e.g. an exception is thrown in a streaming call),
@@ -124,12 +131,19 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         }
     }
 
-    private enum ContainerResponseContextTagTranslator implements TagTranslator<ContainerResponseContext> {
+    private String getPathTemplate() {
+        return Optional.ofNullable(uriInfo)
+                .map(ExtendedUriInfo::getMatchedModelResource)
+                .map(Resource::getPath)
+                .orElse("(unknown)");
+    }
+
+    private enum FunctionalTagTranslator implements TagTranslator<Consumer<BiConsumer<String, String>>> {
         INSTANCE;
 
         @Override
-        public <T> void translate(TagAdapter<T> adapter, T target, ContainerResponseContext data) {
-            adapter.tag(target, TraceTags.HTTP_STATUS_CODE, Integer.toString(data.getStatus()));
+        public <T> void translate(TagAdapter<T> adapter, T target, Consumer<BiConsumer<String, String>> data) {
+            data.accept((key, value) -> adapter.tag(target, key, value));
         }
     }
 }
