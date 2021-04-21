@@ -70,8 +70,8 @@ public final class TraceTags {
     // The data would likely be unsafe to share anyhow.
 
     // 'http.url_details.host' may contain unsafe data and is currently excluded out of caution.
-    /** The HTTP host part of the URL. */
-    public static final String HTTP_URL_HOST = "http.url_details.host";
+    // /** The HTTP host part of the URL. */
+    // public static final String HTTP_URL_HOST = "http.url_details.host";
     /** The HTTP port part of the URL. */
     public static final String HTTP_URL_PORT = "http.url_details.port";
     /**
