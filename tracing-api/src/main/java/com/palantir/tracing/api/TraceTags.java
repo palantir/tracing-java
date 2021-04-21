@@ -77,7 +77,7 @@ public final class TraceTags {
     /**
      * The HTTP path part of the URL.
      * When setting this tag, the caller takes responsibility for redaction, ensuring the path is a known
-     * template which does not include user-provided path paramter data.
+     * template which does not include user-provided path parameter data.
      */
     public static final String HTTP_URL_PATH_TEMPLATE = "http.url_details.path";
     /** The protocol name of the URL (HTTP or HTTPS). */
