@@ -59,10 +59,9 @@ public interface TagTranslator<S> {
         return new CompositeTagTranslator<>(this, after);
     }
 
-    /**
-     * Tag adapter object which insulates the implementation of the underlying data structure from callers.
-     */
+    /** Tag adapter object which insulates the implementation of the underlying data structure from callers. */
     interface TagAdapter<T> {
+        /** No information will be recorded if either {@code key} or {@code value} are {@code null}. */
         void tag(T target, String key, String value);
 
         void tag(T target, Map<String, String> tags);

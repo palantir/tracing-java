@@ -59,6 +59,12 @@ public final class TracerTest {
     private ArgumentCaptor<Span> spanCaptor;
 
     @After
+    public void before() {
+        Tracer.getAndClearTraceIfPresent();
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+    }
+
+    @After
     public void after() {
         Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
@@ -257,6 +263,31 @@ public final class TracerTest {
         Optional<Span> maybeSpan = Tracer.completeSpan(metadata);
         assertThat(maybeSpan).isPresent();
         assertThat(maybeSpan.get().getMetadata()).isEqualTo(metadata);
+    }
+
+    @Test
+    public void testMetadataNullIgnored() {
+        Tracer.subscribe("1", observer1);
+        try {
+            Tracer.fastStartSpan("operation");
+            Tracer.fastCompleteSpan(
+                    new TagTranslator<String>() {
+                        @Override
+                        public <T> void translate(TagAdapter<T> adapter, T target, String _data) {
+                            adapter.tag(target, "foo", null);
+                            adapter.tag(target, null, "bar");
+                            adapter.tag(target, "baz", "bang");
+                        }
+                    },
+                    "str");
+        } finally {
+            Tracer.unsubscribe("1");
+        }
+
+        verify(observer1).consume(spanCaptor.capture());
+        Span span = spanCaptor.getValue();
+        assertThat(span.getOperation()).isEqualTo("operation");
+        assertThat(span.getMetadata()).isEqualTo(ImmutableMap.of("baz", "bang"));
     }
 
     @Test
