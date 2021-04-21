@@ -63,6 +63,10 @@ public interface TagTranslator<S> {
      * Tag adapter object which insulates the implementation of the underlying data structure from callers.
      */
     interface TagAdapter<T> {
+        /**
+         * Implementations should ignore calls with {@code null} key or value, however implementations aren't
+         * expected to tread these as nullable.
+         */
         void tag(T target, String key, String value);
 
         void tag(T target, Map<String, String> tags);
