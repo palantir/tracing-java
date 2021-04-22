@@ -18,7 +18,6 @@ buildscript {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        maven { url 'https://palantir.bintray.com/releases' }
         jcenter()
     }
 
@@ -42,7 +41,6 @@ apply plugin: 'com.palantir.consistent-versions'
 
 repositories {
     mavenCentral()
-    maven { url 'https://palantir.bintray.com/releases' }
     jcenter()
 }
 
@@ -58,7 +56,6 @@ subprojects {
 
     repositories {
         mavenCentral()
-        maven { url 'https://palantir.bintray.com/releases' }
         jcenter()
     }
 
