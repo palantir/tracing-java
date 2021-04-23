@@ -60,27 +60,25 @@ final class UndertowTracing {
     private static final AttachmentKey<TagTranslator<? super HttpServerExchange>> TAG_TRANSLATOR_ATTACHMENT_KEY =
             AttachmentKey.create(TagTranslator.class);
 
-    private static final String OPERATION_NAME = "Undertow Request";
-
     /**
      * Apply detached tracing state to the provided {@link HttpServerExchange request}.
      */
     static DetachedSpan getOrInitializeRequestTrace(
-            HttpServerExchange exchange, TagTranslator<? super HttpServerExchange> translator) {
+            HttpServerExchange exchange, String operationName, TagTranslator<? super HttpServerExchange> translator) {
         DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
         if (detachedSpan == null) {
-            return initializeRequestTrace(exchange, translator);
+            return initializeRequestTrace(exchange, operationName, translator);
         }
         return detachedSpan;
     }
 
     private static DetachedSpan initializeRequestTrace(
-            HttpServerExchange exchange, TagTranslator<? super HttpServerExchange> translator) {
+            HttpServerExchange exchange, String operationName, TagTranslator<? super HttpServerExchange> translator) {
         HeaderMap requestHeaders = exchange.getRequestHeaders();
         String maybeTraceId = requestHeaders.getFirst(TRACE_ID);
         boolean newTraceId = maybeTraceId == null;
         String traceId = newTraceId ? Tracers.randomId() : maybeTraceId;
-        DetachedSpan detachedSpan = detachedSpan(newTraceId, traceId, requestHeaders);
+        DetachedSpan detachedSpan = detachedSpan(operationName, newTraceId, traceId, requestHeaders);
         setExchangeState(exchange, detachedSpan, traceId, translator);
         return detachedSpan;
     }
@@ -104,12 +102,13 @@ final class UndertowTracing {
         exchange.addExchangeCompleteListener(DetachedTraceCompletionListener.INSTANCE);
     }
 
-    private static DetachedSpan detachedSpan(boolean newTrace, String traceId, HeaderMap requestHeaders) {
+    private static DetachedSpan detachedSpan(
+            String operationName, boolean newTrace, String traceId, HeaderMap requestHeaders) {
         return DetachedSpan.start(
                 getObservabilityFromHeader(requestHeaders),
                 traceId,
                 newTrace ? Optional.empty() : Optional.ofNullable(requestHeaders.getFirst(SPAN_ID)),
-                OPERATION_NAME,
+                operationName,
                 SpanType.SERVER_INCOMING);
     }
 

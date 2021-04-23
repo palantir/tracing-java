@@ -81,6 +81,7 @@ public class TracedRequestHandlerTest {
                         .put(
                                 HttpString.tryFromString("requestId"),
                                 exchange.getAttachment(TracingAttachments.REQUEST_ID)),
+                "TracedRequestHandlerTest",
                 new TagTranslator<HttpServerExchange>() {
                     @Override
                     public <T> void translate(TagAdapter<T> adapter, T target, HttpServerExchange data) {
@@ -122,7 +123,7 @@ public class TracedRequestHandlerTest {
         verifyNoMoreInteractions(traceSampler);
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
-        assertThat(span.getOperation()).isEqualTo("Undertow Request");
+        assertThat(span.getOperation()).isEqualTo("TracedRequestHandlerTest");
         assertThat(span.getTraceId()).isEqualTo("1234");
         assertThat(span.getMetadata())
                 .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(con.getResponseCode()));
@@ -151,7 +152,7 @@ public class TracedRequestHandlerTest {
         verifyNoMoreInteractions(traceSampler);
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
-        assertThat(span.getOperation()).isEqualTo("Undertow Request");
+        assertThat(span.getOperation()).isEqualTo("TracedRequestHandlerTest");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
         assertThat(span.getMetadata())
                 .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(con.getResponseCode()));
@@ -169,7 +170,7 @@ public class TracedRequestHandlerTest {
         verifyNoMoreInteractions(traceSampler);
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
-        assertThat(span.getOperation()).isEqualTo("Undertow Request");
+        assertThat(span.getOperation()).isEqualTo("TracedRequestHandlerTest");
         assertThat(span.getTraceId()).isEqualTo(reportedTraceId);
         assertThat(span.getMetadata())
                 .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(con.getResponseCode()));
@@ -193,7 +194,7 @@ public class TracedRequestHandlerTest {
         verifyNoMoreInteractions(traceSampler);
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
-        assertThat(span.getOperation()).isEqualTo("Undertow Request");
+        assertThat(span.getOperation()).isEqualTo("TracedRequestHandlerTest");
         assertThat(span.getTraceId()).isEqualTo("1234");
         assertThat(span.getMetadata())
                 .doesNotContainKey(TraceTags.HTTP_STATUS_CODE)
