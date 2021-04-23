@@ -33,12 +33,21 @@ import io.undertow.server.HttpServerExchange;
  */
 public final class TracedRequestHandler implements HttpHandler {
 
+    private static final String DEFAULT_OPERATION_NAME = "Undertow Request";
+
     private final HttpHandler delegate;
+    private final String operationName;
     private final TagTranslator<? super HttpServerExchange> translator;
 
-    public TracedRequestHandler(HttpHandler delegate, TagTranslator<? super HttpServerExchange> translator) {
+    public TracedRequestHandler(
+            HttpHandler delegate, String operationName, TagTranslator<? super HttpServerExchange> translator) {
         this.delegate = Preconditions.checkNotNull(delegate, "HttpHandler is required");
+        this.operationName = Preconditions.checkNotNull(operationName, "Operation name is required");
         this.translator = Preconditions.checkNotNull(translator, "TagTranslator is required");
+    }
+
+    public TracedRequestHandler(HttpHandler delegate, TagTranslator<? super HttpServerExchange> translator) {
+        this(delegate, DEFAULT_OPERATION_NAME, translator);
     }
 
     public TracedRequestHandler(HttpHandler delegate) {
@@ -47,12 +56,12 @@ public final class TracedRequestHandler implements HttpHandler {
 
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
-        UndertowTracing.getOrInitializeRequestTrace(exchange, translator);
+        UndertowTracing.getOrInitializeRequestTrace(exchange, operationName, translator);
         delegate.handleRequest(exchange);
     }
 
     @Override
     public String toString() {
-        return "TracedRequestHandler{delegate=" + delegate + '}';
+        return "TracedRequestHandler{delegate=" + delegate + ", operationName='" + operationName + "'}";
     }
 }

@@ -63,8 +63,8 @@ public final class TracedOperationHandler implements HttpHandler {
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         // The configured tags apply to this handler, not the full request span. We expect the full request span to
         // be initialized prior to traced operations.
-        DetachedSpan detachedSpan =
-                UndertowTracing.getOrInitializeRequestTrace(exchange, StatusCodeTagTranslator.INSTANCE);
+        DetachedSpan detachedSpan = UndertowTracing.getOrInitializeRequestTrace(
+                exchange, "Undertow Request", StatusCodeTagTranslator.INSTANCE);
         try (CloseableSpan ignored = detachedSpan.childSpan(operation, translator, exchange)) {
             delegate.handleRequest(exchange);
         }
