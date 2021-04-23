@@ -175,7 +175,10 @@ public final class TraceEnrichingFilterTest {
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("Jersey: POST /trace");
         assertThat(span.getMetadata())
-                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getStatus()));
+                .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getStatus()))
+                .containsEntry(TraceTags.HTTP_URL_PATH_TEMPLATE, "/trace")
+                .containsEntry(TraceTags.HTTP_METHOD, "POST")
+                .containsKey(TraceTags.HTTP_REQUEST_ID);
     }
 
     @Test
