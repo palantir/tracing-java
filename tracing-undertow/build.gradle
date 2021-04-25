@@ -19,7 +19,7 @@ apply plugin: 'com.palantir.revapi'
 
 dependencies {
     api project(':tracing')
-    api 'io.undertow:undertow-core'
+    api 'io.quarkus.http:quarkus-http-core'
 
     implementation project(':tracing-api')
     implementation 'com.google.guava:guava'
@@ -31,4 +31,5 @@ dependencies {
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
+    testImplementation 'io.quarkus.http:quarkus-http-vertx-backend'
 }

@@ -34,8 +34,6 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
@@ -76,7 +74,7 @@ public class TracedOperationHandlerTest {
 
         MDC.clear();
 
-        exchange.setRequestMethod(HttpString.tryFromString("GET"));
+        exchange.requestMethod("GET");
         when(traceSampler.sample()).thenReturn(true);
 
         traceId = Tracers.randomId();
@@ -96,19 +94,16 @@ public class TracedOperationHandlerTest {
 
         assertThat(Tracer.hasTraceId()).isFalse();
         assertThat(span.getOperation()).isEqualTo("Undertow: GET /foo");
-        HeaderMap responseHeaders = exchange.getResponseHeaders();
-        assertThat(responseHeaders.get(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
-        assertThat(responseHeaders.get(TraceHttpHeaders.SPAN_ID)).isNull();
-        assertThat(responseHeaders.get(HttpString.tryFromString(TraceHttpHeaders.TRACE_ID)))
-                .containsExactly(span.getTraceId());
+        assertThat(exchange.getResponseHeader(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
+        assertThat(exchange.getResponseHeader(TraceHttpHeaders.SPAN_ID)).isNull();
+        assertThat(exchange.getResponseHeaders(TraceHttpHeaders.TRACE_ID)).containsExactly(span.getTraceId());
     }
 
     @Test
     public void whenTraceIsInHeader_usesGivenTraceId() throws Exception {
         setRequestTraceId(traceId);
         handler.handleRequest(exchange);
-        assertThat(exchange.getResponseHeaders().getFirst(TraceHttpHeaders.TRACE_ID))
-                .isEqualTo(traceId);
+        assertThat(exchange.getResponseHeader(TraceHttpHeaders.TRACE_ID)).isEqualTo(traceId);
     }
 
     @Test
@@ -153,10 +148,10 @@ public class TracedOperationHandlerTest {
 
     @Test
     public void whenTraceIsAlreadySampled_doesNotCallSampler() throws Exception {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
+        exchange.setRequestHeader(TraceHttpHeaders.IS_SAMPLED, "1");
         handler.handleRequest(exchange);
 
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "0");
+        exchange.setRequestHeader(TraceHttpHeaders.IS_SAMPLED, "0");
         handler.handleRequest(exchange);
 
         setRequestTraceId(traceId);
@@ -167,7 +162,7 @@ public class TracedOperationHandlerTest {
 
     @Test
     public void whenTraceIsAlreadySampled_setsAttachment() throws Exception {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
+        exchange.setRequestHeader(TraceHttpHeaders.IS_SAMPLED, "1");
         handler.handleRequest(exchange);
 
         assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED)).isTrue();
@@ -175,7 +170,7 @@ public class TracedOperationHandlerTest {
 
     @Test
     public void whenTraceIsAlreadyNotSampled_setsAttachment() throws Exception {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "0");
+        exchange.setRequestHeader(TraceHttpHeaders.IS_SAMPLED, "0");
         handler.handleRequest(exchange);
 
         assertThat(exchange.getAttachment(TracingAttachments.IS_SAMPLED)).isFalse();
@@ -210,10 +205,10 @@ public class TracedOperationHandlerTest {
     }
 
     private void setRequestTraceId(String theTraceId) {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.TRACE_ID), theTraceId);
+        exchange.setRequestHeader(TraceHttpHeaders.TRACE_ID, theTraceId);
     }
 
     private void setRequestSpanId(String spanId) {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.SPAN_ID), spanId);
+        exchange.setRequestHeader(TraceHttpHeaders.SPAN_ID, spanId);
     }
 }

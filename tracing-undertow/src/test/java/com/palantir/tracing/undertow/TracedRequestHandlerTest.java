@@ -31,7 +31,6 @@ import com.palantir.tracing.api.TraceTags;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.HttpString;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -77,10 +76,8 @@ public class TracedRequestHandlerTest {
         traceReportedLatch = new CountDownLatch(1);
         port = portSelector.incrementAndGet();
         HttpHandler nextHandler = new TracedRequestHandler(
-                exchange -> exchange.getResponseHeaders()
-                        .put(
-                                HttpString.tryFromString("requestId"),
-                                exchange.getAttachment(TracingAttachments.REQUEST_ID)),
+                exchange ->
+                        exchange.setResponseHeader("requestId", exchange.getAttachment(TracingAttachments.REQUEST_ID)),
                 "TracedRequestHandlerTest",
                 new TagTranslator<HttpServerExchange>() {
                     @Override
@@ -89,12 +86,9 @@ public class TracedRequestHandlerTest {
                     }
                 });
         server = Undertow.builder()
-                .addHttpListener(port, null)
+                .addHttpListener(port, "0.0.0.0")
                 .setHandler(exchange -> {
-                    exchange.addExchangeCompleteListener((_exc, nextListener) -> {
-                        traceReportedLatch.countDown();
-                        nextListener.proceed();
-                    });
+                    exchange.addExchangeCompleteListener(_exc -> traceReportedLatch.countDown());
                     nextHandler.handleRequest(exchange);
                 })
                 .build();

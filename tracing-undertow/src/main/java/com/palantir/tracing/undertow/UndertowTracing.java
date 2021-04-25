@@ -30,8 +30,6 @@ import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import io.undertow.util.HeaderMap;
-import io.undertow.util.HttpString;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,11 +41,6 @@ import org.slf4j.LoggerFactory;
 final class UndertowTracing {
 
     private static final Logger log = LoggerFactory.getLogger(UndertowTracing.class);
-
-    // Tracing header definitions
-    private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
-    private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
-    private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
 
     // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated
     // here because we expect the two handler implementations to be sufficient.
@@ -74,11 +67,10 @@ final class UndertowTracing {
 
     private static DetachedSpan initializeRequestTrace(
             HttpServerExchange exchange, String operationName, TagTranslator<? super HttpServerExchange> translator) {
-        HeaderMap requestHeaders = exchange.getRequestHeaders();
-        String maybeTraceId = requestHeaders.getFirst(TRACE_ID);
+        String maybeTraceId = exchange.getRequestHeader(TraceHttpHeaders.TRACE_ID);
         boolean newTraceId = maybeTraceId == null;
         String traceId = newTraceId ? Tracers.randomId() : maybeTraceId;
-        DetachedSpan detachedSpan = detachedSpan(operationName, newTraceId, traceId, requestHeaders);
+        DetachedSpan detachedSpan = detachedSpan(operationName, newTraceId, traceId, exchange);
         setExchangeState(exchange, detachedSpan, traceId, translator);
         return detachedSpan;
     }
@@ -89,7 +81,7 @@ final class UndertowTracing {
             String traceId,
             TagTranslator<? super HttpServerExchange> translator) {
         // Populate response before proceeding since later operations might commit the response.
-        exchange.getResponseHeaders().put(TRACE_ID, traceId);
+        exchange.setResponseHeader(TraceHttpHeaders.TRACE_ID, traceId);
         boolean isSampled = InternalTracers.isSampled(detachedSpan);
         exchange.putAttachment(TracingAttachments.IS_SAMPLED, isSampled);
         Optional<String> requestId = InternalTracers.getRequestId(detachedSpan);
@@ -103,11 +95,11 @@ final class UndertowTracing {
     }
 
     private static DetachedSpan detachedSpan(
-            String operationName, boolean newTrace, String traceId, HeaderMap requestHeaders) {
+            String operationName, boolean newTrace, String traceId, HttpServerExchange exchange) {
         return DetachedSpan.start(
-                getObservabilityFromHeader(requestHeaders),
+                getObservability(exchange),
                 traceId,
-                newTrace ? Optional.empty() : Optional.ofNullable(requestHeaders.getFirst(SPAN_ID)),
+                newTrace ? Optional.empty() : Optional.ofNullable(exchange.getRequestHeader(TraceHttpHeaders.SPAN_ID)),
                 operationName,
                 SpanType.SERVER_INCOMING);
     }
@@ -116,7 +108,7 @@ final class UndertowTracing {
         INSTANCE;
 
         @Override
-        public void exchangeEvent(HttpServerExchange exchange, NextListener nextListener) {
+        public void exchangeEvent(HttpServerExchange exchange) {
             try {
                 DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
                 if (detachedSpan != null) {
@@ -124,8 +116,6 @@ final class UndertowTracing {
                 }
             } catch (Throwable t) {
                 log.error("Failed to complete the request tracing span", t);
-            } finally {
-                nextListener.proceed();
             }
         }
 
@@ -140,8 +130,8 @@ final class UndertowTracing {
      * Force sample iff the context contains a "1" X-B3-Sampled header, force not sample if the header contains another
      * non-empty value, or undecided if there is no such header or the header is empty.
      */
-    private static Observability getObservabilityFromHeader(HeaderMap headers) {
-        String header = headers.getFirst(IS_SAMPLED);
+    private static Observability getObservability(HttpServerExchange exchange) {
+        String header = exchange.getRequestHeader(TraceHttpHeaders.IS_SAMPLED);
         if (Strings.isNullOrEmpty(header)) {
             return Observability.UNDECIDED;
         } else {
