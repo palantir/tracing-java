@@ -367,14 +367,19 @@ public final class Tracers {
         return wrapWithNewTrace(operation, Observability.UNDECIDED, delegate);
     }
 
+    public static <V> Callable<V> wrapWithNewTrace(
+            String operation, Observability observability, Callable<V> delegate) {
+        return wrapWithNewTrace(operation, ImmutableMap.of(), observability, delegate);
+    }
+
     /**
      * Wraps the given {@link Callable} such that it creates a fresh {@link Trace tracing state} for its execution. That
      * is, the trace during its {@link Callable#call() execution} is entirely separate from the trace at construction or
      * any trace already set on the thread used to execute the callable. Each execution of the callable will have a
-     * fresh trace. The given {@link String operation} is used to create the initial span.
+     * fresh trace. The given {@link String operation} and {@link Map metadata} is used to create the initial span.
      */
     public static <V> Callable<V> wrapWithNewTrace(
-            String operation, Observability observability, Callable<V> delegate) {
+            String operation, Map<String, String> metadata, Observability observability, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -383,7 +388,7 @@ public final class Tracers {
                 Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
                 return delegate.call();
             } finally {
-                Tracer.fastCompleteSpan();
+                Tracer.fastCompleteSpan(metadata);
                 restoreTrace(originalTrace);
             }
         };
@@ -403,13 +408,18 @@ public final class Tracers {
         return wrapWithNewTrace(operation, Observability.UNDECIDED, delegate);
     }
 
+    public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
+        return wrapWithNewTrace(operation, ImmutableMap.of(), observability, delegate);
+    }
+
     /**
      * Wraps the given {@link Runnable} such that it creates a fresh {@link Trace tracing state} for its execution. That
      * is, the trace during its {@link Runnable#run() execution} is entirely separate from the trace at construction or
      * any trace already set on the thread used to execute the runnable. Each execution of the runnable will have a
-     * fresh trace. The given {@link String operation} is used to create the initial span.
+     * fresh trace. The given {@link String operation} and {@link Map metadata} is used to create the initial span.
      */
-    public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
+    public static Runnable wrapWithNewTrace(
+            String operation, Map<String, String> metadata, Observability observability, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -418,7 +428,7 @@ public final class Tracers {
                 Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
                 delegate.run();
             } finally {
-                Tracer.fastCompleteSpan();
+                Tracer.fastCompleteSpan(metadata);
                 restoreTrace(originalTrace);
             }
         };
