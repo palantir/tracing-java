@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import com.palantir.logsafe.Safe;
 import java.util.Map;
 
 /**
@@ -62,8 +63,8 @@ public interface TagTranslator<S> {
     /** Tag adapter object which insulates the implementation of the underlying data structure from callers. */
     interface TagAdapter<T> {
         /** No information will be recorded if either {@code key} or {@code value} are {@code null}. */
-        void tag(T target, String key, String value);
+        void tag(T target, @Safe String key, @Safe String value);
 
-        void tag(T target, Map<String, String> tags);
+        void tag(T target, @Safe Map<String, String> tags);
     }
 }

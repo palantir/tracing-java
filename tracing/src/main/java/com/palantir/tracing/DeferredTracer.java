@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.errorprone.annotations.MustBeClosed;
+import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
 import java.io.Closeable;
@@ -89,11 +90,11 @@ public final class DeferredTracer implements Serializable {
      * @deprecated Use {@link #DeferredTracer(String)}
      */
     @Deprecated
-    public DeferredTracer(Optional<String> operation) {
+    public DeferredTracer(@Safe Optional<String> operation) {
         this(operation.orElse(DEFAULT_OPERATION));
     }
 
-    public DeferredTracer(String operation, Map<String, String> metadata) {
+    public DeferredTracer(@Safe String operation, @Safe Map<String, String> metadata) {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
@@ -113,7 +114,7 @@ public final class DeferredTracer implements Serializable {
         }
     }
 
-    public DeferredTracer(String operation) {
+    public DeferredTracer(@Safe String operation) {
         this(operation, ImmutableMap.of());
     }
 

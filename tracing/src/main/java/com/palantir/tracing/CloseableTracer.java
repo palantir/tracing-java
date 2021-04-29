@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
 import java.util.Map;
 
@@ -32,14 +33,14 @@ public class CloseableTracer implements AutoCloseable {
     /**
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      */
-    public static CloseableTracer startSpan(String operation) {
+    public static CloseableTracer startSpan(@Safe String operation) {
         return startSpan(operation, SpanType.LOCAL);
     }
 
     /**
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      */
-    public static CloseableTracer startSpan(String operation, Map<String, String> metadata) {
+    public static CloseableTracer startSpan(@Safe String operation, @Safe Map<String, String> metadata) {
         return startSpan(operation, MapTagTranslator.INSTANCE, metadata, SpanType.LOCAL);
     }
 
@@ -49,7 +50,7 @@ public class CloseableTracer implements AutoCloseable {
      *
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
-    public static CloseableTracer startSpan(String operation, SpanType spanType) {
+    public static CloseableTracer startSpan(@Safe String operation, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
         return INSTANCE;
     }
@@ -60,7 +61,7 @@ public class CloseableTracer implements AutoCloseable {
      *
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
-    public static <T> CloseableTracer startSpan(String operation, TagTranslator<? super T> translator, T data) {
+    public static <T> CloseableTracer startSpan(@Safe String operation, TagTranslator<? super T> translator, T data) {
         return startSpan(operation, translator, data, SpanType.LOCAL);
     }
 
@@ -71,7 +72,7 @@ public class CloseableTracer implements AutoCloseable {
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
     public static <T> CloseableTracer startSpan(
-            String operation, TagTranslator<? super T> translator, T data, SpanType spanType) {
+            @Safe String operation, TagTranslator<? super T> translator, T data, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
         if (!Tracer.isTraceObservable() || translator.isEmpty(data)) {
             return INSTANCE;

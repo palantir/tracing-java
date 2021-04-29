@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import com.google.errorprone.annotations.MustBeClosed;
+import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
 import java.util.Map;
 import java.util.Optional;
@@ -38,7 +39,7 @@ public interface DetachedSpan {
      * must remember to call {@link #complete} eventually.
      */
     @CheckReturnValue
-    static DetachedSpan start(String operation) {
+    static DetachedSpan start(@Safe String operation) {
         return start(operation, SpanType.LOCAL);
     }
 
@@ -48,7 +49,7 @@ public interface DetachedSpan {
      * @see DetachedSpan#start(String)
      */
     @CheckReturnValue
-    static DetachedSpan start(String operation, SpanType type) {
+    static DetachedSpan start(@Safe String operation, SpanType type) {
         return Tracer.detachInternal(operation, type);
     }
 
@@ -62,7 +63,7 @@ public interface DetachedSpan {
             Observability observability,
             String traceId,
             Optional<String> parentSpanId,
-            String operation,
+            @Safe String operation,
             SpanType type) {
         return Tracer.detachInternal(observability, traceId, parentSpanId, operation, type);
     }
@@ -72,7 +73,7 @@ public interface DetachedSpan {
      * instead of thread state.
      */
     @MustBeClosed
-    default CloseableSpan childSpan(String operationName, SpanType type) {
+    default CloseableSpan childSpan(@Safe String operationName, SpanType type) {
         return childSpan(operationName, NoTagTranslator.INSTANCE, NoTagTranslator.INSTANCE, type);
     }
 
@@ -80,12 +81,12 @@ public interface DetachedSpan {
      * Equivalent to {@link #childSpan(String, Map, SpanType)} using a {@link SpanType#LOCAL span}.
      */
     @MustBeClosed
-    default CloseableSpan childSpan(String operationName, Map<String, String> metadata) {
+    default CloseableSpan childSpan(@Safe String operationName, @Safe Map<String, String> metadata) {
         return childSpan(operationName, metadata, SpanType.LOCAL);
     }
 
     @MustBeClosed
-    default <T> CloseableSpan childSpan(String operationName, TagTranslator<? super T> translator, T data) {
+    default <T> CloseableSpan childSpan(@Safe String operationName, TagTranslator<? super T> translator, T data) {
         return childSpan(operationName, translator, data, SpanType.LOCAL);
     }
 
@@ -93,25 +94,25 @@ public interface DetachedSpan {
      * Equivalent to {@link #childSpan(String, SpanType)}, but using {@link Map metadata} tags.
      */
     @MustBeClosed
-    default CloseableSpan childSpan(String operationName, Map<String, String> metadata, SpanType type) {
+    default CloseableSpan childSpan(@Safe String operationName, @Safe Map<String, String> metadata, SpanType type) {
         return childSpan(operationName, MapTagTranslator.INSTANCE, metadata, type);
     }
 
     @MustBeClosed
-    <T> CloseableSpan childSpan(String operationName, TagTranslator<? super T> translator, T data, SpanType type);
+    <T> CloseableSpan childSpan(@Safe String operationName, TagTranslator<? super T> translator, T data, SpanType type);
 
     /**
      * Equivalent to {@link Tracer#startSpan(String)}, but using this {@link DetachedSpan} as the parent instead of
      * thread state.
      */
     @MustBeClosed
-    default CloseableSpan childSpan(String operationName) {
+    default CloseableSpan childSpan(@Safe String operationName) {
         return childSpan(operationName, SpanType.LOCAL);
     }
 
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker")
-    default CloseableSpan completeAndStartChild(String operationName, SpanType type) {
+    default CloseableSpan completeAndStartChild(@Safe String operationName, SpanType type) {
         CloseableSpan child = childSpan(operationName, type);
         complete();
         return child;
@@ -133,7 +134,7 @@ public interface DetachedSpan {
      * {@link #childDetachedSpan(String, SpanType)} using {@link SpanType#LOCAL}.
      */
     @CheckReturnValue
-    default DetachedSpan childDetachedSpan(String operation) {
+    default DetachedSpan childDetachedSpan(@Safe String operation) {
         return childDetachedSpan(operation, SpanType.LOCAL);
     }
 
@@ -147,7 +148,7 @@ public interface DetachedSpan {
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
      * not throw either in order to avoid confusing failures.
      */
-    default void complete(Map<String, String> metadata) {
+    default void complete(@Safe Map<String, String> metadata) {
         complete(MapTagTranslator.INSTANCE, metadata);
     }
 
