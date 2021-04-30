@@ -24,6 +24,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.MustBeClosed;
+import com.palantir.logsafe.Safe;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
@@ -160,7 +161,7 @@ public final class Tracer {
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
      */
     public static void initTraceWithSpan(
-            Observability observability, String traceId, String operation, String parentSpanId, SpanType type) {
+            Observability observability, String traceId, @Safe String operation, String parentSpanId, SpanType type) {
         setTrace(createTrace(
                 observability,
                 traceId,
@@ -172,7 +173,8 @@ public final class Tracer {
      * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
      */
-    public static void initTraceWithSpan(Observability observability, String traceId, String operation, SpanType type) {
+    public static void initTraceWithSpan(
+            Observability observability, String traceId, @Safe String operation, SpanType type) {
         setTrace(createTrace(
                 observability,
                 traceId,
@@ -186,7 +188,7 @@ public final class Tracer {
      * String, SpanType)}}.
      */
     @CheckReturnValue
-    public static OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
+    public static OpenSpan startSpan(@Safe String operation, String parentSpanId, SpanType type) {
         return getOrCreateCurrentTrace().startSpan(operation, parentSpanId, type);
     }
 
@@ -195,7 +197,7 @@ public final class Tracer {
      * return value is not used, prefer {@link Tracer#fastStartSpan(String, SpanType)}}.
      */
     @CheckReturnValue
-    public static OpenSpan startSpan(String operation, SpanType type) {
+    public static OpenSpan startSpan(@Safe String operation, SpanType type) {
         return getOrCreateCurrentTrace().startSpan(operation, type);
     }
 
@@ -204,28 +206,28 @@ public final class Tracer {
      * If the return value is not used, prefer {@link Tracer#fastStartSpan(String)}}.
      */
     @CheckReturnValue
-    public static OpenSpan startSpan(String operation) {
+    public static OpenSpan startSpan(@Safe String operation) {
         return startSpan(operation, SpanType.LOCAL);
     }
 
     /**
      * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
      */
-    public static void fastStartSpan(String operation, String parentSpanId, SpanType type) {
+    public static void fastStartSpan(@Safe String operation, String parentSpanId, SpanType type) {
         getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
     }
 
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
      */
-    public static void fastStartSpan(String operation, SpanType type) {
+    public static void fastStartSpan(@Safe String operation, SpanType type) {
         getOrCreateCurrentTrace().fastStartSpan(operation, type);
     }
 
     /**
      * Like {@link #startSpan(String)}, but does not return an {@link OpenSpan}.
      */
-    public static void fastStartSpan(String operation) {
+    public static void fastStartSpan(@Safe String operation) {
         fastStartSpan(operation, SpanType.LOCAL);
     }
 
@@ -233,7 +235,7 @@ public final class Tracer {
      * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state. This is an internal
      * utility that should not be called directly outside of {@link DetachedSpan}.
      */
-    static DetachedSpan detachInternal(String operation, SpanType type) {
+    static DetachedSpan detachInternal(@Safe String operation, SpanType type) {
         Trace maybeCurrentTrace = currentTrace.get();
         String traceId = maybeCurrentTrace != null ? maybeCurrentTrace.getTraceId() : Tracers.randomId();
         boolean sampled = maybeCurrentTrace != null ? maybeCurrentTrace.isObservable() : sampler.sample();
@@ -252,7 +254,7 @@ public final class Tracer {
             Observability observability,
             String traceId,
             Optional<String> parentSpanId,
-            String operation,
+            @Safe String operation,
             SpanType type) {
         Optional<String> requestId =
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
@@ -268,7 +270,7 @@ public final class Tracer {
             String traceId,
             Optional<String> requestId,
             Optional<String> parentSpanId,
-            String operation,
+            @Safe String operation,
             SpanType type) {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
@@ -517,7 +519,7 @@ public final class Tracer {
     /**
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
      */
-    public static void fastCompleteSpan(Map<String, String> metadata) {
+    public static void fastCompleteSpan(@Safe Map<String, String> metadata) {
         fastCompleteSpan(MapTagTranslator.INSTANCE, metadata);
     }
 
@@ -555,7 +557,7 @@ public final class Tracer {
      */
     @CheckReturnValue
     @Deprecated
-    public static Optional<Span> completeSpan(Map<String, String> metadata) {
+    public static Optional<Span> completeSpan(@Safe Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace == null) {
             return Optional.empty();
