@@ -8,6 +8,7 @@ com.palantir.safe-logging:* = 1.8.2
 com.squareup.okhttp3:okhttp = 3.9.0
 io.dropwizard:dropwizard-* = 2.0.10
 io.undertow:undertow-core = 2.0.17.Final
+io.grpc:* = 1.35.0
 io.zipkin.java:* = 1.13.1
 jakarta.servlet:jakarta.servlet-api = 4.0.4
 jakarta.ws.rs:jakarta.ws.rs-api = 2.1.6
