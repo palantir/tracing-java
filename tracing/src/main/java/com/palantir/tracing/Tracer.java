@@ -64,7 +64,9 @@ public final class Tracer {
     private static final Map<String, SpanObserver> observers = new HashMap<>();
     // we want iterating through tracers to be very fast, and it's faster to pre-define observer execution
     // when our observers are modified.
-    private static volatile Consumer<Span> compositeObserver = _span -> {};
+    private static volatile Consumer<Span> compositeObserver = _span -> {
+        log.info("compositeObserver", SafeArg.of("span", _span.getMetadata()));
+    };
 
     // Thread-safe since stateless
     private static volatile TraceSampler sampler = RandomSampler.create(0.0005f);
@@ -526,6 +528,10 @@ public final class Tracer {
     public static <T> void fastCompleteSpan(TagTranslator<? super T> tag, T state) {
         Trace trace = currentTrace.get();
         if (trace != null) {
+            log.info(
+                    "trace in fastCompleteSpan",
+                    SafeArg.of("trace", trace.getTraceId()),
+                    SafeArg.of("isObservable", trace.isObservable()));
             Optional<OpenSpan> span = popCurrentSpan(trace);
             if (trace.isObservable()) {
                 completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
@@ -535,6 +541,7 @@ public final class Tracer {
 
     private static <T> void completeSpanAndNotifyObservers(
             Optional<OpenSpan> openSpan, TagTranslator<? super T> tag, T state, String traceId) {
+        log.info("span in completeSpanAndNotifyObservers", SafeArg.of("span isPresent", openSpan.isPresent()));
         if (openSpan.isPresent()) {
             Tracer.notifyObservers(toSpan(openSpan.get(), tag, state, traceId));
         }
@@ -575,6 +582,7 @@ public final class Tracer {
     }
 
     private static void notifyObservers(Span span) {
+        log.info("span in notifyObservers", SafeArg.of("metadata", span.getMetadata()));
         compositeObserver.accept(span);
     }
 
