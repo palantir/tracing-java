@@ -64,8 +64,8 @@ public final class Tracer {
     private static final Map<String, SpanObserver> observers = new HashMap<>();
     // we want iterating through tracers to be very fast, and it's faster to pre-define observer execution
     // when our observers are modified.
-    private static volatile Consumer<Span> compositeObserver = _span -> {
-        log.info("compositeObserver", SafeArg.of("span", _span.getMetadata()));
+    private static volatile Consumer<Span> compositeObserver = span -> {
+        log.info("compositeObserver", SafeArg.of("span", span.getMetadata()));
     };
 
     // Thread-safe since stateless
