@@ -21,7 +21,6 @@ dependencies {
     compile project(":tracing-api")
     compile "com.fasterxml.jackson.core:jackson-databind"
     compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
-    compile "com.fasterxml.jackson.module:jackson-module-afterburner"
     compile "com.google.guava:guava"
     compile "com.palantir.safe-logging:preconditions"
     compile "com.palantir.safe-logging:safe-logging"
