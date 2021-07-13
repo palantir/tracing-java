@@ -25,13 +25,16 @@ import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import org.jmock.lib.concurrent.DeterministicScheduler;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public final class AsyncSpanObserverTest {
 
     @Mock
@@ -39,7 +42,7 @@ public final class AsyncSpanObserverTest {
 
     private DeterministicScheduler scheduler;
 
-    @Before
+    @BeforeEach
     public void before() {
         scheduler = new DeterministicScheduler();
     }

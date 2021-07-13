@@ -22,13 +22,13 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("deprecation")
 public class AsyncTracerTest {
 
-    @Before
+    @BeforeEach
     public void before() {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
     }

@@ -17,7 +17,7 @@
 package com.palantir.tracing;
 
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class RenderTracingRuleDemo {
 
