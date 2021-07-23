@@ -22,7 +22,7 @@ import com.palantir.tracing.AlwaysSampler;
 import com.palantir.tracing.Tracer;
 import java.io.ByteArrayOutputStream;
 import javax.ws.rs.core.StreamingOutput;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public final class JaxRsTracersTest {
 
