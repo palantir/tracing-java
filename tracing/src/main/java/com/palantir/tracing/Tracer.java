@@ -96,6 +96,7 @@ public final class Tracer {
      *
      * @deprecated Use {@link Tracer#maybeGetTraceMetadata()} instead.
      */
+    @SuppressWarnings("InlineMeSuggester")
     @Deprecated
     static TraceMetadata getTraceMetadata() {
         return maybeGetTraceMetadata().orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
