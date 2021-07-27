@@ -56,7 +56,7 @@ subprojects {
         mavenCentral()
     }
 
-    sourceCompatibility = 1.8
+    sourceCompatibility = 11
     tasks.check.dependsOn(javadoc)
 
     tasks.withType(JavaCompile) {
