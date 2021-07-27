@@ -1,0 +1,5 @@
+type: break
+break:
+  description: tracing-java require jdk11 (up from jdk8)
+  links:
+  - https://github.com/palantir/tracing-java/pull/751
