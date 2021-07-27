@@ -18,7 +18,6 @@ buildscript {
     repositories {
         gradlePluginPortal()
         mavenCentral()
-        jcenter()
     }
 
     dependencies {
@@ -41,7 +40,6 @@ apply plugin: 'com.palantir.consistent-versions'
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 allprojects {
@@ -56,7 +54,6 @@ subprojects {
 
     repositories {
         mavenCentral()
-        jcenter()
     }
 
     sourceCompatibility = 1.8
