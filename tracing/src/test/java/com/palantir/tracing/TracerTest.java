@@ -80,28 +80,28 @@ public final class TracerTest {
         assertThatLoggableExceptionThrownBy(
                         () -> Tracer.initTraceWithSpan(Observability.UNDECIDED, null, "op", SpanType.LOCAL))
                 .hasLogMessage("traceId must be non-empty")
-                .hasArgs();
+                .hasExactlyArgs();
 
         assertThatLoggableExceptionThrownBy(
                         () -> Tracer.initTraceWithSpan(Observability.UNDECIDED, "", "op", SpanType.LOCAL))
                 .hasLogMessage("traceId must be non-empty")
-                .hasArgs();
+                .hasExactlyArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", null, null))
                 .hasLogMessage("parentSpanId must be non-empty")
-                .hasArgs();
+                .hasExactlyArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.startSpan("op", "", null))
                 .hasLogMessage("parentSpanId must be non-empty")
-                .hasArgs();
+                .hasExactlyArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.fastStartSpan("op", null, null))
                 .hasLogMessage("parentSpanId must be non-empty")
-                .hasArgs();
+                .hasExactlyArgs();
 
         assertThatLoggableExceptionThrownBy(() -> Tracer.fastStartSpan("op", "", null))
                 .hasLogMessage("parentSpanId must be non-empty")
-                .hasArgs();
+                .hasExactlyArgs();
     }
 
     @Test
