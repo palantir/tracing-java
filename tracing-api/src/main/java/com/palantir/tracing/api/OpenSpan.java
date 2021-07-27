@@ -99,6 +99,7 @@ public abstract class OpenSpan {
      *
      * @deprecated Use the variant that accepts an originating span id
      */
+    @SuppressWarnings("InlineMeSuggester")
     @Deprecated
     public static OpenSpan of(String operation, String spanId, SpanType type, Optional<String> parentSpanId) {
         return of(operation, spanId, type, parentSpanId, Optional.empty());
