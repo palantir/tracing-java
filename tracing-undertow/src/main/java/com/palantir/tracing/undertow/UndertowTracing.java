@@ -20,6 +20,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
+import com.palantir.logsafe.logger.SafeLogger;
+import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
@@ -33,8 +35,6 @@ import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Internal utility functionality shared between {@link TracedOperationHandler} and {@link TracedRequestHandler}.
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 final class UndertowTracing {
 
-    private static final Logger log = LoggerFactory.getLogger(UndertowTracing.class);
+    private static final SafeLogger log = SafeLoggerFactory.get(UndertowTracing.class);
 
     // Tracing header definitions
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);

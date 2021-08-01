@@ -18,6 +18,8 @@ package com.palantir.tracing.servlet;
 
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
+import com.palantir.logsafe.logger.SafeLogger;
+import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.Trace;
 import com.palantir.tracing.Tracer;
 import java.io.IOException;
@@ -29,8 +31,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Guarantees clean {@link Tracer} thread state for incoming requests. This {@link Filter} logs at
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * by this filter has leaked state.
  */
 public final class LeakedTraceFilter implements Filter {
-    private static final Logger log = LoggerFactory.getLogger(LeakedTraceFilter.class);
+    private static final SafeLogger log = SafeLoggerFactory.get(LeakedTraceFilter.class);
 
     @Override
     public void init(FilterConfig _value) {
