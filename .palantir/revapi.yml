@@ -19,3 +19,8 @@ acceptedBreaks:
     - code: "java.method.addedToInterface"
       new: "method java.util.Optional<java.lang.String> com.palantir.tracing.TraceMetadata::getRequestId()"
       justification: "immutables are not for extension"
+  "5.0.0":
+    com.palantir.tracing:tracing:
+    - code: "java.class.removed"
+      old: "class com.palantir.tracing.AsyncTracer"
+      justification: "Sourcegraph search shows zero usages of this class"
