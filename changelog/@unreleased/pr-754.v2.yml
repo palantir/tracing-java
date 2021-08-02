@@ -1,0 +1,8 @@
+type: break
+break:
+  description: Delete `AsyncSlf4jSpanObserver` - internally we construct a SpanObserver
+    which uses log4j2 to ensure that spans are serialized and logged without blocking
+    threads that produce spans. This also means tracing-java no longer transitively
+    provides jackson dependencies.
+  links:
+  - https://github.com/palantir/tracing-java/pull/754

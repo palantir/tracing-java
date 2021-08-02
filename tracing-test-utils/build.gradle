@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.junit.jupiter:junit-jupiter-api'
     implementation 'com.palantir.conjure.java.runtime:conjure-java-jackson-serialization'
     implementation 'com.spotify.dataenum:dataenum'
+    implementation "org.slf4j:slf4j-api"
 
     annotationProcessor 'com.spotify.dataenum:dataenum-processor'
     annotationProcessor "org.immutables:value"

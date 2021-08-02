@@ -22,5 +22,14 @@ acceptedBreaks:
   "5.0.0":
     com.palantir.tracing:tracing:
     - code: "java.class.removed"
+      old: "class com.palantir.tracing.AsyncSlf4jSpanObserver"
+      justification: "Sourcegraph search shows no more prod usages of this class"
+    - code: "java.class.removed"
+      old: "class com.palantir.tracing.AsyncSpanObserver"
+      justification: "Sourcegraph search shows no more prod usages of this class"
+    - code: "java.class.removed"
       old: "class com.palantir.tracing.AsyncTracer"
       justification: "Sourcegraph search shows zero usages of this class"
+    - code: "java.class.removed"
+      old: "class com.palantir.tracing.Observers"
+      justification: "Sourcegraph search shows no more prod usages of this class"

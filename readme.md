@@ -32,17 +32,13 @@ dependencies {
 ```
 
 ```java
-Tracer.subscribe("SLF4J", AsyncSlf4jSpanObserver.of(executor));
-
-try {
-    Tracer.startSpan("doSomeComputation");
-    doSomeComputation();  // may itself invoke cross-service or local traced calls
-} finally {
-    Tracer.completeSpan(); // triggers all span observers
+try (CloseableTracer span = CloseableTracer.startSpan("do work")) {
+    Thread.sleep(100);
+    doWork();
 }
 ```
 
-The example above demonstrates how the `Tracer` library supports intra-thread tracing.
+At the end of this try-with-resources block, any registered SpanObservers will be notified with a single immutable `Span` object. The above example demonstrates how to instrument chunks of code that start and finish on one thread. For cross-thread tracing, see `DetachedSpan`.
 
 ## Logging with SLF4J
 
