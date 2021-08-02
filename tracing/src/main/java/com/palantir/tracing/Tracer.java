@@ -30,6 +30,8 @@ import com.palantir.logsafe.UnsafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
+import com.palantir.logsafe.logger.SafeLogger;
+import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
@@ -41,8 +43,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -53,7 +53,7 @@ import org.slf4j.MDC;
  */
 public final class Tracer {
 
-    private static final Logger log = LoggerFactory.getLogger(Tracer.class);
+    private static final SafeLogger log = SafeLoggerFactory.get(Tracer.class);
 
     private Tracer() {}
 

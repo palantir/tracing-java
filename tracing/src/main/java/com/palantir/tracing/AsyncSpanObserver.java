@@ -22,17 +22,17 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.SafeArg;
+import com.palantir.logsafe.logger.SafeLogger;
+import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** A {@link SpanObserver} whose observations are executed on a supplied {@link ExecutorService}. */
 public abstract class AsyncSpanObserver implements SpanObserver {
 
-    private static final Logger log = LoggerFactory.getLogger(AsyncSpanObserver.class);
+    private static final SafeLogger log = SafeLoggerFactory.get(AsyncSpanObserver.class);
     private static final int DEFAULT_MAX_INFLIGHTS = 10_000;
 
     private final ListeningExecutorService executorService;

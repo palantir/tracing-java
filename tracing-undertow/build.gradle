@@ -24,6 +24,7 @@ dependencies {
     implementation project(':tracing-api')
     implementation 'com.google.guava:guava'
     implementation 'com.palantir.safe-logging:preconditions'
+    implementation 'com.palantir.safe-logging:logger'
 
     // Required for tests using the slf4j MDC which is not implemented in slf4j-simple
     testImplementation 'ch.qos.logback:logback-classic'
