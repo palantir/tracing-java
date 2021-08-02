@@ -26,6 +26,7 @@ dependencies {
     compile "com.palantir.safe-logging:safe-logging"
     compile "org.slf4j:slf4j-api"
 
+    implementation 'com.palantir.safe-logging:logger'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'com.fasterxml.jackson.core:jackson-core'
     implementation 'com.google.code.findbugs:jsr305'
@@ -41,5 +42,4 @@ dependencies {
 
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
-    implementation 'com.palantir.safe-logging:logger'
 }

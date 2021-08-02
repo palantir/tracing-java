@@ -24,10 +24,9 @@ dependencies {
     // servlet-api should be the only exposed dependency
     api "jakarta.servlet:jakarta.servlet-api"
 
-    implementation "org.slf4j:slf4j-api"
+    implementation 'com.palantir.safe-logging:logger'
 
     testImplementation "io.dropwizard:dropwizard-testing"
     testImplementation "junit:junit"
     testImplementation 'org.assertj:assertj-core'
-    implementation 'com.palantir.safe-logging:logger'
 }
