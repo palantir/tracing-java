@@ -17,16 +17,10 @@
 package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
-import com.palantir.tracing.api.OpenSpan;
-import com.palantir.tracing.api.SpanType;
-import java.io.Closeable;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
-import javax.annotation.Nullable;
 
 /**
  * Utility class for capturing the current trace at time of construction, and then running callables at some later time
@@ -57,23 +51,6 @@ public final class DeferredTracer implements Serializable {
 
     private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
 
-    @Nullable
-    private final String traceId;
-
-    private final boolean isObservable;
-
-    @Nullable
-    private final String operation;
-
-    @Nullable
-    private final Map<String, String> metadata;
-
-    @Nullable
-    private final String parentSpanId;
-
-    @Nullable
-    private final transient String requestId;
-
     /**
      * Deprecated.
      *
@@ -94,108 +71,12 @@ public final class DeferredTracer implements Serializable {
         this(operation.orElse(DEFAULT_OPERATION));
     }
 
-    public DeferredTracer(@Safe String operation, @Safe Map<String, String> metadata) {
-        Optional<Trace> maybeTrace = Tracer.copyTrace();
-        if (maybeTrace.isPresent()) {
-            Trace trace = maybeTrace.get();
-            this.traceId = trace.getTraceId();
-            this.requestId = trace.getRequestId().orElse(null);
-            this.isObservable = trace.isObservable();
-            this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
-            this.operation = operation;
-            this.metadata = metadata;
-        } else {
-            this.traceId = null;
-            this.requestId = null;
-            this.isObservable = false;
-            this.parentSpanId = null;
-            this.operation = null;
-            this.metadata = null;
-        }
-    }
+    public DeferredTracer(@Safe String operation, @Safe Map<String, String> metadata) {}
 
     public DeferredTracer(@Safe String operation) {
         this(operation, ImmutableMap.of());
     }
 
     /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
-    public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
-        try (CloseableTrace ignored = withTrace()) {
-            return inner.call();
-        }
-    }
-
-    @MustBeClosed
-    @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
-    CloseableTrace withTrace() {
-        if (traceId == null) {
-            return NopCloseableTrace.INSTANCE;
-        }
-
-        Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-        Tracer.setTrace(Trace.of(isObservable, traceId, Optional.ofNullable(requestId)));
-        if (parentSpanId != null) {
-            Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
-        } else {
-            Tracer.fastStartSpan(operation);
-        }
-
-        if (isObservable && metadata != null && !metadata.isEmpty()) {
-            return new TaggedCloseableTrace(originalTrace, metadata);
-        } else {
-            return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
-        }
-    }
-
-    private enum NopCloseableTrace implements CloseableTrace {
-        INSTANCE;
-
-        @Override
-        public void close() {}
-    }
-
-    private enum DefaultCloseableTrace implements CloseableTrace {
-        INSTANCE;
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan();
-            if (Tracer.hasTraceId()) {
-                Tracer.getAndClearTrace();
-            }
-        }
-    }
-
-    private static final class TaggedCloseableTrace implements CloseableTrace {
-        private final Map<String, String> metadata;
-        private final Optional<Trace> originalTrace;
-
-        TaggedCloseableTrace(Optional<Trace> originalTrace, Map<String, String> metadata) {
-            this.metadata = metadata;
-            this.originalTrace = originalTrace;
-        }
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan(metadata);
-            if (originalTrace.isPresent()) {
-                Tracer.setTrace(originalTrace.get());
-            } else if (Tracer.hasTraceId()) {
-                Tracer.getAndClearTrace();
-            }
-        }
-    }
-
-    @SuppressWarnings("UnnecessaryLambda") // this library is allocation sensitive
-    private static final Function<Trace, CloseableTrace> CLOSEABLE_TRACE_FUNCTION = originalTrace -> () -> {
-        DefaultCloseableTrace.INSTANCE.close();
-        Tracer.setTrace(originalTrace);
-    };
-
-    /** Package private mechanism to simplify internal {@link DeferredTracer} use. */
-    interface CloseableTrace extends Closeable {
-        @Override
-        void close();
-    }
+    public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {}
 }

@@ -49,9 +49,7 @@ public interface DetachedSpan {
      * @see DetachedSpan#start(String)
      */
     @CheckReturnValue
-    static DetachedSpan start(@Safe String operation, SpanType type) {
-        return Tracer.detachInternal(operation, type);
-    }
+    static DetachedSpan start(@Safe String operation, SpanType type) {}
 
     /**
      * Marks the beginning of a span, which you can {@link #complete} on any other thread.
@@ -64,9 +62,7 @@ public interface DetachedSpan {
             String traceId,
             Optional<String> parentSpanId,
             @Safe String operation,
-            SpanType type) {
-        return Tracer.detachInternal(observability, traceId, parentSpanId, operation, type);
-    }
+            SpanType type) {}
 
     /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan} as the parent
@@ -112,16 +108,10 @@ public interface DetachedSpan {
 
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker")
-    default CloseableSpan completeAndStartChild(@Safe String operationName, SpanType type) {
-        CloseableSpan child = childSpan(operationName, type);
-        complete();
-        return child;
-    }
+    default CloseableSpan completeAndStartChild(@Safe String operationName, SpanType type) {}
 
     @MustBeClosed
-    default CloseableSpan completeAndStartChild(String operationName) {
-        return completeAndStartChild(operationName, SpanType.LOCAL);
-    }
+    default CloseableSpan completeAndStartChild(String operationName) {}
 
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.

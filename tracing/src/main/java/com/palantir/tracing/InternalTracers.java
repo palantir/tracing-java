@@ -27,14 +27,10 @@ import java.util.Optional;
 public final class InternalTracers {
 
     /** Returns true if the provided detachedSpan is sampled. */
-    public static boolean isSampled(DetachedSpan detachedSpan) {
-        return Tracer.isSampled(detachedSpan);
-    }
+    public static boolean isSampled(DetachedSpan detachedSpan) {}
 
     /** Returns true if the provided detachedSpan is sampled. */
-    public static Optional<String> getRequestId(DetachedSpan detachedSpan) {
-        return Tracer.getRequestId(detachedSpan);
-    }
+    public static Optional<String> getRequestId(DetachedSpan detachedSpan) {}
 
     private InternalTracers() {}
 }
