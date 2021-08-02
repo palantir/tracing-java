@@ -19,16 +19,12 @@ apply plugin: 'com.palantir.revapi'
 
 dependencies {
     compile project(":tracing-api")
-    compile "com.fasterxml.jackson.core:jackson-databind"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
     compile "com.google.guava:guava"
     compile "com.palantir.safe-logging:preconditions"
     compile "com.palantir.safe-logging:safe-logging"
-    compile "org.slf4j:slf4j-api"
+    implementation "org.slf4j:slf4j-api"
 
     implementation 'com.palantir.safe-logging:logger'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations'
-    implementation 'com.fasterxml.jackson.core:jackson-core'
     implementation 'com.google.code.findbugs:jsr305'
     implementation 'com.google.errorprone:error_prone_annotations'
 
