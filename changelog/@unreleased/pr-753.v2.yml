@@ -1,0 +1,5 @@
+type: break
+break:
+  description: The deprecated `AsyncTracer` class is deleted.
+  links:
+  - https://github.com/palantir/tracing-java/pull/753
