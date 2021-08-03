@@ -28,20 +28,28 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
-import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.data.LinkData;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.opentelemetry.sdk.trace.samplers.SamplingDecision;
+import io.opentelemetry.sdk.trace.samplers.SamplingResult;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 import org.slf4j.MDC;
 
@@ -61,8 +69,9 @@ public final class Tracer {
     // when our observers are modified.
     private static volatile Consumer<Span> compositeObserver = _span -> {};
     // Thread-safe since stateless
-    private static volatile TraceSampler sampler = RandomSampler.create(0.0005f);
+    private static volatile TraceSampler palantirSampler = RandomSampler.create(0.0005f);
 
+    // TODO(dfox): delete this and just ban the fastStartSpan/fastCompleteSpan?
     private static final ThreadLocal<Deque<Thingy>> threadLocalScopes = ThreadLocal.withInitial(ArrayDeque::new);
 
     @Value.Immutable
@@ -72,11 +81,120 @@ public final class Tracer {
         Scope scope();
     }
 
+    static final class MdcContextStorage implements ContextStorage {
+        private final ContextStorage delegate;
+
+        MdcContextStorage(ContextStorage delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Scope attach(Context toAttach) {
+
+            // we save these values to ensure we can restore MDCs afterwards
+            String mdcTraceIdBefore = MDC.get(Tracers.TRACE_ID_KEY);
+            String mdcSampledBefore = MDC.get(Tracers.TRACE_SAMPLED_KEY);
+
+            copySpanInfoToMdc(io.opentelemetry.api.trace.Span.fromContextOrNull(toAttach));
+
+            // in practise, we expect the delegate here to always be a ThreadLocalContextStorage, so the effect of
+            // calling this 'attach' is that the context is now accessible using static methods until scope.close is
+            // called.
+            Scope threadLocalResetScope = delegate.attach(toAttach);
+            return new Scope() {
+                @Override
+                public void close() {
+                    threadLocalResetScope.close();
+                    updateMdc(Tracers.TRACE_ID_KEY, mdcTraceIdBefore);
+                    updateMdc(Tracers.TRACE_SAMPLED_KEY, mdcSampledBefore);
+                }
+            };
+        }
+
+        @Nullable
+        @Override
+        public Context current() {
+            return delegate.current();
+        }
+
+        private static void copySpanInfoToMdc(@Nullable io.opentelemetry.api.trace.Span span) {
+            if (span == null) {
+                MDC.remove(Tracers.TRACE_ID_KEY);
+                MDC.remove(Tracers.TRACE_SAMPLED_KEY);
+                return;
+            }
+            SpanContext spanContext = span.getSpanContext();
+
+            MDC.put(Tracers.TRACE_ID_KEY, spanContext.getTraceId());
+            updateMdc(Tracers.TRACE_SAMPLED_KEY, spanContext.isSampled() ? "1" : null);
+        }
+
+        private static void updateMdc(String key, String value) {
+            if (value == null) {
+                MDC.remove(key);
+            } else {
+                MDC.put(key, value);
+            }
+        }
+    }
+
+    static io.opentelemetry.api.trace.Tracer getSpanBuilder() {
+
+        // TODO(dfox): need to initialize this _way_ earlier.
+        ContextStorage.addWrapper(MdcContextStorage::new);
+
+        // TODO(dfox): should we get this from an OpenTelemetry instance?? perhaps GlobalOpenTelemetry?
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(new SpanProcessor() {
+                    @Override
+                    public void onStart(Context _parentContext, ReadWriteSpan _span) {}
+
+                    @Override
+                    public boolean isStartRequired() {
+                        return false;
+                    }
+
+                    @Override
+                    public void onEnd(ReadableSpan span) {
+                        compositeObserver.accept(Translation.fromOpenTelemetry(span));
+                    }
+
+                    @Override
+                    public boolean isEndRequired() {
+                        return true;
+                    }
+                })
+                .setSampler(new Sampler() {
+                    @Override
+                    public SamplingResult shouldSample(
+                            Context _parentContext,
+                            String _traceId,
+                            String _name,
+                            SpanKind _spanKind,
+                            Attributes _attributes,
+                            List<LinkData> _parentLinks) {
+                        return palantirSampler.sample()
+                                ? SamplingResult.create(SamplingDecision.RECORD_AND_SAMPLE)
+                                : SamplingResult.create(SamplingDecision.DROP);
+                    }
+
+                    @Override
+                    public String getDescription() {
+                        return "palantir-tracing-java-sampler";
+                    }
+
+                    @Override
+                    public String toString() {
+                        return getDescription();
+                    }
+                })
+                .build();
+        return tracerProvider.get("palantir-tracing-java");
+    }
+
     private Tracer() {}
 
     public static Optional<TraceMetadata> maybeGetTraceMetadata() {
-        // OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
-        // openTelemetry.getTracer("palantir-tracing-java");
         io.opentelemetry.api.trace.Span currentSpan = io.opentelemetry.api.trace.Span.current();
         if (currentSpan == io.opentelemetry.api.trace.Span.getInvalid()) {
             return Optional.empty();
@@ -134,26 +252,34 @@ public final class Tracer {
      * String, SpanType)}}.
      */
     @CheckReturnValue
-    public static OpenSpan startSpan(@Safe String operation, String parentSpanId, SpanType type) {}
+    public static OpenSpan startSpan(@Safe String operation, String parentSpanId, SpanType type) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Like {@link #startSpan(String)}, but opens a span of the explicitly given {@link SpanType span type}. If the
      * return value is not used, prefer {@link Tracer#fastStartSpan(String, SpanType)}}.
      */
     @CheckReturnValue
-    public static OpenSpan startSpan(@Safe String operation, SpanType type) {}
+    public static OpenSpan startSpan(@Safe String operation, SpanType type) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
      * If the return value is not used, prefer {@link Tracer#fastStartSpan(String)}}.
      */
     @CheckReturnValue
-    public static OpenSpan startSpan(@Safe String operation) {}
+    public static OpenSpan startSpan(@Safe String operation) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
      */
-    public static void fastStartSpan(@Safe String operation, String parentSpanId, SpanType type) {}
+    public static void fastStartSpan(@Safe String operation, String parentSpanId, SpanType type) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
@@ -166,34 +292,10 @@ public final class Tracer {
 
         Scope scope = span.makeCurrent();
 
+        // this is gross... can we just do without???
         threadLocalScopes
                 .get()
                 .push(ImmutableThingy.builder().span(span).scope(scope).build());
-    }
-
-    static io.opentelemetry.api.trace.Tracer getSpanBuilder() {
-        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(new SpanProcessor() {
-                    @Override
-                    public void onStart(Context parentContext, ReadWriteSpan span) {}
-
-                    @Override
-                    public boolean isStartRequired() {
-                        return false;
-                    }
-
-                    @Override
-                    public void onEnd(ReadableSpan span) {
-                        compositeObserver.accept(Translation.fromOpenTelemetry(span));
-                    }
-
-                    @Override
-                    public boolean isEndRequired() {
-                        return false;
-                    }
-                })
-                .build();
-        return GlobalOpenTelemetry.get().getTracer("palantir-tracing-java");
     }
 
     /**
@@ -277,7 +379,8 @@ public final class Tracer {
     @CheckReturnValue
     @Deprecated
     public static Optional<Span> completeSpan(@Safe Map<String, String> _metadata) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+                "OpenTelemetry does not make it easy to directly access the resultant span after completion");
     }
 
     /**
@@ -335,8 +438,8 @@ public final class Tracer {
     /**
      * Sets the sampler (for all threads).
      */
-    public static void setSampler(TraceSampler sampler) {
-        Tracer.sampler = sampler;
+    public static void setSampler(TraceSampler palantirSampler) {
+        Tracer.palantirSampler = palantirSampler;
     }
 
     /**

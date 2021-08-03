@@ -75,8 +75,9 @@ final class Translation {
             spanBuilder.parentSpanId(spanData.getParentSpanId());
         }
 
-        spanData.getAttributes()
-                .forEach((key, value) -> spanBuilder.putMetadata(key.getKey(), valueToString(key, value)));
+        spanData.getAttributes().forEach((key, value) -> {
+            spanBuilder.putMetadata(key.getKey(), valueToString(key, value));
+        });
 
         return spanBuilder.build();
     }
