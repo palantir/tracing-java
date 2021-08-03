@@ -16,12 +16,10 @@
 
 package com.palantir.tracing;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.Safe;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
-import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.logsafe.logger.SafeLogger;
 import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.api.OpenSpan;
@@ -459,36 +457,26 @@ public final class Tracer {
     /**
      * Clears the current trace id and returns (a copy of) it.
      */
-    public static Trace getAndClearTrace() {}
+    public static Trace getAndClearTrace() {
+        throw new UnsupportedOperationException("Only a couple of users of this - don't think we want to support it");
+    }
 
     /**
      * True iff the spans of this thread's trace are to be observed by {@link SpanObserver span obververs} upon
      * {@link Tracer#completeSpan span completion}.
      */
-    public static boolean isTraceObservable() {}
+    public static boolean isTraceObservable() {
+        return io.opentelemetry.api.trace.Span.current().getSpanContext().isSampled();
+    }
 
     /**
      * Returns true if there is an active trace which is not observable. This is equivalent to the result of
      * {@code Tracer.hasTraceId() && !Tracer.isTraceObservable()}.
      * This check is used frequently in hot paths to avoid unnecessary overhead in unsampled traces.
      */
-    public static boolean hasUnobservableTrace() {}
-
-    @VisibleForTesting
-    static void clearCurrentTrace() {
-        logClearingTrace();
-        currentTrace.remove();
-        MDC.remove(Tracers.TRACE_ID_KEY);
-        MDC.remove(Tracers.TRACE_SAMPLED_KEY);
-        MDC.remove(Tracers.REQUEST_ID_KEY);
-    }
-
-    private static void logClearingTrace() {
-        if (log.isDebugEnabled()) {
-            log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
-            if (log.isTraceEnabled()) {
-                log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
-            }
-        }
+    public static boolean hasUnobservableTrace() {
+        io.opentelemetry.api.trace.Span maybeSpan =
+                io.opentelemetry.api.trace.Span.fromContextOrNull(Context.current());
+        return maybeSpan != null && !maybeSpan.getSpanContext().isSampled();
     }
 }
