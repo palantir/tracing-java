@@ -20,6 +20,9 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
 import java.util.Map;
@@ -73,7 +76,37 @@ public interface DetachedSpan {
             String traceId,
             Optional<String> parentSpanId,
             @Safe String operation,
-            SpanType type) {}
+            SpanType type) {
+
+        TraceFlags flags = TraceFlags.getDefault();
+        switch (observability) {
+            case SAMPLE:
+                flags = TraceFlags.getSampled();
+                break;
+            case DO_NOT_SAMPLE:
+                flags = TraceFlags.getDefault();
+                break;
+            case UNDECIDED:
+                // TODO(dfox): invoke our crappy sampler?
+                throw new UnsupportedOperationException();
+        }
+
+        SpanContext parentSpanContext = SpanContext.createFromRemoteParent(
+                traceId,
+                parentSpanId.orElseGet(() -> SpanContext.getInvalid().getSpanId()),
+                flags,
+                TraceState.getDefault());
+        Span parentSpan = Span.wrap(parentSpanContext);
+        Context context2 = Context.current().with(parentSpan);
+
+        Span span = Tracer.getSpanBuilder()
+                .spanBuilder(operation)
+                .setSpanKind(Translation.toOpenTelemetry(type))
+                .setParent(context2)
+                .startSpan();
+
+        return DetachedSpanImpl.createAndMakeCurrent(span);
+    }
 
     final class DetachedSpanImpl implements DetachedSpan {
         // Gotta keep these two around so we can close them at the end
