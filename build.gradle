@@ -73,4 +73,9 @@ subprojects {
             options.errorprone.errorproneArgs.add '-XepOpt:NullAway:AnnotatedPackages=com.palantir'
         }
     })
+
+    dependencies {
+        implementation 'io.opentelemetry:opentelemetry-api'
+        implementation 'io.opentelemetry:opentelemetry-sdk'
+    }
 }

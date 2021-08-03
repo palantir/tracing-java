@@ -13,6 +13,7 @@ jakarta.ws.rs:jakarta.ws.rs-api = 2.1.6
 org.glassfish.jersey.*:* = 2.22.2
 org.slf4j:slf4j-api = 1.7.12
 com.palantir.conjure.java.runtime:* = 7.11.0
+io.opentelemetry:* = 1.4.1
 
 # dependency-upgrader:ON
 junit:junit = 4.13.2
