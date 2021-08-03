@@ -56,10 +56,10 @@ public interface DetachedSpan {
      */
     @CheckReturnValue
     static DetachedSpan start(@Safe String operation, SpanType type) {
-        // implicitly parented to whatever is the current threadlocal span (from Context.current())
         Span span = Tracer.getSpanBuilder()
                 .spanBuilder(operation)
                 .setSpanKind(Translation.toOpenTelemetry(type))
+                .setParent(Context.current())
                 .startSpan();
 
         return DetachedSpanImpl.createAndMakeCurrent(span);
@@ -160,6 +160,12 @@ public interface DetachedSpan {
         }
 
         @Override
+        public CloseableSpan completeAndStartChild(String operationName, SpanType type) {
+            complete();
+            return childSpan(operationName, type);
+        }
+
+        @Override
         public void complete() {
             span.end();
             scope.close();
@@ -217,10 +223,12 @@ public interface DetachedSpan {
 
     @MustBeClosed
     @SuppressWarnings("MustBeClosedChecker")
-    default CloseableSpan completeAndStartChild(@Safe String operationName, SpanType type) {}
+    CloseableSpan completeAndStartChild(@Safe String operationName, SpanType type);
 
     @MustBeClosed
-    default CloseableSpan completeAndStartChild(String operationName) {}
+    default CloseableSpan completeAndStartChild(@Safe String operationName) {
+        return completeAndStartChild(operationName, SpanType.LOCAL);
+    }
 
     /**
      * Starts a child {@link DetachedSpan} using this instance as the parent.
