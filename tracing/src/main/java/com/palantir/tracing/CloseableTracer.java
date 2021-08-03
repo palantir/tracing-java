@@ -18,6 +18,8 @@ package com.palantir.tracing;
 
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Scope;
 import java.util.Map;
 
 /**
@@ -51,8 +53,21 @@ public class CloseableTracer implements AutoCloseable {
      * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
      */
     public static CloseableTracer startSpan(@Safe String operation, SpanType spanType) {
-        Tracer.fastStartSpan(operation, spanType);
-        return INSTANCE;
+        Span span = Tracer.getSpanBuilder()
+                .spanBuilder(operation)
+                .setSpanKind(Translation.toOpenTelemetry(spanType))
+                .startSpan();
+
+        // TODO(dfox): how are we gonna tolerate folks calling the 'legacy' endpoints to put stuff on a stack
+        Scope scope = span.makeCurrent();
+
+        return new CloseableTracer() {
+            @Override
+            public void close() {
+                span.end();
+                scope.close();
+            }
+        };
     }
 
     /**

@@ -16,8 +16,17 @@
 
 package com.palantir.tracing;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+
+import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.AttributeType;
+import io.opentelemetry.api.trace.SpanId;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.opentelemetry.sdk.trace.data.SpanData;
+import java.util.List;
 
 final class Translation {
 
@@ -49,5 +58,58 @@ final class Translation {
                 return SpanType.LOCAL;
         }
         throw new UnsupportedOperationException();
+    }
+
+    public static Span fromOpenTelemetry(ReadableSpan span) {
+        SpanData spanData = span.toSpanData();
+
+        Span.Builder spanBuilder = Span.builder()
+                .traceId(spanData.getTraceId())
+                .spanId(spanData.getSpanId())
+                .type(fromOpenTelemetryLossy(spanData.getKind()))
+                .operation(spanData.getName())
+                .startTimeMicroSeconds(toEpochMicros(spanData.getStartEpochNanos()))
+                .durationNanoSeconds(Math.max(1, spanData.getEndEpochNanos() - spanData.getStartEpochNanos()));
+
+        if (!spanData.getParentSpanId().equals(SpanId.getInvalid())) {
+            spanBuilder.parentSpanId(spanData.getParentSpanId());
+        }
+
+        spanData.getAttributes()
+                .forEach((key, value) -> spanBuilder.putMetadata(key.getKey(), valueToString(key, value)));
+
+        return spanBuilder.build();
+    }
+
+    private static String valueToString(AttributeKey<?> key, Object attributeValue) {
+        AttributeType type = key.getType();
+        switch (type) {
+            case STRING:
+            case BOOLEAN:
+            case LONG:
+            case DOUBLE:
+                return String.valueOf(attributeValue);
+            case STRING_ARRAY:
+            case BOOLEAN_ARRAY:
+            case LONG_ARRAY:
+            case DOUBLE_ARRAY:
+                return commaSeparated((List<?>) attributeValue);
+        }
+        throw new IllegalStateException("Unknown attribute type: " + type);
+    }
+
+    private static String commaSeparated(List<?> values) {
+        StringBuilder builder = new StringBuilder();
+        for (Object value : values) {
+            if (builder.length() != 0) {
+                builder.append(',');
+            }
+            builder.append(value);
+        }
+        return builder.toString();
+    }
+
+    private static long toEpochMicros(long epochNanos) {
+        return NANOSECONDS.toMicros(epochNanos);
     }
 }

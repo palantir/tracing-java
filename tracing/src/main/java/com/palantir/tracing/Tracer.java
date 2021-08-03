@@ -30,7 +30,12 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
+import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
@@ -154,8 +159,7 @@ public final class Tracer {
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(@Safe String operation, SpanType type) {
-        io.opentelemetry.api.trace.Span span = GlobalOpenTelemetry.get()
-                .getTracer("palantir-tracing-java")
+        io.opentelemetry.api.trace.Span span = getSpanBuilder()
                 .spanBuilder(operation)
                 .setSpanKind(Translation.toOpenTelemetry(type))
                 .startSpan();
@@ -165,6 +169,31 @@ public final class Tracer {
         threadLocalScopes
                 .get()
                 .push(ImmutableThingy.builder().span(span).scope(scope).build());
+    }
+
+    static io.opentelemetry.api.trace.Tracer getSpanBuilder() {
+        SdkTracerProvider tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(new SpanProcessor() {
+                    @Override
+                    public void onStart(Context parentContext, ReadWriteSpan span) {}
+
+                    @Override
+                    public boolean isStartRequired() {
+                        return false;
+                    }
+
+                    @Override
+                    public void onEnd(ReadableSpan span) {
+                        compositeObserver.accept(Translation.fromOpenTelemetry(span));
+                    }
+
+                    @Override
+                    public boolean isEndRequired() {
+                        return false;
+                    }
+                })
+                .build();
+        return GlobalOpenTelemetry.get().getTracer("palantir-tracing-java");
     }
 
     /**
@@ -235,7 +264,8 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static Optional<Span> completeSpan() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+                "OpenTelemetry does not make it easy to directly access the resultant span after completion");
     }
 
     /**
@@ -246,7 +276,9 @@ public final class Tracer {
      */
     @CheckReturnValue
     @Deprecated
-    public static Optional<Span> completeSpan(@Safe Map<String, String> metadata) {}
+    public static Optional<Span> completeSpan(@Safe Map<String, String> _metadata) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Subscribes the given (named) span observer to all "span completed" events. Observers are expected to be "cheap",
