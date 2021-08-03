@@ -28,6 +28,7 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
+import io.opentelemetry.api.trace.SpanContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -54,13 +55,29 @@ public final class Tracer {
 
     private Tracer() {}
 
-    /**
-     * In the unsampled case, the Trace.Unsampled class doesn't actually store a spanId/parentSpanId stack, so we just
-     * make one up (just in time). This matches the behaviour of Tracer#startSpan.
-     *
-     * <p>n.b. this is a bit funky because calling maybeGetTraceMetadata multiple times will return different spanIds
-     */
-    public static Optional<TraceMetadata> maybeGetTraceMetadata() {}
+    public static Optional<TraceMetadata> maybeGetTraceMetadata() {
+        // OpenTelemetry openTelemetry = GlobalOpenTelemetry.get();
+        // openTelemetry.getTracer("palantir-tracing-java");
+        io.opentelemetry.api.trace.Span currentSpan = io.opentelemetry.api.trace.Span.current();
+        if (currentSpan == io.opentelemetry.api.trace.Span.getInvalid()) {
+            return Optional.empty();
+        }
+
+        SpanContext spanContext = currentSpan.getSpanContext();
+        return Optional.of(TraceMetadata.builder()
+                .traceId(spanContext.getTraceId())
+                // b3 takes the odd decision to propagate parentSpanId, but OpenTelemetry doesn't.
+                // In theory, perhaps this could result in a span starting on one node, making an RPC and ending on
+                // another node. In practise, conjure undertow never reads this X-B3-ParentSpanId header and we just
+                // create a new span on the server side, parented to the value of X-B3-SpanId.
+                // https://github.com/openzipkin/b3-propagation/blob/master/RATIONALE.md
+                // https://github.com/openzipkin/b3-propagation#why-is-parentspanid-propagated.
+                .parentSpanId(Optional.empty())
+                .spanId(spanContext.getSpanId())
+                .requestId(Optional.empty()) // TODO(dfox): wire this through
+                .originatingSpanId(Optional.empty()) // TODO(dfox): wire this through somehows
+                .build());
+    }
 
     /**
      * Deprecated.
