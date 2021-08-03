@@ -28,11 +28,16 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.SpanContext;
+import io.opentelemetry.context.Scope;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.immutables.value.Value;
 import org.slf4j.MDC;
 
 /**
@@ -52,6 +57,15 @@ public final class Tracer {
     private static volatile Consumer<Span> compositeObserver = _span -> {};
     // Thread-safe since stateless
     private static volatile TraceSampler sampler = RandomSampler.create(0.0005f);
+
+    private static final ThreadLocal<Deque<Thingy>> threadLocalScopes = ThreadLocal.withInitial(ArrayDeque::new);
+
+    @Value.Immutable
+    interface Thingy {
+        io.opentelemetry.api.trace.Span span();
+
+        Scope scope();
+    }
 
     private Tracer() {}
 
@@ -139,12 +153,26 @@ public final class Tracer {
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
      */
-    public static void fastStartSpan(@Safe String operation, SpanType type) {}
+    public static void fastStartSpan(@Safe String operation, SpanType type) {
+        io.opentelemetry.api.trace.Span span = GlobalOpenTelemetry.get()
+                .getTracer("palantir-tracing-java")
+                .spanBuilder(operation)
+                .setSpanKind(Translation.toOpenTelemetry(type))
+                .startSpan();
+
+        Scope scope = span.makeCurrent();
+
+        threadLocalScopes
+                .get()
+                .push(ImmutableThingy.builder().span(span).scope(scope).build());
+    }
 
     /**
      * Like {@link #startSpan(String)}, but does not return an {@link OpenSpan}.
      */
-    public static void fastStartSpan(@Safe String operation) {}
+    public static void fastStartSpan(@Safe String operation) {
+        fastStartSpan(operation, SpanType.LOCAL);
+    }
 
     /**
      * Completes the current span (if it exists) and notifies all {@link #observers subscribers} about the completed
@@ -152,21 +180,63 @@ public final class Tracer {
      *
      * <p>Does not construct the Span object if no subscriber will see it.
      */
-    public static void fastCompleteSpan() {}
+    public static void fastCompleteSpan() {
+        Thingy thingy = threadLocalScopes.get().pollFirst();
+        if (thingy == null) {
+            return;
+        }
+        thingy.scope().close();
+        thingy.span().end();
+    }
 
     /**
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
      */
-    public static void fastCompleteSpan(@Safe Map<String, String> metadata) {}
+    public static void fastCompleteSpan(@Safe Map<String, String> metadata) {
+        Thingy thingy = threadLocalScopes.get().pollFirst();
+        if (thingy == null) {
+            return;
+        }
+        metadata.forEach(thingy.span()::setAttribute);
+        thingy.scope().close();
+        thingy.span().end();
+    }
 
-    public static <T> void fastCompleteSpan(TagTranslator<? super T> tag, T state) {}
+    public static <T> void fastCompleteSpan(TagTranslator<? super T> tagTranslator, T data) {
+        Thingy thingy = threadLocalScopes.get().pollFirst();
+        if (thingy == null) {
+            return;
+        }
+
+        if (!tagTranslator.isEmpty(data) && thingy.span().isRecording()) {
+            tagTranslator.translate(
+                    new TagTranslator.TagAdapter<io.opentelemetry.api.trace.Span>() {
+                        @Override
+                        public void tag(io.opentelemetry.api.trace.Span target, String key, String value) {
+                            target.setAttribute(key, value);
+                        }
+
+                        @Override
+                        public void tag(io.opentelemetry.api.trace.Span target, Map<String, String> tags) {
+                            tags.forEach(target::setAttribute);
+                        }
+                    },
+                    thingy.span(),
+                    data);
+        }
+
+        thingy.scope().close();
+        thingy.span().end();
+    }
 
     /**
      * Completes and returns the current span (if it exists) and notifies all {@link #observers subscribers} about the
      * completed span. If the return value is not used, prefer {@link Tracer#fastCompleteSpan()}.
      */
     @CheckReturnValue
-    public static Optional<Span> completeSpan() {}
+    public static Optional<Span> completeSpan() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Like {@link #completeSpan()}, but adds {@code metadata} to the current span being completed.
@@ -177,22 +247,6 @@ public final class Tracer {
     @CheckReturnValue
     @Deprecated
     public static Optional<Span> completeSpan(@Safe Map<String, String> metadata) {}
-
-    private enum SpanBuilderTagAdapter implements TagTranslator.TagAdapter<Span.Builder> {
-        INSTANCE;
-
-        @Override
-        public void tag(Span.Builder target, String key, String value) {
-            if (key != null && value != null) {
-                target.putMetadata(key, value);
-            }
-        }
-
-        @Override
-        public void tag(Span.Builder target, Map<String, String> tags) {
-            target.putAllMetadata(tags);
-        }
-    }
 
     /**
      * Subscribes the given (named) span observer to all "span completed" events. Observers are expected to be "cheap",
