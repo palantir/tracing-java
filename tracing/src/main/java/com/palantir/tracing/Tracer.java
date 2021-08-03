@@ -438,26 +438,23 @@ public final class Tracer {
     /**
      * Sets the sampler (for all threads).
      */
-    public static void setSampler(TraceSampler palantirSampler) {
-        Tracer.palantirSampler = palantirSampler;
+    public static void setSampler(TraceSampler sampler) {
+        palantirSampler = sampler;
     }
 
     /**
      * Returns true if there is an active trace on this thread.
      */
     public static boolean hasTraceId() {
-        return currentTrace.get() != null;
+        return io.opentelemetry.api.trace.Span.fromContextOrNull(Context.current()) != null;
     }
 
     /**
      * Returns the globally unique identifier for this thread's trace.
      */
-    public static String getTraceId() {}
-
-    /**
-     * Clears the current trace id and returns it if present.
-     */
-    static Optional<Trace> getAndClearTraceIfPresent() {}
+    public static String getTraceId() {
+        return io.opentelemetry.api.trace.Span.current().getSpanContext().getTraceId();
+    }
 
     /**
      * Clears the current trace id and returns (a copy of) it.
