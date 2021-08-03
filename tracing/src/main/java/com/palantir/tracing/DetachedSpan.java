@@ -19,6 +19,9 @@ package com.palantir.tracing;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.CheckReturnValue;
@@ -49,7 +52,15 @@ public interface DetachedSpan {
      * @see DetachedSpan#start(String)
      */
     @CheckReturnValue
-    static DetachedSpan start(@Safe String operation, SpanType type) {}
+    static DetachedSpan start(@Safe String operation, SpanType type) {
+        // implicitly parented to whatever is the current threadlocal span (from Context.current())
+        Span span = Tracer.getSpanBuilder()
+                .spanBuilder(operation)
+                .setSpanKind(Translation.toOpenTelemetry(type))
+                .startSpan();
+
+        return DetachedSpanImpl.createAndMakeCurrent(span);
+    }
 
     /**
      * Marks the beginning of a span, which you can {@link #complete} on any other thread.
@@ -63,6 +74,71 @@ public interface DetachedSpan {
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type) {}
+
+    final class DetachedSpanImpl implements DetachedSpan {
+        // Gotta keep these two around so we can close them at the end
+        private final Span span;
+        private final Scope scope;
+        // Allows creating new child spans parented correctly
+        private final Context context;
+
+        private DetachedSpanImpl(Span span, Scope scope, Context context) {
+            this.span = span;
+            this.scope = scope;
+            this.context = context;
+        }
+
+        static DetachedSpan createAndMakeCurrent(Span span) {
+            Context context2 = Context.current().with(span);
+            Scope scope = context2.makeCurrent();
+            return new DetachedSpanImpl(span, scope, context2);
+        }
+
+        @Override
+        public <T> CloseableSpan childSpan(
+                String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
+
+            Span childSpan = Tracer.getSpanBuilder()
+                    .spanBuilder(operationName)
+                    .setSpanKind(Translation.toOpenTelemetry(type))
+                    .setParent(context)
+                    .startSpan();
+            Tracer.setSpanAttributes(childSpan, translator, data);
+
+            Scope scope2 = childSpan.makeCurrent();
+            return new CloseableSpan() {
+                @Override
+                public void close() {
+                    childSpan.end();
+                    scope2.close();
+                }
+            };
+        }
+
+        @Override
+        public DetachedSpan childDetachedSpan(String operation, SpanType type) {
+            Span childDetachedSpan = Tracer.getSpanBuilder()
+                    .spanBuilder(operation)
+                    .setSpanKind(Translation.toOpenTelemetry(type))
+                    .setParent(context)
+                    .startSpan();
+
+            return DetachedSpanImpl.createAndMakeCurrent(childDetachedSpan);
+        }
+
+        @Override
+        public void complete() {
+            span.end();
+            scope.close();
+        }
+
+        @Override
+        public <T> void complete(TagTranslator<? super T> tagTranslator, T data) {
+            Tracer.setSpanAttributes(span, tagTranslator, data);
+            span.end();
+            scope.close();
+        }
+    }
 
     /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan} as the parent

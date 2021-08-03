@@ -337,25 +337,31 @@ public final class Tracer {
             return;
         }
 
-        if (!tagTranslator.isEmpty(data) && thingy.span().isRecording()) {
-            tagTranslator.translate(
-                    new TagTranslator.TagAdapter<io.opentelemetry.api.trace.Span>() {
-                        @Override
-                        public void tag(io.opentelemetry.api.trace.Span target, String key, String value) {
-                            target.setAttribute(key, value);
-                        }
-
-                        @Override
-                        public void tag(io.opentelemetry.api.trace.Span target, Map<String, String> tags) {
-                            tags.forEach(target::setAttribute);
-                        }
-                    },
-                    thingy.span(),
-                    data);
-        }
+        setSpanAttributes(thingy.span(), tagTranslator, data);
 
         thingy.scope().close();
         thingy.span().end();
+    }
+
+    static <T> void setSpanAttributes(
+            io.opentelemetry.api.trace.Span span, TagTranslator<? super T> tagTranslator, T data) {
+        if (!tagTranslator.isEmpty(data) && span.isRecording()) {
+            tagTranslator.translate(OpenTelemetryTagAdapter.INSTANCE, span, data);
+        }
+    }
+
+    private enum OpenTelemetryTagAdapter implements TagTranslator.TagAdapter<io.opentelemetry.api.trace.Span> {
+        INSTANCE;
+
+        @Override
+        public void tag(io.opentelemetry.api.trace.Span target, String key, String value) {
+            target.setAttribute(key, value);
+        }
+
+        @Override
+        public void tag(io.opentelemetry.api.trace.Span target, Map<String, String> tags) {
+            tags.forEach(target::setAttribute);
+        }
     }
 
     /**

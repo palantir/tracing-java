@@ -60,7 +60,6 @@ public class CloseableTracer implements AutoCloseable {
 
         // TODO(dfox): how are we gonna tolerate folks calling the 'legacy' endpoints to put stuff on a stack
         Scope scope = span.makeCurrent();
-
         return new CloseableTracer() {
             @Override
             public void close() {
