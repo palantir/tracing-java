@@ -220,7 +220,16 @@ public final class Tracers {
      * execution.
      */
     public static Runnable wrap(String operation, Map<String, String> metadata, Runnable delegate) {
-        return new TracingAwareRunnable(operation, metadata, delegate);
+        return Context.current().wrap(() -> {
+            Span span = Tracer.getSpanBuilder().spanBuilder(operation).startSpan();
+            Tracer.setSpanAttributes(span, MapTagTranslator.INSTANCE, metadata);
+
+            try (Scope scope = span.makeCurrent()) {
+                delegate.run();
+            } finally {
+                span.end();
+            }
+        });
     }
 
     /**
