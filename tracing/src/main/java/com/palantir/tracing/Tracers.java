@@ -179,7 +179,7 @@ public final class Tracers {
      * it's construction during its {@link Callable#call() execution}.
      */
     public static <V> Callable<V> wrap(Callable<V> delegate) {
-        return new AnonymousTracingAwareCallable<>(delegate);
+        return wrap("DeferredTracer(unnamed operation)", delegate);
     }
 
     /**
@@ -187,7 +187,7 @@ public final class Tracers {
      * execution.
      */
     public static <V> Callable<V> wrap(String operation, Callable<V> delegate) {
-        return new TracingAwareCallable<>(operation, ImmutableMap.of(), delegate);
+        return wrap(operation, ImmutableMap.of(), delegate);
     }
 
     /**
@@ -195,7 +195,19 @@ public final class Tracers {
      * the execution.
      */
     public static <V> Callable<V> wrap(String operation, Map<String, String> metadata, Callable<V> delegate) {
-        return new TracingAwareCallable<>(operation, metadata, delegate);
+        Context before = Context.current();
+        return () -> {
+            try (Scope scope1 = before.makeCurrent()) {
+                Span span = Tracer.getSpanBuilder().spanBuilder(operation).startSpan();
+                Tracer.setSpanAttributes(span, MapTagTranslator.INSTANCE, metadata);
+
+                try (Scope scope2 = span.makeCurrent()) {
+                    return delegate.call();
+                } finally {
+                    span.end();
+                }
+            }
+        };
     }
 
     /**
@@ -203,7 +215,7 @@ public final class Tracers {
      * it's construction during its {@link Runnable#run()} execution}.
      */
     public static Runnable wrap(Runnable delegate) {
-        return new AnonymousTracingAwareRunnable(delegate);
+        return wrap("DeferredTracer(unnamed operation)", delegate);
     }
 
     /**
@@ -220,16 +232,19 @@ public final class Tracers {
      * execution.
      */
     public static Runnable wrap(String operation, Map<String, String> metadata, Runnable delegate) {
-        return Context.current().wrap(() -> {
-            Span span = Tracer.getSpanBuilder().spanBuilder(operation).startSpan();
-            Tracer.setSpanAttributes(span, MapTagTranslator.INSTANCE, metadata);
+        Context before = Context.current();
+        return () -> {
+            try (Scope scope1 = before.makeCurrent()) {
+                Span span = Tracer.getSpanBuilder().spanBuilder(operation).startSpan();
+                Tracer.setSpanAttributes(span, MapTagTranslator.INSTANCE, metadata);
 
-            try (Scope scope = span.makeCurrent()) {
-                delegate.run();
-            } finally {
-                span.end();
+                try (Scope scope2 = span.makeCurrent()) {
+                    delegate.run();
+                } finally {
+                    span.end();
+                }
             }
-        });
+        };
     }
 
     /**
@@ -425,7 +440,7 @@ public final class Tracers {
         return () -> {
             Span newRootSpan = Tracer.getSpanBuilder()
                     .spanBuilder(operation)
-                    .setAttribute("observability-hint", observability.toString()) // TODO(dfox): make sampler read this
+                    .setAttribute(PalantirAttributes.OBSERVABILITY_HINT, observability.toString())
                     .setParent(Context.root())
                     .startSpan();
 
@@ -497,9 +512,7 @@ public final class Tracers {
 
             Span newNamedSpan = Tracer.getSpanBuilder()
                     .spanBuilder(operation)
-                    .setAttribute(
-                            PalantirAttributes.OBSERVABILITY_HINT,
-                            observability.toString()) // TODO(dfox): make sampler read this
+                    .setAttribute(PalantirAttributes.OBSERVABILITY_HINT, observability.toString())
                     .setParent(Context.root().with(madeUpSpan))
                     .startSpan();
 
@@ -509,88 +522,6 @@ public final class Tracers {
                 newNamedSpan.end();
             }
         };
-    }
-
-    /**
-     * Wraps a given callable such that its execution operates with the {@link Trace thread-local Trace} of the thread
-     * that constructs the {@link TracingAwareCallable} instance rather than the thread that executes the callable.
-     *
-     * <p>The constructor is typically called by a tracing-aware executor service on the same thread on which a user
-     * creates {@link Callable delegate}, and the {@link #call()} method is executed on an arbitrary (likely different)
-     * thread with different {@link Trace tracing state}. In order to execute the task with the original (and
-     * intuitively expected) tracing state, we remember the original state and set it for the duration of the
-     * {@link #call() execution}.
-     */
-    private static class TracingAwareCallable<V> implements Callable<V> {
-        private final Callable<V> delegate;
-        private final DeferredTracer deferredTracer;
-
-        TracingAwareCallable(String operation, Map<String, String> metadata, Callable<V> delegate) {
-            this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer(operation, metadata);
-        }
-
-        @Override
-        public V call() throws Exception {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
-                return delegate.call();
-            }
-        }
-    }
-
-    private static class AnonymousTracingAwareCallable<V> implements Callable<V> {
-        private final Callable<V> delegate;
-        private final DeferredTracer deferredTracer;
-
-        AnonymousTracingAwareCallable(Callable<V> delegate) {
-            this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer("DeferredTracer(unnamed operation)");
-        }
-
-        @Override
-        public V call() throws Exception {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
-                return delegate.call();
-            }
-        }
-    }
-
-    /**
-     * Wraps a given runnable such that its execution operates with the {@link Trace thread-local Trace} of the thread
-     * that constructs the {@link TracingAwareRunnable} instance rather than the thread that executes the runnable.
-     */
-    private static class TracingAwareRunnable implements Runnable {
-        private final Runnable delegate;
-        private final DeferredTracer deferredTracer;
-
-        TracingAwareRunnable(String operation, Map<String, String> metadata, Runnable delegate) {
-            this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer(operation, metadata);
-        }
-
-        @Override
-        public void run() {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
-                delegate.run();
-            }
-        }
-    }
-
-    private static class AnonymousTracingAwareRunnable implements Runnable {
-        private final Runnable delegate;
-        private final DeferredTracer deferredTracer;
-
-        AnonymousTracingAwareRunnable(Runnable delegate) {
-            this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer("DeferredTracer(unnamed operation)");
-        }
-
-        @Override
-        public void run() {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
-                delegate.run();
-            }
-        }
     }
 
     public interface ThrowingCallable<T, E extends Throwable> {
