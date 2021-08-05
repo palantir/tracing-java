@@ -156,6 +156,11 @@ public interface DetachedSpan {
             span.end();
             scope.close();
         }
+
+        @Override
+        public boolean isSampled() {
+            return span.isRecording();
+        }
     }
 
     /**
@@ -243,4 +248,6 @@ public interface DetachedSpan {
      * not throw either in order to avoid confusing failures.
      */
     <T> void complete(TagTranslator<? super T> tagTranslator, T data);
+
+    boolean isSampled();
 }

@@ -78,5 +78,7 @@ public final class DeferredTracer implements Serializable {
     }
 
     /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
-    public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {}
+    public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
+        throw new UnsupportedOperationException();
+    }
 }
