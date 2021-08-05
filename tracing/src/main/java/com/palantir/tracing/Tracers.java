@@ -21,6 +21,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.SpanType;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -376,15 +379,16 @@ public final class Tracers {
     public static <V> Callable<V> wrapWithNewTrace(
             String operation, Observability observability, Callable<V> delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
+            Span newRootSpan = Tracer.getSpanBuilder()
+                    .spanBuilder(operation)
+                    .setAttribute("observability-hint", observability.toString()) // TODO(dfox): make sampler read this
+                    .setParent(Context.root())
+                    .startSpan();
 
-            try {
-                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
+            try (Scope scope = newRootSpan.makeCurrent()) {
                 return delegate.call();
             } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
+                newRootSpan.end();
             }
         };
     }
@@ -411,15 +415,16 @@ public final class Tracers {
      */
     public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
+            Span newRootSpan = Tracer.getSpanBuilder()
+                    .spanBuilder(operation)
+                    .setAttribute("observability-hint", observability.toString()) // TODO(dfox): make sampler read this
+                    .setParent(Context.root())
+                    .startSpan();
 
-            try {
-                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
+            try (Scope scope = newRootSpan.makeCurrent()) {
                 delegate.run();
             } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
+                newRootSpan.end();
             }
         };
     }
@@ -434,15 +439,20 @@ public final class Tracers {
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
-            try {
-                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
+            // we invent this purely just to get the traceId we want, even though it doesn't get sent to processors.
+            Span madeUpSpan = Tracer.createMadeUpSpan(traceId, Optional.empty(), observability);
+
+            Span newNamedSpan = Tracer.getSpanBuilder()
+                    .spanBuilder(operation)
+                    .setAttribute("observability-hint", observability.toString()) // TODO(dfox): make sampler read this
+                    .setParent(Context.root().with(madeUpSpan))
+                    .startSpan();
+
+            try (Scope scope = newNamedSpan.makeCurrent()) {
                 return delegate.call();
             } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
+                newNamedSpan.end();
             }
         };
     }

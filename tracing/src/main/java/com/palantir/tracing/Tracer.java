@@ -29,14 +29,18 @@ import com.palantir.tracing.api.SpanType;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.api.trace.TraceFlags;
+import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
+import io.opentelemetry.exporter.logging.LoggingSpanExporter;
 import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.data.LinkData;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.opentelemetry.sdk.trace.samplers.SamplingDecision;
 import io.opentelemetry.sdk.trace.samplers.SamplingResult;
@@ -136,6 +140,37 @@ public final class Tracer {
         }
     }
 
+    // TODO(dfox): I don't think these Span.wrap things get sent to spanprocessors (i.e. observers)
+    /** Creates a {@link io.opentelemetry.api.trace.PropagatedSpan}. */
+    static io.opentelemetry.api.trace.Span createMadeUpSpan(
+            String traceId, Optional<String> maybeParentSpanId, Observability observability) {
+
+        // TODO(dfox): is all this observability stuff pointless???
+        TraceFlags flags = TraceFlags.getDefault();
+        switch (observability) {
+            case SAMPLE:
+                flags = TraceFlags.getSampled();
+                break;
+            case DO_NOT_SAMPLE:
+                flags = TraceFlags.getDefault();
+                break;
+            case UNDECIDED:
+                return createMadeUpSpan(
+                        traceId,
+                        maybeParentSpanId,
+                        palantirSampler.sample() ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE);
+        }
+
+        String parentSpanId =
+                maybeParentSpanId.orElseGet(() -> SpanContext.getInvalid().getSpanId());
+
+        // TODO(dfox): these probably aren't all remote... use SpanContext.create too?
+        SpanContext spanContext =
+                SpanContext.createFromRemoteParent(traceId, parentSpanId, flags, TraceState.getDefault());
+
+        return io.opentelemetry.api.trace.Span.wrap(spanContext);
+    }
+
     static io.opentelemetry.api.trace.Tracer getSpanBuilder() {
 
         // TODO(dfox): need to initialize this _way_ earlier.
@@ -165,20 +200,33 @@ public final class Tracer {
                 .setSampler(new Sampler() {
                     @Override
                     public SamplingResult shouldSample(
-                            Context _parentContext,
+                            Context parentContext,
                             String _traceId,
                             String _name,
                             SpanKind _spanKind,
                             Attributes _attributes,
                             List<LinkData> _parentLinks) {
-                        return palantirSampler.sample()
+                        // String maybeHint = _attributes.get(AttributeKey.stringKey("observability-hint"));
+
+                        SpanContext spanContext = io.opentelemetry.api.trace.Span.fromContext(parentContext)
+                                .getSpanContext();
+
+                        if (spanContext.isValid()) {
+                            return fromBoolean(spanContext.isSampled());
+                        }
+
+                        return fromBoolean(palantirSampler.sample());
+                    }
+
+                    private SamplingResult fromBoolean(boolean shouldSample) {
+                        return shouldSample
                                 ? SamplingResult.create(SamplingDecision.RECORD_AND_SAMPLE)
                                 : SamplingResult.create(SamplingDecision.DROP);
                     }
 
                     @Override
                     public String getDescription() {
-                        return "palantir-tracing-java-sampler";
+                        return "tracing-java-sampler{" + palantirSampler + '}';
                     }
 
                     @Override
@@ -186,6 +234,7 @@ public final class Tracer {
                         return getDescription();
                     }
                 })
+                .addSpanProcessor(SimpleSpanProcessor.create(new LoggingSpanExporter()))
                 .build();
         return tracerProvider.get("palantir-tracing-java");
     }
@@ -220,7 +269,9 @@ public final class Tracer {
      * @deprecated Use {@link #initTraceWithSpan(Observability, String, String, SpanType)}
      */
     @Deprecated
-    public static void initTrace(Optional<Boolean> isObservable, String traceId) {}
+    public static void initTrace(Optional<Boolean> isObservable, String traceId) {
+        // 230 results... likely gotta figure out a solution for this
+    }
 
     /**
      * Initializes the current thread's trace, erasing any previously accrued open spans.
@@ -235,14 +286,18 @@ public final class Tracer {
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
      */
     public static void initTraceWithSpan(
-            Observability observability, String traceId, @Safe String operation, String parentSpanId, SpanType type) {}
+            Observability observability, String traceId, @Safe String operation, String parentSpanId, SpanType type) {
+        // 23 results... likely gotta figure out a solution for this
+    }
 
     /**
      * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
      */
     public static void initTraceWithSpan(
-            Observability observability, String traceId, @Safe String operation, SpanType type) {}
+            Observability observability, String traceId, @Safe String operation, SpanType type) {
+        // 23 results... likely gotta figure out a solution for this
+    }
 
     /**
      * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
