@@ -159,7 +159,7 @@ public interface DetachedSpan {
 
         @Override
         public boolean isSampled() {
-            return span.isRecording();
+            return span.getSpanContext().isSampled();
         }
     }
 
