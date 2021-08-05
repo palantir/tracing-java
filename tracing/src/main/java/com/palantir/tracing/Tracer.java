@@ -204,9 +204,22 @@ public final class Tracer {
                             String _traceId,
                             String _name,
                             SpanKind _spanKind,
-                            Attributes _attributes,
+                            Attributes attributes,
                             List<LinkData> _parentLinks) {
-                        // String maybeHint = _attributes.get(AttributeKey.stringKey("observability-hint"));
+                        Optional<Observability> maybeHint = Optional.ofNullable(
+                                        attributes.get(PalantirAttributes.OBSERVABILITY_HINT))
+                                .map(Observability::valueOf);
+
+                        if (maybeHint.isPresent()) {
+                            switch (maybeHint.get()) {
+                                case SAMPLE:
+                                    return fromBoolean(true);
+                                case DO_NOT_SAMPLE:
+                                    return fromBoolean(false);
+                                case UNDECIDED:
+                                    // fall through
+                            }
+                        }
 
                         SpanContext spanContext = io.opentelemetry.api.trace.Span.fromContext(parentContext)
                                 .getSpanContext();
