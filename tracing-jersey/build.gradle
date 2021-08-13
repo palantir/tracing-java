@@ -18,8 +18,8 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
 dependencies {
-    compile "org.glassfish.jersey.core:jersey-server"
-    compile project(":tracing")
+    api "org.glassfish.jersey.core:jersey-server"
+    api project(":tracing")
 
     implementation 'com.google.guava:guava'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'

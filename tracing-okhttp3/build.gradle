@@ -18,8 +18,8 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
 dependencies {
-    compile project(":tracing")
-    compile "com.squareup.okhttp3:okhttp"
+    api project(":tracing")
+    api "com.squareup.okhttp3:okhttp"
 
     implementation project(':tracing-api')
 

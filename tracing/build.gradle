@@ -18,10 +18,10 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
 dependencies {
-    compile project(":tracing-api")
-    compile "com.google.guava:guava"
-    compile "com.palantir.safe-logging:preconditions"
-    compile "com.palantir.safe-logging:safe-logging"
+    api project(":tracing-api")
+    api "com.google.guava:guava"
+    api "com.palantir.safe-logging:preconditions"
+    api "com.palantir.safe-logging:safe-logging"
     implementation "org.slf4j:slf4j-api"
 
     implementation 'com.palantir.safe-logging:logger'
