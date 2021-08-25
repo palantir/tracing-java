@@ -72,6 +72,17 @@ public final class Tracer {
     /**
      * Creates a new trace, but does not set it as the current trace.
      */
+    private static Trace createTrace(
+            Observability observability, String traceId, Optional<String> requestId, String originUserAgent) {
+        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
+        checkArgument(!Strings.isNullOrEmpty(originUserAgent), "originUserAgent must ne non-empty");
+        boolean observable = shouldObserve(observability);
+        return Trace.of(observable, traceId, requestId, originUserAgent);
+    }
+
+    /**
+     * Creates a new trace, but does not set it as the current trace.
+     */
     private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
@@ -155,6 +166,25 @@ public final class Tracer {
     @Deprecated
     public static void initTrace(Observability observability, String traceId) {
         setTrace(createTrace(observability, traceId, Optional.empty()));
+    }
+
+    /**
+     * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
+     * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
+     */
+    public static void initTraceWithSpan(
+            Observability observability,
+            String traceId,
+            @Safe String operation,
+            String parentSpanId,
+            SpanType type,
+            String originUserAgent) {
+        setTrace(createTrace(
+                observability,
+                traceId,
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
+                originUserAgent));
+        fastStartSpan(operation, parentSpanId, type);
     }
 
     /**

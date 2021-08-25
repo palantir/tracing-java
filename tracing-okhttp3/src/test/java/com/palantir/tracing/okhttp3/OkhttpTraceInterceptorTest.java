@@ -110,7 +110,8 @@ public final class OkhttpTraceInterceptorTest {
     @Test
     public void testPopulatesNewTrace_whenOriginUserAgentIsPresent() throws IOException {
         String originUserAgent = "originUserAgent";
-        Tracer.initTraceWithSpan(Observability.SAMPLE, "id", "operation", SpanType.SERVER_INCOMING);
+        Tracer.initTraceWithSpan(
+                Observability.SAMPLE, "id", "operation", "parent", SpanType.SERVER_INCOMING, originUserAgent);
         String traceId = Tracer.getTraceId();
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);

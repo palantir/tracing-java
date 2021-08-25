@@ -48,7 +48,10 @@ public abstract class Trace {
 
     private final Optional<String> requestId;
 
-    private Trace(String traceId, Optional<String> requestId) {
+    private final Optional<String> originUserAgent;
+
+    private Trace(String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
+        this.originUserAgent = originUserAgent;
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
         this.requestId = checkNotNull(requestId, "requestId");
@@ -68,7 +71,8 @@ public abstract class Trace {
                 Tracers.randomId(),
                 type,
                 Optional.of(parentSpanId),
-                orElse(getOriginatingSpanId(), Optional.of(parentSpanId)));
+                orElse(getOriginatingSpanId(), Optional.of(parentSpanId)),
+                Optional.empty());
         push(span);
         return span;
     }
@@ -88,9 +92,16 @@ public abstract class Trace {
                     Tracers.randomId(),
                     type,
                     Optional.of(prevState.get().getSpanId()),
-                    orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()));
+                    orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()),
+                    orElse(getOriginUserAgent(), prevState.get().getOriginUserAgent()));
         } else {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty(), getOriginatingSpanId());
+            span = OpenSpan.of(
+                    operation,
+                    Tracers.randomId(),
+                    type,
+                    Optional.empty(),
+                    getOriginatingSpanId(),
+                    getOriginUserAgent());
         }
 
         push(span);
@@ -142,24 +153,40 @@ public abstract class Trace {
 
     abstract Optional<String> getOriginatingSpanId();
 
+    final Optional<String> getOriginUserAgent() {
+        return originUserAgent;
+    }
+
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
     static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
-        return isObservable ? new Sampled(traceId, requestId) : new Unsampled(traceId, requestId);
+        return isObservable
+                ? new Sampled(traceId, requestId, Optional.empty())
+                : new Unsampled(traceId, requestId, Optional.empty());
+    }
+
+    static Trace of(boolean isObservable, String traceId, Optional<String> requestId, String originUserAgent) {
+        return isObservable
+                ? new Sampled(traceId, requestId, Optional.of(originUserAgent))
+                : new Unsampled(traceId, requestId, Optional.of(originUserAgent));
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, String traceId, Optional<String> requestId) {
-            super(traceId, requestId);
+        private Sampled(
+                ArrayDeque<OpenSpan> stack,
+                String traceId,
+                Optional<String> requestId,
+                Optional<String> originUserAgent) {
+            super(traceId, requestId, originUserAgent);
             this.stack = stack;
         }
 
-        private Sampled(String traceId, Optional<String> requestId) {
-            this(new ArrayDeque<>(), traceId, requestId);
+        private Sampled(String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
+            this(new ArrayDeque<>(), traceId, requestId, originUserAgent);
         }
 
         @Override
@@ -209,7 +236,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId());
+            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId(), getOriginUserAgent());
         }
 
         @Override
@@ -227,14 +254,15 @@ public abstract class Trace {
 
         private Optional<String> originatingSpanId = Optional.empty();
 
-        private Unsampled(int numberOfSpans, String traceId, Optional<String> requestId) {
-            super(traceId, requestId);
+        private Unsampled(
+                int numberOfSpans, String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
+            super(traceId, requestId, originUserAgent);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId, Optional<String> requestId) {
-            this(0, traceId, requestId);
+        private Unsampled(String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
+            this(0, traceId, requestId, originUserAgent);
         }
 
         @Override
@@ -294,7 +322,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId(), getRequestId());
+            return new Unsampled(numberOfSpans, getTraceId(), getRequestId(), getOriginUserAgent());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
