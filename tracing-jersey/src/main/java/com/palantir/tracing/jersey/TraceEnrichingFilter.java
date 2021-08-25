@@ -35,6 +35,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ExtendedUriInfo;
@@ -52,6 +53,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     public static final String TRACE_ID_PROPERTY_NAME = "com.palantir.tracing.traceId";
 
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
+
+    public static final String ORIGIN_USER_AGENT_PROPERTY_NAME = "com.palantir.tracing.originUserAgent";
 
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
@@ -76,22 +79,37 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                     getObservabilityFromHeader(requestContext),
                     Tracers.randomId(),
                     operation,
-                    SpanType.SERVER_INCOMING);
+                    SpanType.SERVER_INCOMING,
+                    getOriginUserAgentFromHeader(requestContext));
         } else if (spanId == null) {
             Tracer.initTraceWithSpan(
-                    getObservabilityFromHeader(requestContext), traceId, operation, SpanType.SERVER_INCOMING);
+                    getObservabilityFromHeader(requestContext),
+                    traceId,
+                    operation,
+                    SpanType.SERVER_INCOMING,
+                    getOriginUserAgentFromHeader(requestContext));
         } else {
             // caller's span is this span's parent.
             Tracer.initTraceWithSpan(
-                    getObservabilityFromHeader(requestContext), traceId, operation, spanId, SpanType.SERVER_INCOMING);
+                    getObservabilityFromHeader(requestContext),
+                    traceId,
+                    operation,
+                    spanId,
+                    SpanType.SERVER_INCOMING,
+                    getOriginUserAgentFromHeader(requestContext));
         }
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
-        Tracer.maybeGetTraceMetadata()
+        Optional<TraceMetadata> traceMetadata = Tracer.maybeGetTraceMetadata();
+        traceMetadata
                 .flatMap(TraceMetadata::getRequestId)
                 .ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
+        traceMetadata
+                .flatMap(TraceMetadata::getOriginUserAgent)
+                .ifPresent(originUserAgent ->
+                        requestContext.setProperty(ORIGIN_USER_AGENT_PROPERTY_NAME, originUserAgent));
     }
 
     // Handles outgoing response
@@ -129,6 +147,14 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         } else {
             return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
+    }
+
+    private static Optional<String> getOriginUserAgentFromHeader(ContainerRequestContext requestContext) {
+        String originUserAgent = requestContext.getHeaderString(TraceHttpHeaders.ORIGIN_USER_AGENT);
+        if (originUserAgent == null) {
+            return Optional.ofNullable(requestContext.getHeaderString(HttpHeaders.USER_AGENT));
+        }
+        return Optional.of(originUserAgent);
     }
 
     private String getPathTemplate() {

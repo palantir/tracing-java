@@ -73,9 +73,8 @@ public final class Tracer {
      * Creates a new trace, but does not set it as the current trace.
      */
     private static Trace createTrace(
-            Observability observability, String traceId, Optional<String> requestId, String originUserAgent) {
+            Observability observability, String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
-        checkArgument(!Strings.isNullOrEmpty(originUserAgent), "originUserAgent must ne non-empty");
         boolean observable = shouldObserve(observability);
         return Trace.of(observable, traceId, requestId, originUserAgent);
     }
@@ -180,7 +179,7 @@ public final class Tracer {
             @Safe String operation,
             String parentSpanId,
             SpanType type,
-            String originUserAgent) {
+            Optional<String> originUserAgent) {
         setTrace(createTrace(
                 observability,
                 traceId,
@@ -212,6 +211,24 @@ public final class Tracer {
                 observability,
                 traceId,
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty()));
+        fastStartSpan(operation, type);
+    }
+
+    /**
+     * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
+     * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
+     */
+    public static void initTraceWithSpan(
+            Observability observability,
+            String traceId,
+            @Safe String operation,
+            SpanType type,
+            Optional<String> originUserAgent) {
+        setTrace(createTrace(
+                observability,
+                traceId,
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
+                originUserAgent));
         fastStartSpan(operation, type);
     }
 

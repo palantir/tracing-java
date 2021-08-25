@@ -158,10 +158,11 @@ public abstract class Trace {
                 : new Unsampled(traceId, requestId, Optional.empty());
     }
 
-    static Trace of(boolean isObservable, String traceId, Optional<String> requestId, String originUserAgent) {
+    static Trace of(
+            boolean isObservable, String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
         return isObservable
-                ? new Sampled(traceId, requestId, Optional.of(originUserAgent))
-                : new Unsampled(traceId, requestId, Optional.of(originUserAgent));
+                ? new Sampled(traceId, requestId, originUserAgent)
+                : new Unsampled(traceId, requestId, originUserAgent);
     }
 
     private static final class Sampled extends Trace {

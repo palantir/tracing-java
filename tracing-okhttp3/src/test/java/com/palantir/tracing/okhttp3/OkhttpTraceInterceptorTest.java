@@ -31,6 +31,7 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
+import java.util.Optional;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import org.junit.After;
@@ -111,7 +112,12 @@ public final class OkhttpTraceInterceptorTest {
     public void testPopulatesNewTrace_whenOriginUserAgentIsPresent() throws IOException {
         String originUserAgent = "originUserAgent";
         Tracer.initTraceWithSpan(
-                Observability.SAMPLE, "id", "operation", "parent", SpanType.SERVER_INCOMING, originUserAgent);
+                Observability.SAMPLE,
+                "id",
+                "operation",
+                "parent",
+                SpanType.SERVER_INCOMING,
+                Optional.of(originUserAgent));
         String traceId = Tracer.getTraceId();
         try {
             OkhttpTraceInterceptor.INSTANCE.intercept(chain);
