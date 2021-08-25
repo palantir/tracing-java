@@ -34,4 +34,6 @@ public interface TraceHttpHeaders {
      * tracing, the typical trace logs (with sampling) are still required.
      */
     String ORIGINATING_SPAN_ID = "X-OrigSpanId";
+
+    String ORIGIN_USER_AGENT = "Origin-User-Agent";
 }

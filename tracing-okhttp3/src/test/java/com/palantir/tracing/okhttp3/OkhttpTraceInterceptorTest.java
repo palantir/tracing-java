@@ -108,6 +108,27 @@ public final class OkhttpTraceInterceptorTest {
     }
 
     @Test
+    public void testPopulatesNewTrace_whenOriginUserAgentIsPresent() throws IOException {
+        String originUserAgent = "originUserAgent";
+        Tracer.initTraceWithSpan(Observability.SAMPLE, "id", "operation", SpanType.SERVER_INCOMING);
+        String traceId = Tracer.getTraceId();
+        try {
+            OkhttpTraceInterceptor.INSTANCE.intercept(chain);
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
+
+        verify(chain).request();
+        verify(chain).proceed(requestCaptor.capture());
+        verifyNoMoreInteractions(chain);
+
+        Request intercepted = requestCaptor.getValue();
+        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
+        assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
+        assertThat(intercepted.headers(TraceHttpHeaders.ORIGIN_USER_AGENT)).containsOnly(originUserAgent);
+    }
+
+    @Test
     public void testAddsIsSampledHeader_whenTraceIsObservable() throws IOException {
         Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         OkhttpTraceInterceptor.INSTANCE.intercept(chain);
