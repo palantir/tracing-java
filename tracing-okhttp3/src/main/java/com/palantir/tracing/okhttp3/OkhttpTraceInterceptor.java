@@ -62,10 +62,10 @@ public enum OkhttpTraceInterceptor implements Interceptor {
                     TraceHttpHeaders.ORIGINATING_SPAN_ID,
                     span.getOriginatingSpanId().get());
         }
-        if (span.getOriginUserAgent().isPresent()) {
+        if (Tracer.getOriginUserAgent().isPresent()) {
             tracedRequest.header(
                     TraceHttpHeaders.ORIGIN_USER_AGENT,
-                    span.getOriginUserAgent().get());
+                    Tracer.getOriginUserAgent().get());
         }
 
         Response response;

@@ -130,6 +130,7 @@ public final class Tracer {
                     .spanId(openSpan.getSpanId())
                     .parentSpanId(openSpan.getParentSpanId())
                     .originatingSpanId(trace.getOriginatingSpanId())
+                    .originUserAgent(trace.getOriginUserAgent())
                     .traceId(trace.getTraceId())
                     .requestId(trace.getRequestId())
                     .build());
@@ -138,6 +139,7 @@ public final class Tracer {
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
                     .originatingSpanId(trace.getOriginatingSpanId())
+                    .originUserAgent(trace.getOriginUserAgent())
                     .traceId(trace.getTraceId())
                     .requestId(trace.getRequestId())
                     .build());
@@ -719,6 +721,10 @@ public final class Tracer {
      */
     public static String getTraceId() {
         return checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
+    }
+
+    public static Optional<String> getOriginUserAgent() {
+        return currentTrace.get().getOriginUserAgent();
     }
 
     /**

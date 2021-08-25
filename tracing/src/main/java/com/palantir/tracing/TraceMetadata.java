@@ -42,6 +42,9 @@ public interface TraceMetadata {
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#ORIGINATING_SPAN_ID}. */
     Optional<String> getOriginatingSpanId();
 
+    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#ORIGIN_USER_AGENT}. */
+    Optional<String> getOriginUserAgent();
+
     static Builder builder() {
         return new Builder();
     }

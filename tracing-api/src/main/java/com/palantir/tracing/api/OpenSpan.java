@@ -64,14 +64,6 @@ public abstract class OpenSpan {
     @Value.Parameter
     public abstract Optional<String> getOriginatingSpanId();
 
-    /**
-     * Returns the identifier of the 'origin' User-Agent if one exists.
-     *
-     * @see TraceHttpHeaders
-     */
-    @Value.Parameter
-    public abstract Optional<String> getOriginUserAgent();
-
     /** Returns a globally unique identifier representing a single span within the call trace. */
     @Value.Parameter
     public abstract String getSpanId();
@@ -97,17 +89,9 @@ public abstract class OpenSpan {
             String spanId,
             SpanType type,
             Optional<String> parentSpanId,
-            Optional<String> originatingSpanId,
-            Optional<String> originUserAgent) {
+            Optional<String> originatingSpanId) {
         return ImmutableOpenSpan.of(
-                operation,
-                getNowInMicroSeconds(),
-                System.nanoTime(),
-                parentSpanId,
-                originatingSpanId,
-                originUserAgent,
-                spanId,
-                type);
+                operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, originatingSpanId, spanId, type);
     }
 
     /**
@@ -118,7 +102,7 @@ public abstract class OpenSpan {
     @SuppressWarnings("InlineMeSuggester")
     @Deprecated
     public static OpenSpan of(String operation, String spanId, SpanType type, Optional<String> parentSpanId) {
-        return of(operation, spanId, type, parentSpanId, Optional.empty(), Optional.empty());
+        return of(operation, spanId, type, parentSpanId, Optional.empty());
     }
 
     private static long getNowInMicroSeconds() {

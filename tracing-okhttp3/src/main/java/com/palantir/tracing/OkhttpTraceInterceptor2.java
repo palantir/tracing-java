@@ -64,6 +64,12 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
                         metadata.getOriginatingSpanId().get());
             }
 
+            if (metadata.getOriginUserAgent().isPresent()) {
+                tracedRequest.header(
+                        TraceHttpHeaders.ORIGIN_USER_AGENT,
+                        metadata.getOriginUserAgent().get());
+            }
+
             return chain.proceed(tracedRequest.build());
         }
     }

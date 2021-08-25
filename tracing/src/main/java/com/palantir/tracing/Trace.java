@@ -71,8 +71,7 @@ public abstract class Trace {
                 Tracers.randomId(),
                 type,
                 Optional.of(parentSpanId),
-                orElse(getOriginatingSpanId(), Optional.of(parentSpanId)),
-                Optional.empty());
+                orElse(getOriginatingSpanId(), Optional.of(parentSpanId)));
         push(span);
         return span;
     }
@@ -92,16 +91,9 @@ public abstract class Trace {
                     Tracers.randomId(),
                     type,
                     Optional.of(prevState.get().getSpanId()),
-                    orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()),
-                    orElse(getOriginUserAgent(), prevState.get().getOriginUserAgent()));
+                    orElse(getOriginatingSpanId(), prevState.get().getParentSpanId()));
         } else {
-            span = OpenSpan.of(
-                    operation,
-                    Tracers.randomId(),
-                    type,
-                    Optional.empty(),
-                    getOriginatingSpanId(),
-                    getOriginUserAgent());
+            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty(), getOriginatingSpanId());
         }
 
         push(span);
