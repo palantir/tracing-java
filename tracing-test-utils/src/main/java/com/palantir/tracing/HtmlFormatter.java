@@ -26,10 +26,12 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
@@ -116,11 +118,11 @@ final class HtmlFormatter {
     }
 
     private void header(StringBuilder sb) throws IOException {
-        OffsetDateTime startTime = Instant.ofEpochMilli(
-                        TimeUnit.MILLISECONDS.convert(config.bounds().startMicros(), TimeUnit.MICROSECONDS))
+        OffsetDateTime startTime = Instant.ofEpochMilli(TimeUnit.MILLISECONDS.convert(
+                        Duration.of(config.bounds().startMicros(), ChronoUnit.MICROS)))
                 .atOffset(ZoneOffset.UTC);
-        OffsetDateTime endTime = Instant.ofEpochMilli(
-                        TimeUnit.MILLISECONDS.convert(config.bounds().endNanos(), TimeUnit.NANOSECONDS))
+        OffsetDateTime endTime = Instant.ofEpochMilli(TimeUnit.MILLISECONDS.convert(
+                        Duration.ofNanos(config.bounds().endNanos())))
                 .atOffset(ZoneOffset.UTC);
         sb.append(template(
                 "header.html",
@@ -167,7 +169,7 @@ final class HtmlFormatter {
                                 Utils.renderDuration(
                                         transposedStartMicros
                                                 + TimeUnit.MICROSECONDS.convert(
-                                                        span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS),
+                                                        Duration.ofNanos(span.getDurationNanoSeconds())),
                                         TimeUnit.MICROSECONDS))
                         .put("{{OPERATION}}", span.getOperation())
                         .put("{{DURATION}}", Utils.renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
