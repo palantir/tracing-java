@@ -48,7 +48,6 @@ import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
 import org.slf4j.MDC;
 
 @SuppressWarnings("deprecation")
@@ -56,7 +55,6 @@ public final class TracersTest {
 
     @Before
     public void before() {
-        MockitoAnnotations.initMocks(this);
         MDC.clear();
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
