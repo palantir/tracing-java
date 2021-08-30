@@ -246,9 +246,7 @@ public final class Tracers {
         U result = null;
         // n.b. This span is required to apply tracing thread state to an initial request. Otherwise if there is
         // no active trace, the detached span would not be associated with work initiated by delegateFactory.
-        try (CloseableSpan ignored =
-                // This could be more efficient using https://github.com/palantir/tracing-java/issues/177
-                span.childSpan(operation + " initial", metadata)) {
+        try (CloseableSpan ignored = span.attach()) {
             result = Preconditions.checkNotNull(delegateFactory.get(), "Expected a ListenableFuture");
         } finally {
             if (result != null) {

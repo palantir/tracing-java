@@ -139,6 +139,17 @@ public interface DetachedSpan {
     }
 
     /**
+     * Attaches the current {@link DetachedSpan} state to the current thread without creating additional spans.
+     * This is useful when a long-lived {@link DetachedSpan} measures many smaller operations (like async-io)
+     * in which we don't want to produce spans for each task, but do need tracing state associated for logging
+     * and potential child traces.
+     * @apiNote This must be executed within a try-with-resources block, and the parent detached span must still be
+     * completed separately.
+     */
+    @MustBeClosed
+    CloseableSpan attach();
+
+    /**
      * Completes this span. After complete is invoked, other methods are not expected to produce spans, but they must
      * not throw either in order to avoid confusing failures.
      */
