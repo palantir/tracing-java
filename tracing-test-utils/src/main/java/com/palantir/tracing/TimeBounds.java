@@ -17,6 +17,8 @@
 package com.palantir.tracing;
 
 import com.palantir.tracing.api.Span;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
@@ -31,7 +33,7 @@ interface TimeBounds extends Comparable<TimeBounds> {
     long endNanos();
 
     default long startNanos() {
-        return TimeUnit.NANOSECONDS.convert(startMicros(), TimeUnit.MICROSECONDS);
+        return TimeUnit.NANOSECONDS.convert(Duration.of(startMicros(), ChronoUnit.MICROS));
     }
 
     default long durationNanos() {
@@ -39,7 +41,7 @@ interface TimeBounds extends Comparable<TimeBounds> {
     }
 
     default long durationMicros() {
-        return TimeUnit.MICROSECONDS.convert(durationNanos(), TimeUnit.NANOSECONDS);
+        return TimeUnit.MICROSECONDS.convert(Duration.ofNanos(durationNanos()));
     }
 
     static TimeBounds fromSpans(Collection<Span> spans) {
@@ -47,8 +49,8 @@ interface TimeBounds extends Comparable<TimeBounds> {
                 spans.stream().mapToLong(Span::getStartTimeMicroSeconds).min().getAsLong();
         long latestEndNanos = spans.stream()
                 .mapToLong(span -> {
-                    long startTimeNanos =
-                            TimeUnit.NANOSECONDS.convert(span.getStartTimeMicroSeconds(), TimeUnit.MICROSECONDS);
+                    long startTimeNanos = TimeUnit.NANOSECONDS.convert(
+                            Duration.of(span.getStartTimeMicroSeconds(), ChronoUnit.MICROS));
                     return startTimeNanos + span.getDurationNanoSeconds();
                 })
                 .max()
