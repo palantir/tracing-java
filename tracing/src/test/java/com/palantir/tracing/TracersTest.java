@@ -383,10 +383,8 @@ public final class TracersTest {
             ListenableFuture<String> traced =
                     Tracers.wrapListenableFuture(operationName, () -> Futures.immediateFuture("result"));
             assertThat(traced).isDone();
-            assertThat(observed).hasSize(2);
-            // Inner operation must complete first to avoid confusion
-            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
-            assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+            assertThat(observed).hasSize(1);
+            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName);
             assertThat(observed)
                     .allSatisfy(span ->
                             assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
@@ -404,10 +402,8 @@ public final class TracersTest {
             ListenableFuture<String> traced = Tracers.wrapListenableFuture(
                     operationName, () -> Futures.immediateFailedFuture(new SafeRuntimeException("result")));
             assertThat(traced).isDone();
-            assertThat(observed).hasSize(2);
-            // Inner operation must complete first to avoid confusion
-            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
-            assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+            assertThat(observed).hasSize(1);
+            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName);
             assertThat(observed)
                     .allSatisfy(span ->
                             assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
@@ -424,14 +420,13 @@ public final class TracersTest {
         SettableFuture<String> rawFuture = SettableFuture.create();
         SettableFuture<String> traced = Tracers.wrapListenableFuture(operationName, () -> rawFuture);
         assertThat(traced).isNotDone();
-        // Inner operation has completed
-        assertThat(observed).hasSize(1);
-        assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
+        // attached component has completed but does not emit any spans
+        assertThat(observed).isEmpty();
         // Complete the future
         rawFuture.set("complete");
         assertThat(traced).isDone();
-        assertThat(observed).hasSize(2);
-        assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+        assertThat(observed).hasSize(1);
+        assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName);
         assertThat(observed)
                 .allSatisfy(
                         span -> assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
@@ -450,9 +445,8 @@ public final class TracersTest {
                     }))
                     .isInstanceOf(SafeRuntimeException.class)
                     .hasMessage("initial operation failure");
-            assertThat(observed).hasSize(2);
-            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName + " initial");
-            assertThat(observed.get(1)).extracting(Span::getOperation).isEqualTo(operationName);
+            assertThat(observed).hasSize(1);
+            assertThat(observed.get(0)).extracting(Span::getOperation).isEqualTo(operationName);
             assertThat(observed)
                     .allSatisfy(span ->
                             assertThat(span).extracting(Span::getTraceId).isEqualTo("defaultTraceId"));
