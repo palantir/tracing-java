@@ -363,6 +363,22 @@ public final class Tracer {
         }
 
         @Override
+        @MustBeClosed
+        public CloseableSpan attach() {
+            warnIfCompleted("startSpanOnCurrentThread");
+            Trace maybeCurrentTrace = currentTrace.get();
+            Trace newTrace = Trace.of(true, traceId, requestId);
+            // Push the DetachedSpan OpenSpan to provide the correct parent information
+            // to child spans created within the context of this attach.
+            // It is VITAL that this span is never completed, it exists only for attribution.
+            newTrace.push(openSpan);
+            setTrace(newTrace);
+            // Do not complete the synthetic root span, it simply prevents nested spans from removing trace state, and
+            // allows
+            return maybeCurrentTrace == null ? REMOVE_TRACE : () -> Tracer.setTrace(maybeCurrentTrace);
+        }
+
+        @Override
         public void complete() {
             complete(NoTagTranslator.INSTANCE, NoTagTranslator.INSTANCE);
         }
@@ -464,6 +480,14 @@ public final class Tracer {
         }
 
         @Override
+        @MustBeClosed
+        public CloseableSpan attach() {
+            // In the unsampled case this method is equivalent to 'childSpan' because spans are neither
+            // measured nor emitted.
+            return childSpan("SYNTHETIC_ATTACH");
+        }
+
+        @Override
         public void complete() {
             // nop
         }
@@ -481,6 +505,7 @@ public final class Tracer {
 
     // Complete the current span.
     private static final CloseableSpan DEFAULT_CLOSEABLE_SPAN = Tracer::fastCompleteSpan;
+    private static final CloseableSpan REMOVE_TRACE = Tracer::clearCurrentTrace;
 
     private static final class TraceRestoringCloseableSpan implements CloseableSpan {
 
