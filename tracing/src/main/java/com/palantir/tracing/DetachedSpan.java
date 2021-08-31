@@ -69,6 +69,17 @@ public interface DetachedSpan {
     }
 
     /**
+     * Creates a {@link DetachedSpan} instance based on the current tracing state without adding a new span.
+     * If there is no tracing state present a no-op instance is returned. This is equivalent to {@link #attach()}.
+     *
+     * @see DetachedSpan#attach()
+     */
+    @CheckReturnValue
+    static DetachedSpan detach() {
+        return Tracer.detachInternal();
+    }
+
+    /**
      * Equivalent to {@link Tracer#startSpan(String, SpanType)}, but using this {@link DetachedSpan} as the parent
      * instead of thread state.
      */
