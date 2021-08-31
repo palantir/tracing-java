@@ -59,13 +59,13 @@ public final class TracersTest {
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         // Initialize a new trace for each test
-        Tracer.setTrace(Trace.of(true, "defaultTraceId", Optional.empty()));
+        Tracer.initTraceWithSpan(Observability.SAMPLE, "defaultTraceId", "rootOperation", SpanType.LOCAL);
     }
 
     @After
     public void after() {
         // Clear out the old trace from each test
-        Tracer.getAndClearTraceIfPresent();
+        Tracer.clearCurrentTrace();
     }
 
     @Test
