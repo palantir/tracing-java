@@ -337,6 +337,37 @@ public final class Tracer {
         return detachedSpan instanceof SampledDetachedSpan;
     }
 
+    private static final class TraceRestoringCloseableSpanWithMetadata<T> implements CloseableSpan {
+
+        @Nullable
+        private final Trace original;
+
+        private final TagTranslator<? super T> translator;
+        private final T data;
+
+        static <T> CloseableSpan of(@Nullable Trace original, TagTranslator<? super T> translator, T data) {
+            if (original != null || !translator.isEmpty(data)) {
+                return new TraceRestoringCloseableSpanWithMetadata<>(original, translator, data);
+            }
+            return DEFAULT_CLOSEABLE_SPAN;
+        }
+
+        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagTranslator<? super T> translator, T data) {
+            this.original = original;
+            this.translator = translator;
+            this.data = data;
+        }
+
+        @Override
+        public void close() {
+            Tracer.fastCompleteSpan(translator, data);
+            Trace originalTrace = original;
+            if (originalTrace != null) {
+                Tracer.setTrace(originalTrace);
+            }
+        }
+    }
+
     private static final class SampledDetachedSpan implements DetachedSpan {
         private static final int NOT_COMPLETE = 0;
         private static final int COMPLETE = 1;
@@ -368,15 +399,27 @@ public final class Tracer {
                     .build();
         }
 
+        @MustBeClosed
+        private static <T> CloseableSpan childSpan(
+                String traceId,
+                OpenSpan openSpan,
+                Optional<String> requestId,
+                String operationName,
+                TagTranslator<? super T> translator,
+                T data,
+                SpanType type) {
+            Trace maybeCurrentTrace = currentTrace.get();
+            setTrace(Trace.of(true, traceId, requestId));
+            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
+            return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, translator, data);
+        }
+
         @Override
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
             warnIfCompleted("startSpanOnCurrentThread");
-            Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(true, traceId, requestId));
-            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, translator, data);
+            return childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
         }
 
         @Override
@@ -385,10 +428,8 @@ public final class Tracer {
             return new SampledDetachedSpan(operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()));
         }
 
-        @Override
         @MustBeClosed
-        public CloseableSpan attach() {
-            warnIfCompleted("startSpanOnCurrentThread");
+        private static CloseableSpan attach(String traceId, OpenSpan openSpan, Optional<String> requestId) {
             Trace maybeCurrentTrace = currentTrace.get();
             Trace newTrace = Trace.of(true, traceId, requestId);
             // Push the DetachedSpan OpenSpan to provide the correct parent information
@@ -399,6 +440,13 @@ public final class Tracer {
             // Do not complete the synthetic root span, it simply prevents nested spans from removing trace state, and
             // allows
             return maybeCurrentTrace == null ? REMOVE_TRACE : () -> Tracer.setTrace(maybeCurrentTrace);
+        }
+
+        @Override
+        @MustBeClosed
+        public CloseableSpan attach() {
+            warnIfCompleted("startSpanOnCurrentThread");
+            return attach(traceId, openSpan, requestId);
         }
 
         @Override
@@ -438,37 +486,6 @@ public final class Tracer {
         }
     }
 
-    private static final class TraceRestoringCloseableSpanWithMetadata<T> implements CloseableSpan {
-
-        @Nullable
-        private final Trace original;
-
-        private final TagTranslator<? super T> translator;
-        private final T data;
-
-        static <T> CloseableSpan of(@Nullable Trace original, TagTranslator<? super T> translator, T data) {
-            if (original != null || !translator.isEmpty(data)) {
-                return new TraceRestoringCloseableSpanWithMetadata<>(original, translator, data);
-            }
-            return DEFAULT_CLOSEABLE_SPAN;
-        }
-
-        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagTranslator<? super T> translator, T data) {
-            this.original = original;
-            this.translator = translator;
-            this.data = data;
-        }
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan(translator, data);
-            Trace originalTrace = original;
-            if (originalTrace != null) {
-                Tracer.setTrace(originalTrace);
-            }
-        }
-    }
-
     private static final class SampledDetached implements Detached {
 
         private final String traceId;
@@ -485,10 +502,7 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(true, traceId, requestId));
-            Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
-            return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, translator, data);
+            return SampledDetachedSpan.childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
         }
 
         @Override
@@ -499,21 +513,12 @@ public final class Tracer {
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            Trace maybeCurrentTrace = currentTrace.get();
-            Trace newTrace = Trace.of(true, traceId, requestId);
-            // Push the DetachedSpan OpenSpan to provide the correct parent information
-            // to child spans created within the context of this attach.
-            // It is VITAL that this span is never completed, it exists only for attribution.
-            newTrace.push(openSpan);
-            setTrace(newTrace);
-            // Do not complete the synthetic root span, it simply prevents nested spans from removing trace state, and
-            // allows
-            return maybeCurrentTrace == null ? REMOVE_TRACE : () -> Tracer.setTrace(maybeCurrentTrace);
+            return SampledDetachedSpan.attach(traceId, openSpan, requestId);
         }
 
         @Override
         public String toString() {
-            return "SampledUnnamedDetached{traceId='"
+            return "SampledDetached{traceId='"
                     + traceId
                     + '\''
                     + ", requestId='"
