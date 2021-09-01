@@ -18,7 +18,6 @@ package com.palantir.tracing;
 
 import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
-import static com.palantir.logsafe.Preconditions.checkState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
@@ -520,16 +519,6 @@ public final class Tracer {
             Tracer.fastCompleteSpan();
             Tracer.setTrace(original);
         }
-    }
-
-    /**
-     * Discards the current span without emitting it.
-     */
-    static void fastDiscardSpan() {
-        Trace trace = currentTrace.get();
-        checkNotNull(trace, "Expected current trace to exist");
-        checkState(!trace.isEmpty(), "Expected span to exist before discarding");
-        popCurrentSpan(trace);
     }
 
     /**
