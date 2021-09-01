@@ -281,13 +281,13 @@ public final class Tracer {
     }
 
     /**
-     * Like {@link #detachInternal(String, SpanType)}, but does not create a new span, and may return a
+     * Like {@link #detachInternal(String, SpanType)} but does not create a new span and may return a
      * no-op implementation if no tracing state is currently set.
      */
-    static DetachedSpan detachInternal() {
+    static Detached detachInternal() {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            return NopDetachedSpan.INSTANCE;
+            return NopDetached.INSTANCE;
         }
 
         String traceId = trace.getTraceId();
@@ -295,9 +295,9 @@ public final class Tracer {
         if (trace.isObservable()) {
             OpenSpan maybeOpenSpan = trace.top().orElse(null);
             if (maybeOpenSpan == null) {
-                return NopDetachedSpan.INSTANCE;
+                return NopDetached.INSTANCE;
             }
-            return new SampledUnnamedDetachedSpan(traceId, requestId, maybeOpenSpan);
+            return new SampledDetached(traceId, requestId, maybeOpenSpan);
         } else {
             return new UnsampledDetachedSpan(traceId, requestId, Optional.empty());
         }
@@ -469,13 +469,13 @@ public final class Tracer {
         }
     }
 
-    private static final class SampledUnnamedDetachedSpan implements DetachedSpan {
+    private static final class SampledDetached implements Detached {
 
         private final String traceId;
         private final Optional<String> requestId;
         private final OpenSpan openSpan;
 
-        SampledUnnamedDetachedSpan(String traceId, Optional<String> requestId, OpenSpan openSpan) {
+        SampledDetached(String traceId, Optional<String> requestId, OpenSpan openSpan) {
             this.traceId = traceId;
             this.requestId = requestId;
             this.openSpan = openSpan;
@@ -512,18 +512,8 @@ public final class Tracer {
         }
 
         @Override
-        public void complete() {
-            // nop -- unnamed span cannot be completed
-        }
-
-        @Override
-        public <T> void complete(TagTranslator<? super T> _tagTranslator, T _data) {
-            // nop -- unnamed span cannot be completed
-        }
-
-        @Override
         public String toString() {
-            return "SampledUnnamedDetachedSpan{traceId='"
+            return "SampledUnnamedDetached{traceId='"
                     + traceId
                     + '\''
                     + ", requestId='"

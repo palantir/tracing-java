@@ -35,7 +35,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,30 +71,37 @@ public final class TracersTest {
     }
 
     @Test
-    public void testWrapExecutorService() throws Exception {
-        ExecutorService wrappedService = Tracers.wrap(Executors.newSingleThreadExecutor());
+    public void testWrapExecutorService() {
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadExecutor()), wrappedService -> {
+            String subscription = UUID.randomUUID().toString();
+            List<String> operations = new CopyOnWriteArrayList<>();
+            Tracer.subscribe(subscription, span -> operations.add(span.getOperation()));
+            try {
+                String traceId = Tracer.getTraceId();
+                wrappedService
+                        .submit(() -> assertThat(Tracer.getTraceId()).isEqualTo(traceId))
+                        .get();
+                wrappedService
+                        .submit(() -> assertThat(Tracer.getTraceId()).isEqualTo(traceId))
+                        .get();
 
-        // Empty trace
-        wrappedService
-                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
-                .get();
-        wrappedService
-                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
-                .get();
-
-        // Non-empty trace
-        Tracer.fastStartSpan("foo");
-        Tracer.fastStartSpan("bar");
-        Tracer.fastStartSpan("baz");
-        wrappedService
-                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
-                .get();
-        wrappedService
-                .submit(traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"))
-                .get();
-        Tracer.fastCompleteSpan();
-        Tracer.fastCompleteSpan();
-        Tracer.fastCompleteSpan();
+                Tracer.fastStartSpan("foo");
+                Tracer.fastStartSpan("bar");
+                Tracer.fastStartSpan("baz");
+                wrappedService
+                        .submit(() -> assertThat(Tracer.getTraceId()).isEqualTo(traceId))
+                        .get();
+                wrappedService
+                        .submit(() -> assertThat(Tracer.getTraceId()).isEqualTo(traceId))
+                        .get();
+                Tracer.fastCompleteSpan();
+                Tracer.fastCompleteSpan();
+                Tracer.fastCompleteSpan();
+                assertThat(operations).containsExactly("baz", "bar", "foo");
+            } finally {
+                Tracer.unsubscribe(subscription);
+            }
+        });
     }
 
     @Test
@@ -112,6 +121,8 @@ public final class TracersTest {
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
         Tracer.fastCompleteSpan();
+
+        wrappedService.shutdownNow();
     }
 
     @Test
@@ -130,23 +141,18 @@ public final class TracersTest {
                 .submit(traceExpectingRunnableWithSingleSpan("operation", Optional.of(requestId)))
                 .get();
         Tracer.fastCompleteSpan();
+        wrappedService.shutdownNow();
     }
 
     @Test
     public void testWrapScheduledExecutorService() {
-        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadScheduledExecutor()), wrappedService -> {
+        withExecutor(() -> Tracers.wrap("scheduler", Executors.newSingleThreadScheduledExecutor()), wrappedService -> {
             // Empty trace
             wrappedService
-                    .schedule(
-                            traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                            0,
-                            TimeUnit.SECONDS)
+                    .schedule(traceExpectingCallableWithSingleSpan("scheduler"), 0, TimeUnit.SECONDS)
                     .get();
             wrappedService
-                    .schedule(
-                            traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                            0,
-                            TimeUnit.SECONDS)
+                    .schedule(traceExpectingRunnableWithSingleSpan("scheduler"), 0, TimeUnit.SECONDS)
                     .get();
 
             // Non-empty trace
@@ -154,20 +160,15 @@ public final class TracersTest {
             Tracer.fastStartSpan("bar");
             Tracer.fastStartSpan("baz");
             wrappedService
-                    .schedule(
-                            traceExpectingCallableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                            0,
-                            TimeUnit.SECONDS)
+                    .schedule(traceExpectingCallableWithSingleSpan("scheduler"), 0, TimeUnit.SECONDS)
                     .get();
             wrappedService
-                    .schedule(
-                            traceExpectingRunnableWithSingleSpan("DeferredTracer(unnamed operation)"),
-                            0,
-                            TimeUnit.SECONDS)
+                    .schedule(traceExpectingRunnableWithSingleSpan("scheduler"), 0, TimeUnit.SECONDS)
                     .get();
             Tracer.fastCompleteSpan();
             Tracer.fastCompleteSpan();
             Tracer.fastCompleteSpan();
+            wrappedService.shutdownNow();
         });
     }
 
@@ -324,8 +325,8 @@ public final class TracersTest {
     @Test
     public void testWrapCallable_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.fastStartSpan("before-construction");
-        Callable<Void> callable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("DeferredTracer(unnamed operation)");
+        Callable<Void> callable = Tracers.wrap("callable", () -> {
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("callable");
             return null;
         });
         Tracer.fastStartSpan("after-construction");
@@ -355,8 +356,8 @@ public final class TracersTest {
     @Test
     public void testWrapRunnable_traceStateIsCapturedAtConstructionTime() throws Exception {
         Tracer.fastStartSpan("before-construction");
-        Runnable runnable = Tracers.wrap(() -> {
-            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("DeferredTracer(unnamed operation)");
+        Runnable runnable = Tracers.wrap("runnable", () -> {
+            assertThat(Tracer.completeSpan().get().getOperation()).isEqualTo("runnable");
         });
         Tracer.fastStartSpan("after-construction");
         runnable.run();

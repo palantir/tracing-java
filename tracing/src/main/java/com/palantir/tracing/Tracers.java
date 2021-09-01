@@ -507,42 +507,38 @@ public final class Tracers {
      */
     private static class TracingAwareCallable<V> implements Callable<V> {
         private final Callable<V> delegate;
-        private final DetachedSpan detachedSpan;
+        private final Detached detached;
         private final String operation;
         private final Map<String, String> metadata;
 
         TracingAwareCallable(String operation, Map<String, String> metadata, Callable<V> delegate) {
             this.delegate = delegate;
-            this.detachedSpan = DetachedSpan.detach();
+            this.detached = DetachedSpan.detach();
             this.operation = operation;
             this.metadata = metadata;
         }
 
         @Override
         public V call() throws Exception {
-            try (CloseableSpan ignored = detachedSpan.childSpan(operation, metadata)) {
+            try (CloseableSpan ignored = detached.childSpan(operation, metadata)) {
                 return delegate.call();
-            } finally {
-                detachedSpan.complete();
             }
         }
     }
 
     private static class AnonymousTracingAwareCallable<V> implements Callable<V> {
         private final Callable<V> delegate;
-        private final DetachedSpan detachedSpan;
+        private final Detached detached;
 
         AnonymousTracingAwareCallable(Callable<V> delegate) {
             this.delegate = delegate;
-            this.detachedSpan = DetachedSpan.detach();
+            this.detached = DetachedSpan.detach();
         }
 
         @Override
         public V call() throws Exception {
-            try (CloseableSpan ignored = detachedSpan.childSpan("DeferredTracer(unnamed operation)")) {
+            try (CloseableSpan ignored = detached.attach()) {
                 return delegate.call();
-            } finally {
-                detachedSpan.complete();
             }
         }
     }
@@ -553,42 +549,38 @@ public final class Tracers {
      */
     private static class TracingAwareRunnable implements Runnable {
         private final Runnable delegate;
-        private final DetachedSpan detachedSpan;
+        private final Detached detached;
         private final String operation;
         private final Map<String, String> metadata;
 
         TracingAwareRunnable(String operation, Map<String, String> metadata, Runnable delegate) {
             this.delegate = delegate;
-            this.detachedSpan = DetachedSpan.detach();
+            this.detached = DetachedSpan.detach();
             this.operation = operation;
             this.metadata = metadata;
         }
 
         @Override
         public void run() {
-            try (CloseableSpan ignored = detachedSpan.childSpan(operation, metadata)) {
+            try (CloseableSpan ignored = detached.childSpan(operation, metadata)) {
                 delegate.run();
-            } finally {
-                detachedSpan.complete();
             }
         }
     }
 
     private static class AnonymousTracingAwareRunnable implements Runnable {
         private final Runnable delegate;
-        private final DetachedSpan detachedSpan;
+        private final Detached detached;
 
         AnonymousTracingAwareRunnable(Runnable delegate) {
             this.delegate = delegate;
-            this.detachedSpan = DetachedSpan.detach();
+            this.detached = DetachedSpan.detach();
         }
 
         @Override
         public void run() {
-            try (CloseableSpan ignored = detachedSpan.childSpan("DeferredTracer(unnamed operation)")) {
+            try (CloseableSpan ignored = detached.attach()) {
                 delegate.run();
-            } finally {
-                detachedSpan.complete();
             }
         }
     }
