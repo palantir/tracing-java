@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: Allow conjure-undertow to leverage the `DetachedSpan.attach()` mechanism
+    without creating spans for blocking work
+  links:
+  - https://github.com/palantir/tracing-java/pull/773
