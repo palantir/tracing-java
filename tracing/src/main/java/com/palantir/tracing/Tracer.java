@@ -417,13 +417,11 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            warnIfCompleted("startSpanOnCurrentThread");
             return childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
         }
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            warnIfCompleted("startDetachedSpan");
             return new SampledDetachedSpan(operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()));
         }
 
@@ -444,7 +442,6 @@ public final class Tracer {
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            warnIfCompleted("startSpanOnCurrentThread");
             return attach(traceId, openSpan, requestId);
         }
 
@@ -473,15 +470,6 @@ public final class Tracer {
                     + ", openSpan="
                     + openSpan
                     + '}';
-        }
-
-        private void warnIfCompleted(String feature) {
-            if (completed == COMPLETE) {
-                log.warn(
-                        "{} called after span {} completed",
-                        SafeArg.of("feature", feature),
-                        SafeArg.of("detachedSpan", this));
-            }
         }
     }
 
