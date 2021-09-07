@@ -72,9 +72,8 @@ public interface DetachedSpan extends Detached {
 
     /**
      * Creates a {@link Detached} instance based on the current tracing state without adding a new span.
-     * Note that
-     *
-     * If there is no tracing state present a no-op instance is returned. This is the inverse of {@link #attach()}.
+     * Note that if there is no tracing state present a no-op instance is returned. This is the inverse of
+     * {@link #attach()}.
      *
      * @see DetachedSpan#attach()
      */
