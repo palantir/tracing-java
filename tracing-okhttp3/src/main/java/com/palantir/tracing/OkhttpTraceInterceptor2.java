@@ -47,24 +47,11 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
             TraceMetadata metadata = Tracer.maybeGetTraceMetadata()
                     .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
 
-            Request.Builder tracedRequest = request.newBuilder()
+            return chain.proceed(request.newBuilder()
                     .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
                     .header(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
-                    .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
-
-            if (metadata.getParentSpanId().isPresent()) {
-                tracedRequest.header(
-                        TraceHttpHeaders.PARENT_SPAN_ID,
-                        metadata.getParentSpanId().get());
-            }
-
-            if (metadata.getOriginatingSpanId().isPresent()) {
-                tracedRequest.header(
-                        TraceHttpHeaders.ORIGINATING_SPAN_ID,
-                        metadata.getOriginatingSpanId().get());
-            }
-
-            return chain.proceed(tracedRequest.build());
+                    .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0")
+                    .build());
         }
     }
 }

@@ -19,19 +19,22 @@ package com.palantir.tracing.api;
 /** Zipkin-compatible HTTP header names. */
 public interface TraceHttpHeaders {
     String TRACE_ID = "X-B3-TraceId";
+    /**
+     * Field is no longer used by the tracing library.
+     *
+     * @deprecated No longer used
+     */
+    @Deprecated
     String PARENT_SPAN_ID = "X-B3-ParentSpanId";
+
     String SPAN_ID = "X-B3-SpanId";
     String IS_SAMPLED = "X-B3-Sampled"; // Boolean (either “1” or “0”, can be absent)
 
     /**
-     * Conceptually, a trace is a stack of spans. In implementation, this is actually many stacks, in many servers,
-     * where a server's stack will typically contain a single parent span from a different server at the bottom, and
-     * many spans of its own above it.
+     * Field is no longer used by the tracing library.
      *
-     * <p>By communicating this deepest span id with future network calls as an 'originating' span id, this enables
-     * network-level tracing to be enabled always in a low-fidelity form, with request logs containing enough
-     * information to reconstruct a request-level trace, even when the trace is not sampled. For server-internal
-     * tracing, the typical trace logs (with sampling) are still required.
+     * @deprecated No longer used
      */
+    @Deprecated
     String ORIGINATING_SPAN_ID = "X-OrigSpanId";
 }
