@@ -18,14 +18,12 @@ package com.palantir.tracing.undertow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -46,7 +44,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import org.slf4j.MDC;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -97,7 +94,6 @@ public class TracedOperationHandlerTest {
         assertThat(Tracer.hasTraceId()).isFalse();
         assertThat(span.getOperation()).isEqualTo("Undertow: GET /foo");
         HeaderMap responseHeaders = exchange.getResponseHeaders();
-        assertThat(responseHeaders.get(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(responseHeaders.get(TraceHttpHeaders.SPAN_ID)).isNull();
         assertThat(responseHeaders.get(HttpString.tryFromString(TraceHttpHeaders.TRACE_ID)))
                 .containsExactly(span.getTraceId());
@@ -127,28 +123,6 @@ public class TracedOperationHandlerTest {
         assertThat(spans.get(0).getParentSpanId()).hasValue(span.getSpanId());
         assertThat(span.getParentSpanId()).hasValue(parentSpanId);
         assertThat(span.getSpanId()).isNotEqualTo(parentSpanId);
-    }
-
-    @Test
-    public void whenParentSpanIsGiven_usesParentSpan_unsampled() throws Exception {
-        when(traceSampler.sample()).thenReturn(false);
-        setRequestTraceId(traceId);
-        String parentSpanId = Tracers.randomId();
-        setRequestSpanId(parentSpanId);
-
-        AtomicReference<String> capturedParentSpanId = new AtomicReference<>();
-        doAnswer((Answer<Void>) _invocation -> {
-                    Tracer.maybeGetTraceMetadata()
-                            .flatMap(TraceMetadata::getOriginatingSpanId)
-                            .ifPresent(capturedParentSpanId::set);
-                    return null;
-                })
-                .when(delegate)
-                .handleRequest(any());
-
-        handler.handleRequest(exchange);
-
-        assertThat(capturedParentSpanId).hasValue(parentSpanId);
     }
 
     @Test

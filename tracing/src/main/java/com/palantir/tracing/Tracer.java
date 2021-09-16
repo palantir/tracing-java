@@ -117,7 +117,6 @@ public final class Tracer {
             return trace.top().map(openSpan -> TraceMetadata.builder()
                     .spanId(openSpan.getSpanId())
                     .parentSpanId(openSpan.getParentSpanId())
-                    .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
                     .requestId(trace.getRequestId())
                     .build());
@@ -125,7 +124,6 @@ public final class Tracer {
             return Optional.of(TraceMetadata.builder()
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
-                    .originatingSpanId(trace.getOriginatingSpanId())
                     .traceId(trace.getTraceId())
                     .requestId(trace.getRequestId())
                     .build());
@@ -390,12 +388,7 @@ public final class Tracer {
                 Optional<String> parentSpanId) {
             this.traceId = traceId;
             this.requestId = requestId;
-            this.openSpan = OpenSpan.builder()
-                    .parentSpanId(parentSpanId)
-                    .spanId(Tracers.randomId())
-                    .operation(operation)
-                    .type(type)
-                    .build();
+            this.openSpan = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         }
 
         @MustBeClosed

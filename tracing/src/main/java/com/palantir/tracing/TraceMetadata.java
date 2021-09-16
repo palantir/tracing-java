@@ -33,14 +33,22 @@ public interface TraceMetadata {
      */
     Optional<String> getRequestId();
 
-    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID}. */
+    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID} on outgoing requests. */
     String getSpanId();
 
-    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#PARENT_SPAN_ID}. */
+    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID} on incoming requests. */
     Optional<String> getParentSpanId();
 
-    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#ORIGINATING_SPAN_ID}. */
-    Optional<String> getOriginatingSpanId();
+    /**
+     * Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#ORIGINATING_SPAN_ID} which is no longer used.
+     *
+     * @deprecated No longer used
+     */
+    @Deprecated
+    // Intentionally does not set @Value.Default because the value is always empty.
+    default Optional<String> getOriginatingSpanId() {
+        return Optional.empty();
+    }
 
     static Builder builder() {
         return new Builder();

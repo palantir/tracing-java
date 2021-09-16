@@ -38,3 +38,22 @@ acceptedBreaks:
     - code: "java.method.addedToInterface"
       new: "method com.palantir.tracing.CloseableSpan com.palantir.tracing.DetachedSpan::attach()"
       justification: "DetachedSpan is not meant for external implementations"
+  "6.3.0":
+    com.palantir.tracing:tracing:
+    - code: "java.method.removed"
+      old: "method com.palantir.tracing.TraceMetadata.Builder com.palantir.tracing.ImmutableTraceMetadata.Builder::originatingSpanId(java.lang.String)\
+        \ @ com.palantir.tracing.TraceMetadata.Builder"
+      justification: "Type is not meant for external creation"
+    - code: "java.method.removed"
+      old: "method com.palantir.tracing.TraceMetadata.Builder com.palantir.tracing.ImmutableTraceMetadata.Builder::originatingSpanId(java.util.Optional<java.lang.String>)\
+        \ @ com.palantir.tracing.TraceMetadata.Builder"
+      justification: "Type is not meant for external creation"
+    com.palantir.tracing:tracing-api:
+    - code: "java.method.removed"
+      old: "method com.palantir.tracing.api.OpenSpan.Builder com.palantir.tracing.api.ImmutableOpenSpan.Builder::originatingSpanId(java.lang.String)\
+        \ @ com.palantir.tracing.api.OpenSpan.Builder"
+      justification: "Type is not meant for external creation"
+    - code: "java.method.removed"
+      old: "method com.palantir.tracing.api.OpenSpan.Builder com.palantir.tracing.api.ImmutableOpenSpan.Builder::originatingSpanId(java.util.Optional<java.lang.String>)\
+        \ @ com.palantir.tracing.api.OpenSpan.Builder"
+      justification: "Type is not meant for external creation"
