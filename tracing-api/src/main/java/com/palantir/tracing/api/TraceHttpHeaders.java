@@ -38,5 +38,5 @@ public interface TraceHttpHeaders {
     @Deprecated
     String ORIGINATING_SPAN_ID = "X-OrigSpanId";
 
-    String ORIGIN_USER_AGENT = "Origin-User-Agent";
+    String ORIGIN_USER_AGENT = "X-Origin-User-Agent";
 }
