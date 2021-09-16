@@ -289,8 +289,8 @@ public final class Tracer {
         Optional<String> parentSpan = getParentSpanId(maybeCurrentTrace);
         Optional<String> requestId = getRequestId(maybeCurrentTrace, type);
         return sampled
-                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpan)
-                : new UnsampledDetachedSpan(traceId, requestId, Optional.empty());
+                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpan, Optional.empty())
+                : new UnsampledDetachedSpan(traceId, requestId, Optional.empty(), Optional.empty());
     }
 
     /**
@@ -305,7 +305,23 @@ public final class Tracer {
             SpanType type) {
         Optional<String> requestId =
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
-        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type);
+        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type, Optional.empty());
+    }
+
+    /**
+     * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state. This is an internal
+     * utility that should not be called directly outside of {@link DetachedSpan}.
+     */
+    static DetachedSpan detachInternal(
+            Observability observability,
+            String traceId,
+            Optional<String> parentSpanId,
+            @Safe String operation,
+            SpanType type,
+            Optional<String> originUserAgent) {
+        Optional<String> requestId =
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
+        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type, originUserAgent);
     }
 
     /**
@@ -318,12 +334,13 @@ public final class Tracer {
             Optional<String> requestId,
             Optional<String> parentSpanId,
             @Safe String operation,
-            SpanType type) {
+            SpanType type,
+            Optional<String> originUserAgent) {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
         return shouldObserve(observability)
-                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpanId)
-                : new UnsampledDetachedSpan(traceId, requestId, parentSpanId);
+                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpanId, originUserAgent)
+                : new UnsampledDetachedSpan(traceId, requestId, parentSpanId, originUserAgent);
     }
 
     /**
@@ -343,9 +360,9 @@ public final class Tracer {
             if (maybeOpenSpan == null) {
                 return NopDetached.INSTANCE;
             }
-            return new SampledDetached(traceId, requestId, maybeOpenSpan);
+            return new SampledDetached(traceId, requestId, maybeOpenSpan, trace.getOriginUserAgent());
         } else {
-            return new UnsampledDetachedSpan(traceId, requestId, Optional.empty());
+            return new UnsampledDetachedSpan(traceId, requestId, Optional.empty(), trace.getOriginUserAgent());
         }
     }
 
@@ -423,6 +440,7 @@ public final class Tracer {
 
         private final String traceId;
         private final Optional<String> requestId;
+        private final Optional<String> originUserAgent;
         private final OpenSpan openSpan;
 
         private volatile int completed;
@@ -434,9 +452,11 @@ public final class Tracer {
                 SpanType type,
                 String traceId,
                 Optional<String> requestId,
-                Optional<String> parentSpanId) {
+                Optional<String> parentSpanId,
+                Optional<String> originUserAgent) {
             this.traceId = traceId;
             this.requestId = requestId;
+            this.originUserAgent = originUserAgent;
             this.openSpan = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         }
 
@@ -464,7 +484,8 @@ public final class Tracer {
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            return new SampledDetachedSpan(operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()));
+            return new SampledDetachedSpan(
+                    operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()), originUserAgent);
         }
 
         @MustBeClosed
@@ -520,11 +541,14 @@ public final class Tracer {
         private final String traceId;
         private final Optional<String> requestId;
         private final OpenSpan openSpan;
+        private final Optional<String> originUserAgent;
 
-        SampledDetached(String traceId, Optional<String> requestId, OpenSpan openSpan) {
+        SampledDetached(
+                String traceId, Optional<String> requestId, OpenSpan openSpan, Optional<String> originUserAgent) {
             this.traceId = traceId;
             this.requestId = requestId;
             this.openSpan = openSpan;
+            this.originUserAgent = originUserAgent;
         }
 
         @Override
@@ -536,7 +560,8 @@ public final class Tracer {
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            return new SampledDetachedSpan(operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()));
+            return new SampledDetachedSpan(
+                    operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()), originUserAgent);
         }
 
         @Override
@@ -564,11 +589,17 @@ public final class Tracer {
         private final String traceId;
         private final Optional<String> requestId;
         private final Optional<String> parentSpanId;
+        private final Optional<String> originUserAgent;
 
-        UnsampledDetachedSpan(String traceId, Optional<String> requestId, Optional<String> parentSpanId) {
+        UnsampledDetachedSpan(
+                String traceId,
+                Optional<String> requestId,
+                Optional<String> parentSpanId,
+                Optional<String> originUserAgent) {
             this.traceId = traceId;
             this.requestId = requestId;
             this.parentSpanId = parentSpanId;
+            this.originUserAgent = originUserAgent;
         }
 
         @Override
