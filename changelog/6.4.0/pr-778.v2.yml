@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: 'Remove unused headers: `X-B3-ParentSpanId` and `X-OrigSpanId`'
+  links:
+  - https://github.com/palantir/tracing-java/pull/778

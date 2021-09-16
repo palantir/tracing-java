@@ -83,8 +83,6 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).hasSize(1);
         assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).hasSize(1);
-        assertThat(intercepted.headers(TraceHttpHeaders.ORIGINATING_SPAN_ID)).isEmpty();
-        assertThat(intercepted.headers(TraceHttpHeaders.PARENT_SPAN_ID)).isEmpty();
     }
 
     @Test
@@ -105,7 +103,6 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
-        assertThat(intercepted.headers(TraceHttpHeaders.ORIGINATING_SPAN_ID)).containsOnly(originatingSpanId);
     }
 
     @Test

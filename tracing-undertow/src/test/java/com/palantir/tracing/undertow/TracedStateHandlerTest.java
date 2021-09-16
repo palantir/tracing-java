@@ -18,42 +18,31 @@ package com.palantir.tracing.undertow;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.palantir.tracing.TraceMetadata;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
-import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import org.slf4j.MDC;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TracedStateHandlerTest {
-
-    @Captor
-    private ArgumentCaptor<Span> spanCaptor;
 
     @Mock
     private SpanObserver observer;
@@ -94,7 +83,6 @@ public class TracedStateHandlerTest {
 
         assertThat(Tracer.hasTraceId()).isFalse();
         HeaderMap responseHeaders = exchange.getResponseHeaders();
-        assertThat(responseHeaders.get(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(responseHeaders.get(TraceHttpHeaders.SPAN_ID)).isNull();
         assertThat(responseHeaders.get(HttpString.tryFromString(TraceHttpHeaders.TRACE_ID)))
                 .isNotEmpty();
@@ -106,45 +94,6 @@ public class TracedStateHandlerTest {
         handler.handleRequest(exchange);
         assertThat(exchange.getResponseHeaders().getFirst(TraceHttpHeaders.TRACE_ID))
                 .isEqualTo(traceId);
-    }
-
-    @Test
-    public void whenParentSpanIsGiven_usesParentSpan() throws Exception {
-        setRequestTraceId(traceId);
-        String parentSpanId = Tracers.randomId();
-        setRequestSpanId(parentSpanId);
-
-        handler.handleRequest(exchange);
-        // Since we're not running a full request, the completion handler cannot execute normally.
-        exchange.getAttachment(UndertowTracing.REQUEST_SPAN).complete();
-        verify(observer, times(1)).consume(spanCaptor.capture());
-        List<Span> spans = spanCaptor.getAllValues();
-        assertThat(spans).hasSize(1);
-        Span span = spans.get(0);
-        assertThat(span.getParentSpanId()).hasValue(parentSpanId);
-        assertThat(span.getSpanId()).isNotEqualTo(parentSpanId);
-    }
-
-    @Test
-    public void whenParentSpanIsGiven_usesParentSpan_unsampled() throws Exception {
-        when(traceSampler.sample()).thenReturn(false);
-        setRequestTraceId(traceId);
-        String parentSpanId = Tracers.randomId();
-        setRequestSpanId(parentSpanId);
-
-        AtomicReference<String> capturedParentSpanId = new AtomicReference<>();
-        doAnswer((Answer<Void>) _invocation -> {
-                    Tracer.maybeGetTraceMetadata()
-                            .flatMap(TraceMetadata::getOriginatingSpanId)
-                            .ifPresent(capturedParentSpanId::set);
-                    return null;
-                })
-                .when(delegate)
-                .handleRequest(any());
-
-        handler.handleRequest(exchange);
-
-        assertThat(capturedParentSpanId).hasValue(parentSpanId);
     }
 
     @Test
@@ -207,9 +156,5 @@ public class TracedStateHandlerTest {
 
     private void setRequestTraceId(String theTraceId) {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.TRACE_ID), theTraceId);
-    }
-
-    private void setRequestSpanId(String spanId) {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.SPAN_ID), spanId);
     }
 }

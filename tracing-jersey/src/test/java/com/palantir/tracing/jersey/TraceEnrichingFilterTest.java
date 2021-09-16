@@ -112,11 +112,9 @@ public final class TraceEnrichingFilterTest {
         Response response = target.path("/trace")
                 .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
-                .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
                 .get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isEqualTo("traceId");
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace");
@@ -127,11 +125,9 @@ public final class TraceEnrichingFilterTest {
         Response response = target.path("/trace")
                 .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
-                .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
                 .post(Entity.json(""));
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isEqualTo("traceId");
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: POST /trace");
@@ -142,11 +138,9 @@ public final class TraceEnrichingFilterTest {
         Response response = target.path("/trace/no")
                 .request()
                 .header(TraceHttpHeaders.TRACE_ID, "traceId")
-                .header(TraceHttpHeaders.PARENT_SPAN_ID, "parentSpanId")
                 .header(TraceHttpHeaders.SPAN_ID, "spanId")
                 .get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isEqualTo("traceId");
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace/{param}");
@@ -156,7 +150,6 @@ public final class TraceEnrichingFilterTest {
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeaders() {
         Response response = target.path("/trace").request().get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
@@ -169,7 +162,6 @@ public final class TraceEnrichingFilterTest {
     public void testTraceState_setsResponseStatus() {
         Response response = target.path("/trace").request().post(null);
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
@@ -185,7 +177,6 @@ public final class TraceEnrichingFilterTest {
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenFailing() {
         Response response = target.path("/failing-trace").request().get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
@@ -198,7 +189,6 @@ public final class TraceEnrichingFilterTest {
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenStreaming() {
         Response response = target.path("/streaming-trace").request().get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /streaming-trace");
@@ -208,7 +198,6 @@ public final class TraceEnrichingFilterTest {
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenFailingToStream() {
         Response response = target.path("/failing-streaming-trace").request().get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /failing-streaming-trace");
@@ -233,7 +222,6 @@ public final class TraceEnrichingFilterTest {
                 .header(TraceHttpHeaders.TRACE_ID, "")
                 .get();
         assertThat(response.getHeaderString(TraceHttpHeaders.TRACE_ID)).isNotNull();
-        assertThat(response.getHeaderString(TraceHttpHeaders.PARENT_SPAN_ID)).isNull();
         assertThat(response.getHeaderString(TraceHttpHeaders.SPAN_ID)).isNull();
         verify(observer).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace");

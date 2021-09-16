@@ -59,10 +59,14 @@ public abstract class OpenSpan {
     /**
      * Returns the identifier of the 'originating' span if one exists.
      *
-     * @see TraceHttpHeaders
+     * @see TraceHttpHeaders#ORIGINATING_SPAN_ID
+     * @deprecated No longer used.
      */
-    @Value.Parameter
-    public abstract Optional<String> getOriginatingSpanId();
+    @Deprecated
+    // Intentionally does not set @Value.Default because the value is always empty.
+    public Optional<String> getOriginatingSpanId() {
+        return Optional.empty();
+    }
 
     /** Returns a globally unique identifier representing a single span within the call trace. */
     @Value.Parameter
@@ -83,26 +87,25 @@ public abstract class OpenSpan {
         return new Builder().startTimeMicroSeconds(getNowInMicroSeconds()).startClockNanoSeconds(System.nanoTime());
     }
 
-    /** Use this factory method to avoid allocate {@link Builder} in hot path. */
+    /**
+     * Use this factory method to avoid {@link Builder} allocations in hot paths.
+     *
+     * @deprecated Use the variant without an originating span id
+     */
+    @SuppressWarnings("InlineMeSuggester")
+    @Deprecated
     public static OpenSpan of(
             String operation,
             String spanId,
             SpanType type,
             Optional<String> parentSpanId,
-            Optional<String> originatingSpanId) {
-        return ImmutableOpenSpan.of(
-                operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, originatingSpanId, spanId, type);
+            Optional<String> _originatingSpanId) {
+        return ImmutableOpenSpan.of(operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, spanId, type);
     }
 
-    /**
-     * Deprecated.
-     *
-     * @deprecated Use the variant that accepts an originating span id
-     */
-    @SuppressWarnings("InlineMeSuggester")
-    @Deprecated
+    /** Use this factory method to avoid {@link Builder} allocations in hot paths. */
     public static OpenSpan of(String operation, String spanId, SpanType type, Optional<String> parentSpanId) {
-        return of(operation, spanId, type, parentSpanId, Optional.empty());
+        return ImmutableOpenSpan.of(operation, getNowInMicroSeconds(), System.nanoTime(), parentSpanId, spanId, type);
     }
 
     private static long getNowInMicroSeconds() {
