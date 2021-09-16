@@ -246,9 +246,7 @@ public final class Tracers {
         U result = null;
         // n.b. This span is required to apply tracing thread state to an initial request. Otherwise if there is
         // no active trace, the detached span would not be associated with work initiated by delegateFactory.
-        try (CloseableSpan ignored =
-                // This could be more efficient using https://github.com/palantir/tracing-java/issues/177
-                span.childSpan(operation + " initial", metadata)) {
+        try (CloseableSpan ignored = span.attach()) {
             result = Preconditions.checkNotNull(delegateFactory.get(), "Expected a ListenableFuture");
         } finally {
             if (result != null) {
@@ -509,16 +507,20 @@ public final class Tracers {
      */
     private static class TracingAwareCallable<V> implements Callable<V> {
         private final Callable<V> delegate;
-        private final DeferredTracer deferredTracer;
+        private final Detached detached;
+        private final String operation;
+        private final Map<String, String> metadata;
 
         TracingAwareCallable(String operation, Map<String, String> metadata, Callable<V> delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer(operation, metadata);
+            this.detached = DetachedSpan.detach();
+            this.operation = operation;
+            this.metadata = metadata;
         }
 
         @Override
         public V call() throws Exception {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+            try (CloseableSpan ignored = detached.childSpan(operation, metadata)) {
                 return delegate.call();
             }
         }
@@ -526,16 +528,16 @@ public final class Tracers {
 
     private static class AnonymousTracingAwareCallable<V> implements Callable<V> {
         private final Callable<V> delegate;
-        private final DeferredTracer deferredTracer;
+        private final Detached detached;
 
         AnonymousTracingAwareCallable(Callable<V> delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer("DeferredTracer(unnamed operation)");
+            this.detached = DetachedSpan.detach();
         }
 
         @Override
         public V call() throws Exception {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+            try (CloseableSpan ignored = detached.attach()) {
                 return delegate.call();
             }
         }
@@ -547,16 +549,20 @@ public final class Tracers {
      */
     private static class TracingAwareRunnable implements Runnable {
         private final Runnable delegate;
-        private final DeferredTracer deferredTracer;
+        private final Detached detached;
+        private final String operation;
+        private final Map<String, String> metadata;
 
         TracingAwareRunnable(String operation, Map<String, String> metadata, Runnable delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer(operation, metadata);
+            this.detached = DetachedSpan.detach();
+            this.operation = operation;
+            this.metadata = metadata;
         }
 
         @Override
         public void run() {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+            try (CloseableSpan ignored = detached.childSpan(operation, metadata)) {
                 delegate.run();
             }
         }
@@ -564,16 +570,16 @@ public final class Tracers {
 
     private static class AnonymousTracingAwareRunnable implements Runnable {
         private final Runnable delegate;
-        private final DeferredTracer deferredTracer;
+        private final Detached detached;
 
         AnonymousTracingAwareRunnable(Runnable delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer("DeferredTracer(unnamed operation)");
+            this.detached = DetachedSpan.detach();
         }
 
         @Override
         public void run() {
-            try (DeferredTracer.CloseableTrace ignored = deferredTracer.withTrace()) {
+            try (CloseableSpan ignored = detached.attach()) {
                 delegate.run();
             }
         }

@@ -16,7 +16,9 @@
 
 package com.palantir.tracing.jaxrs;
 
-import com.palantir.tracing.DeferredTracer;
+import com.palantir.tracing.CloseableSpan;
+import com.palantir.tracing.Detached;
+import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.Tracers;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -36,19 +38,18 @@ public final class JaxRsTracers {
     private static class TracingAwareStreamingOutput implements StreamingOutput {
 
         private final StreamingOutput delegate;
-        private DeferredTracer deferredTracer;
+        private final Detached detached;
 
         TracingAwareStreamingOutput(StreamingOutput delegate) {
             this.delegate = delegate;
-            this.deferredTracer = new DeferredTracer("streaming-output");
+            this.detached = DetachedSpan.detach();
         }
 
         @Override
         public void write(OutputStream output) throws IOException, WebApplicationException {
-            deferredTracer.withTrace(() -> {
+            try (CloseableSpan ignored = detached.childSpan("streaming-output")) {
                 delegate.write(output);
-                return true;
-            });
+            }
         }
     }
 }

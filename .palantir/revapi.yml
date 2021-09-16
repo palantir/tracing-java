@@ -33,3 +33,8 @@ acceptedBreaks:
     - code: "java.class.removed"
       old: "class com.palantir.tracing.Observers"
       justification: "Sourcegraph search shows no more prod usages of this class"
+  "6.0.0":
+    com.palantir.tracing:tracing:
+    - code: "java.method.addedToInterface"
+      new: "method com.palantir.tracing.CloseableSpan com.palantir.tracing.DetachedSpan::attach()"
+      justification: "DetachedSpan is not meant for external implementations"

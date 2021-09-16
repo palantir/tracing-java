@@ -16,7 +16,6 @@
 
 package com.palantir.tracing.undertow;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
@@ -37,7 +36,8 @@ import io.undertow.util.HttpString;
 import java.util.Optional;
 
 /**
- * Internal utility functionality shared between {@link TracedOperationHandler} and {@link TracedRequestHandler}.
+ * Internal utility functionality shared between {@link TracedRequestHandler}, {@link TracedStateHandler}, and
+ * {@link TracedOperationHandler}.
  * Intentionally package private.
  */
 final class UndertowTracing {
@@ -54,7 +54,6 @@ final class UndertowTracing {
     /**
      * Detached span object representing the entire request including asynchronous components.
      */
-    @VisibleForTesting
     static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
 
     private static final AttachmentKey<TagTranslator<? super HttpServerExchange>> TAG_TRANSLATOR_ATTACHMENT_KEY =

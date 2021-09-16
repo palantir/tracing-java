@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Support attaching DetachedSpan state to a thread without creating children
+  links:
+  - https://github.com/palantir/tracing-java/pull/769
