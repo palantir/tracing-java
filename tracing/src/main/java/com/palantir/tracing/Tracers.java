@@ -48,6 +48,11 @@ public final class Tracers {
      */
     public static final String REQUEST_ID_KEY = "_requestId";
 
+    /**
+     * The Key under which origin user agents are inserted into SLF4J {@link org.slf4j.MDC MDCs}.
+     */
+    public static final String ORIGIN_USER_AGENT_KEY = "__originUserAgent";
+
     private static final String DEFAULT_ROOT_SPAN_OPERATION = "root";
     private static final char[] HEX_DIGITS = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'

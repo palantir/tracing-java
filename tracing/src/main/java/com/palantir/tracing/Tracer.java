@@ -453,9 +453,10 @@ public final class Tracer {
                 String operationName,
                 TagTranslator<? super T> translator,
                 T data,
-                SpanType type) {
+                SpanType type,
+                Optional<String> originUserAgent) {
             Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(true, traceId, requestId));
+            setTrace(Trace.of(true, traceId, requestId, originUserAgent));
             Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
             return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, translator, data);
         }
@@ -464,7 +465,7 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            return childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
+            return childSpan(traceId, openSpan, requestId, operationName, translator, data, type, originUserAgent);
         }
 
         @Override
@@ -474,9 +475,10 @@ public final class Tracer {
         }
 
         @MustBeClosed
-        private static CloseableSpan attach(String traceId, OpenSpan openSpan, Optional<String> requestId) {
+        private static CloseableSpan attach(
+                String traceId, OpenSpan openSpan, Optional<String> requestId, Optional<String> originUserAgent) {
             Trace maybeCurrentTrace = currentTrace.get();
-            Trace newTrace = Trace.of(true, traceId, requestId);
+            Trace newTrace = Trace.of(true, traceId, requestId, originUserAgent);
             // Push the DetachedSpan OpenSpan to provide the correct parent information
             // to child spans created within the context of this attach.
             // It is VITAL that this span is never completed, it exists only for attribution.
@@ -490,7 +492,7 @@ public final class Tracer {
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            return attach(traceId, openSpan, requestId);
+            return attach(traceId, openSpan, requestId, originUserAgent);
         }
 
         @Override
@@ -540,7 +542,8 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            return SampledDetachedSpan.childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
+            return SampledDetachedSpan.childSpan(
+                    traceId, openSpan, requestId, operationName, translator, data, type, originUserAgent);
         }
 
         @Override
@@ -552,7 +555,7 @@ public final class Tracer {
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            return SampledDetachedSpan.attach(traceId, openSpan, requestId);
+            return SampledDetachedSpan.attach(traceId, openSpan, requestId, originUserAgent);
         }
 
         @Override
@@ -591,7 +594,7 @@ public final class Tracer {
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> _translator, T _data, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(false, traceId, requestId));
+            setTrace(Trace.of(false, traceId, requestId, originUserAgent));
             if (parentSpanId.isPresent()) {
                 Tracer.fastStartSpan(operationName, parentSpanId.get(), type);
             } else {
@@ -896,8 +899,18 @@ public final class Tracer {
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
         setTraceRequestId(trace.getRequestId());
+        setOriginUserAgent(trace.getOriginUserAgent());
 
         logSettingTrace();
+    }
+
+    private static void setOriginUserAgent(Optional<String> originUserAgent) {
+        if (originUserAgent.isPresent()) {
+            MDC.put(Tracers.ORIGIN_USER_AGENT_KEY, originUserAgent.get());
+        } else {
+            // Ensure MDC state is cleared when there is no origin user header
+            MDC.remove(Tracers.ORIGIN_USER_AGENT_KEY);
+        }
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {
@@ -939,6 +952,7 @@ public final class Tracer {
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
         MDC.remove(Tracers.REQUEST_ID_KEY);
+        MDC.remove(Tracers.ORIGIN_USER_AGENT_KEY);
     }
 
     private static void logClearingTrace() {
