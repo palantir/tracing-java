@@ -302,21 +302,6 @@ public final class Tracer {
             String traceId,
             Optional<String> parentSpanId,
             @Safe String operation,
-            SpanType type) {
-        Optional<String> requestId =
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
-        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type, Optional.empty());
-    }
-
-    /**
-     * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state. This is an internal
-     * utility that should not be called directly outside of {@link DetachedSpan}.
-     */
-    static DetachedSpan detachInternal(
-            Observability observability,
-            String traceId,
-            Optional<String> parentSpanId,
-            @Safe String operation,
             SpanType type,
             Optional<String> originUserAgent) {
         Optional<String> requestId =
