@@ -51,10 +51,10 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
                     .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
                     .header(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
                     .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
-            if (metadata.getOriginUserAgent().isPresent()) {
+            if (metadata.getForUserAgent().isPresent()) {
                 tracedRequest.header(
-                        TraceHttpHeaders.ORIGIN_USER_AGENT,
-                        metadata.getOriginUserAgent().get());
+                        TraceHttpHeaders.FOR_USER_AGENT,
+                        metadata.getForUserAgent().get());
             }
 
             return chain.proceed(tracedRequest.build());

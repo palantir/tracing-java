@@ -67,8 +67,8 @@ public interface DetachedSpan extends Detached {
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type,
-            Optional<String> originUserAgent) {
-        return Tracer.detachInternal(observability, traceId, parentSpanId, operation, type, originUserAgent);
+            Optional<String> forUserAgent) {
+        return Tracer.detachInternal(observability, traceId, parentSpanId, operation, type, forUserAgent);
     }
 
     /**

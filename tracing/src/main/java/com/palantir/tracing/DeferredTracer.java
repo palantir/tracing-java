@@ -75,7 +75,7 @@ public final class DeferredTracer implements Serializable {
     private final transient String requestId;
 
     @Nullable
-    private final String originUserAgent;
+    private final String forUserAgent;
 
     /**
      * Deprecated.
@@ -107,7 +107,7 @@ public final class DeferredTracer implements Serializable {
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
             this.metadata = metadata;
-            this.originUserAgent = trace.getOriginUserAgent().orElse(null);
+            this.forUserAgent = trace.getForUserAgent().orElse(null);
         } else {
             this.traceId = null;
             this.requestId = null;
@@ -115,7 +115,7 @@ public final class DeferredTracer implements Serializable {
             this.parentSpanId = null;
             this.operation = null;
             this.metadata = null;
-            this.originUserAgent = null;
+            this.forUserAgent = null;
         }
     }
 
@@ -140,7 +140,7 @@ public final class DeferredTracer implements Serializable {
         Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
         Tracer.setTrace(
-                Trace.of(isObservable, traceId, Optional.ofNullable(requestId), Optional.ofNullable(originUserAgent)));
+                Trace.of(isObservable, traceId, Optional.ofNullable(requestId), Optional.ofNullable(forUserAgent)));
         if (parentSpanId != null) {
             Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {

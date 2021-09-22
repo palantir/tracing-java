@@ -50,8 +50,8 @@ public interface TraceMetadata {
         return Optional.empty();
     }
 
-    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#ORIGIN_USER_AGENT}. */
-    Optional<String> getOriginUserAgent();
+    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#FOR_USER_AGENT}. */
+    Optional<String> getForUserAgent();
 
     static Builder builder() {
         return new Builder();

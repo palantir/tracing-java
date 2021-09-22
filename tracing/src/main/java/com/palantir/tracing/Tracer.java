@@ -72,10 +72,10 @@ public final class Tracer {
      * Creates a new trace, but does not set it as the current trace.
      */
     private static Trace createTrace(
-            Observability observability, String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
+            Observability observability, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return Trace.of(observable, traceId, requestId, originUserAgent);
+        return Trace.of(observable, traceId, requestId, forUserAgent);
     }
 
     /**
@@ -127,7 +127,7 @@ public final class Tracer {
             return trace.top().map(openSpan -> TraceMetadata.builder()
                     .spanId(openSpan.getSpanId())
                     .parentSpanId(openSpan.getParentSpanId())
-                    .originUserAgent(trace.getOriginUserAgent())
+                    .forUserAgent(trace.getForUserAgent())
                     .traceId(trace.getTraceId())
                     .requestId(trace.getRequestId())
                     .build());
@@ -135,7 +135,7 @@ public final class Tracer {
             return Optional.of(TraceMetadata.builder()
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
-                    .originUserAgent(trace.getOriginUserAgent())
+                    .forUserAgent(trace.getForUserAgent())
                     .traceId(trace.getTraceId())
                     .requestId(trace.getRequestId())
                     .build());
@@ -176,12 +176,12 @@ public final class Tracer {
             @Safe String operation,
             String parentSpanId,
             SpanType type,
-            Optional<String> originUserAgent) {
+            Optional<String> forUserAgent) {
         setTrace(createTrace(
                 observability,
                 traceId,
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
-                originUserAgent));
+                forUserAgent));
         fastStartSpan(operation, parentSpanId, type);
     }
 
@@ -220,12 +220,12 @@ public final class Tracer {
             String traceId,
             @Safe String operation,
             SpanType type,
-            Optional<String> originUserAgent) {
+            Optional<String> forUserAgent) {
         setTrace(createTrace(
                 observability,
                 traceId,
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
-                originUserAgent));
+                forUserAgent));
         fastStartSpan(operation, type);
     }
 
@@ -303,10 +303,10 @@ public final class Tracer {
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type,
-            Optional<String> originUserAgent) {
+            Optional<String> forUserAgent) {
         Optional<String> requestId =
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
-        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type, originUserAgent);
+        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type, forUserAgent);
     }
 
     /**
@@ -320,12 +320,12 @@ public final class Tracer {
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type,
-            Optional<String> originUserAgent) {
+            Optional<String> forUserAgent) {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
         return shouldObserve(observability)
-                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpanId, originUserAgent)
-                : new UnsampledDetachedSpan(traceId, requestId, parentSpanId, originUserAgent);
+                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpanId, forUserAgent)
+                : new UnsampledDetachedSpan(traceId, requestId, parentSpanId, forUserAgent);
     }
 
     /**
@@ -345,9 +345,9 @@ public final class Tracer {
             if (maybeOpenSpan == null) {
                 return NopDetached.INSTANCE;
             }
-            return new SampledDetached(traceId, requestId, maybeOpenSpan, trace.getOriginUserAgent());
+            return new SampledDetached(traceId, requestId, maybeOpenSpan, trace.getForUserAgent());
         } else {
-            return new UnsampledDetachedSpan(traceId, requestId, Optional.empty(), trace.getOriginUserAgent());
+            return new UnsampledDetachedSpan(traceId, requestId, Optional.empty(), trace.getForUserAgent());
         }
     }
 
@@ -425,7 +425,7 @@ public final class Tracer {
 
         private final String traceId;
         private final Optional<String> requestId;
-        private final Optional<String> originUserAgent;
+        private final Optional<String> forUserAgent;
         private final OpenSpan openSpan;
 
         private volatile int completed;
@@ -438,10 +438,10 @@ public final class Tracer {
                 String traceId,
                 Optional<String> requestId,
                 Optional<String> parentSpanId,
-                Optional<String> originUserAgent) {
+                Optional<String> forUserAgent) {
             this.traceId = traceId;
             this.requestId = requestId;
-            this.originUserAgent = originUserAgent;
+            this.forUserAgent = forUserAgent;
             this.openSpan = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         }
 
@@ -454,9 +454,9 @@ public final class Tracer {
                 TagTranslator<? super T> translator,
                 T data,
                 SpanType type,
-                Optional<String> originUserAgent) {
+                Optional<String> forUserAgent) {
             Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(true, traceId, requestId, originUserAgent));
+            setTrace(Trace.of(true, traceId, requestId, forUserAgent));
             Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
             return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, translator, data);
         }
@@ -465,20 +465,20 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            return childSpan(traceId, openSpan, requestId, operationName, translator, data, type, originUserAgent);
+            return childSpan(traceId, openSpan, requestId, operationName, translator, data, type, forUserAgent);
         }
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             return new SampledDetachedSpan(
-                    operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()), originUserAgent);
+                    operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()), forUserAgent);
         }
 
         @MustBeClosed
         private static CloseableSpan attach(
-                String traceId, OpenSpan openSpan, Optional<String> requestId, Optional<String> originUserAgent) {
+                String traceId, OpenSpan openSpan, Optional<String> requestId, Optional<String> forUserAgent) {
             Trace maybeCurrentTrace = currentTrace.get();
-            Trace newTrace = Trace.of(true, traceId, requestId, originUserAgent);
+            Trace newTrace = Trace.of(true, traceId, requestId, forUserAgent);
             // Push the DetachedSpan OpenSpan to provide the correct parent information
             // to child spans created within the context of this attach.
             // It is VITAL that this span is never completed, it exists only for attribution.
@@ -492,7 +492,7 @@ public final class Tracer {
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            return attach(traceId, openSpan, requestId, originUserAgent);
+            return attach(traceId, openSpan, requestId, forUserAgent);
         }
 
         @Override
@@ -528,14 +528,13 @@ public final class Tracer {
         private final String traceId;
         private final Optional<String> requestId;
         private final OpenSpan openSpan;
-        private final Optional<String> originUserAgent;
+        private final Optional<String> forUserAgent;
 
-        SampledDetached(
-                String traceId, Optional<String> requestId, OpenSpan openSpan, Optional<String> originUserAgent) {
+        SampledDetached(String traceId, Optional<String> requestId, OpenSpan openSpan, Optional<String> forUserAgent) {
             this.traceId = traceId;
             this.requestId = requestId;
             this.openSpan = openSpan;
-            this.originUserAgent = originUserAgent;
+            this.forUserAgent = forUserAgent;
         }
 
         @Override
@@ -543,19 +542,19 @@ public final class Tracer {
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
             return SampledDetachedSpan.childSpan(
-                    traceId, openSpan, requestId, operationName, translator, data, type, originUserAgent);
+                    traceId, openSpan, requestId, operationName, translator, data, type, forUserAgent);
         }
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
             return new SampledDetachedSpan(
-                    operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()), originUserAgent);
+                    operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()), forUserAgent);
         }
 
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            return SampledDetachedSpan.attach(traceId, openSpan, requestId, originUserAgent);
+            return SampledDetachedSpan.attach(traceId, openSpan, requestId, forUserAgent);
         }
 
         @Override
@@ -577,24 +576,24 @@ public final class Tracer {
         private final String traceId;
         private final Optional<String> requestId;
         private final Optional<String> parentSpanId;
-        private final Optional<String> originUserAgent;
+        private final Optional<String> forUserAgent;
 
         UnsampledDetachedSpan(
                 String traceId,
                 Optional<String> requestId,
                 Optional<String> parentSpanId,
-                Optional<String> originUserAgent) {
+                Optional<String> forUserAgent) {
             this.traceId = traceId;
             this.requestId = requestId;
             this.parentSpanId = parentSpanId;
-            this.originUserAgent = originUserAgent;
+            this.forUserAgent = forUserAgent;
         }
 
         @Override
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> _translator, T _data, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(false, traceId, requestId, originUserAgent));
+            setTrace(Trace.of(false, traceId, requestId, forUserAgent));
             if (parentSpanId.isPresent()) {
                 Tracer.fastStartSpan(operationName, parentSpanId.get(), type);
             } else {
@@ -837,8 +836,8 @@ public final class Tracer {
         return checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
     }
 
-    public static Optional<String> getOriginUserAgent() {
-        return currentTrace.get().getOriginUserAgent();
+    public static Optional<String> getForUserAgent() {
+        return currentTrace.get().getForUserAgent();
     }
 
     /**
@@ -899,17 +898,17 @@ public final class Tracer {
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
         setTraceRequestId(trace.getRequestId());
-        setOriginUserAgent(trace.getOriginUserAgent());
+        setForUserAgent(trace.getForUserAgent());
 
         logSettingTrace();
     }
 
-    private static void setOriginUserAgent(Optional<String> originUserAgent) {
-        if (originUserAgent.isPresent()) {
-            MDC.put(Tracers.ORIGIN_USER_AGENT_KEY, originUserAgent.get());
+    private static void setForUserAgent(Optional<String> forUserAgent) {
+        if (forUserAgent.isPresent()) {
+            MDC.put(Tracers.FOR_USER_AGENT_KEY, forUserAgent.get());
         } else {
             // Ensure MDC state is cleared when there is no origin user header
-            MDC.remove(Tracers.ORIGIN_USER_AGENT_KEY);
+            MDC.remove(Tracers.FOR_USER_AGENT_KEY);
         }
     }
 
@@ -952,7 +951,7 @@ public final class Tracer {
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
         MDC.remove(Tracers.REQUEST_ID_KEY);
-        MDC.remove(Tracers.ORIGIN_USER_AGENT_KEY);
+        MDC.remove(Tracers.FOR_USER_AGENT_KEY);
     }
 
     private static void logClearingTrace() {

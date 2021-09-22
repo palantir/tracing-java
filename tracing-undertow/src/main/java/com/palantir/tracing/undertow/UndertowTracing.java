@@ -48,7 +48,7 @@ final class UndertowTracing {
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
     private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
-    private static final HttpString ORIGIN_USER_AGENT = HttpString.tryFromString(TraceHttpHeaders.ORIGIN_USER_AGENT);
+    private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(TraceHttpHeaders.FOR_USER_AGENT);
 
     // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated
     // here because we expect the two handler implementations to be sufficient.
@@ -110,7 +110,7 @@ final class UndertowTracing {
                 newTrace ? Optional.empty() : Optional.ofNullable(requestHeaders.getFirst(SPAN_ID)),
                 operationName,
                 SpanType.SERVER_INCOMING,
-                Optional.ofNullable(requestHeaders.getFirst(ORIGIN_USER_AGENT)));
+                Optional.ofNullable(requestHeaders.getFirst(FOR_USER_AGENT)));
     }
 
     private enum DetachedTraceCompletionListener implements ExchangeCompletionListener {

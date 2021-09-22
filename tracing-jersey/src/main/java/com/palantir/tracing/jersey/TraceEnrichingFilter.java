@@ -54,7 +54,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
 
-    public static final String ORIGIN_USER_AGENT_PROPERTY_NAME = "com.palantir.tracing.originUserAgent";
+    public static final String FOR_USER_AGENT_PROPERTY_NAME = "com.palantir.tracing.forUserAgent";
 
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
@@ -80,14 +80,14 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                     Tracers.randomId(),
                     operation,
                     SpanType.SERVER_INCOMING,
-                    getOriginUserAgentFromHeader(requestContext));
+                    getForUserAgentFromHeader(requestContext));
         } else if (spanId == null) {
             Tracer.initTraceWithSpan(
                     getObservabilityFromHeader(requestContext),
                     traceId,
                     operation,
                     SpanType.SERVER_INCOMING,
-                    getOriginUserAgentFromHeader(requestContext));
+                    getForUserAgentFromHeader(requestContext));
         } else {
             // caller's span is this span's parent.
             Tracer.initTraceWithSpan(
@@ -96,7 +96,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                     operation,
                     spanId,
                     SpanType.SERVER_INCOMING,
-                    getOriginUserAgentFromHeader(requestContext));
+                    getForUserAgentFromHeader(requestContext));
         }
 
         // Give asynchronous downstream handlers access to the trace id
@@ -107,9 +107,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                 .flatMap(TraceMetadata::getRequestId)
                 .ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
         traceMetadata
-                .flatMap(TraceMetadata::getOriginUserAgent)
-                .ifPresent(originUserAgent ->
-                        requestContext.setProperty(ORIGIN_USER_AGENT_PROPERTY_NAME, originUserAgent));
+                .flatMap(TraceMetadata::getForUserAgent)
+                .ifPresent(forUserAgent -> requestContext.setProperty(FOR_USER_AGENT_PROPERTY_NAME, forUserAgent));
     }
 
     // Handles outgoing response
@@ -149,12 +148,12 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         }
     }
 
-    private static Optional<String> getOriginUserAgentFromHeader(ContainerRequestContext requestContext) {
-        String originUserAgent = requestContext.getHeaderString(TraceHttpHeaders.ORIGIN_USER_AGENT);
-        if (originUserAgent == null) {
+    private static Optional<String> getForUserAgentFromHeader(ContainerRequestContext requestContext) {
+        String forUserAgent = requestContext.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT);
+        if (forUserAgent == null) {
             return Optional.ofNullable(requestContext.getHeaderString(HttpHeaders.USER_AGENT));
         }
-        return Optional.of(originUserAgent);
+        return Optional.of(forUserAgent);
     }
 
     private String getPathTemplate() {

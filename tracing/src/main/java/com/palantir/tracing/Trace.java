@@ -48,13 +48,13 @@ public abstract class Trace {
 
     private final Optional<String> requestId;
 
-    private final Optional<String> originUserAgent;
+    private final Optional<String> forUserAgent;
 
-    private Trace(String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
-        this.originUserAgent = originUserAgent;
+    private Trace(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         this.traceId = traceId;
         this.requestId = checkNotNull(requestId, "requestId");
+        this.forUserAgent = forUserAgent;
     }
 
     /**
@@ -130,8 +130,8 @@ public abstract class Trace {
         return requestId;
     }
 
-    final Optional<String> getOriginUserAgent() {
-        return originUserAgent;
+    final Optional<String> getForUserAgent() {
+        return forUserAgent;
     }
 
     /** Returns a copy of this Trace which can be independently mutated. */
@@ -143,11 +143,10 @@ public abstract class Trace {
                 : new Unsampled(traceId, requestId, Optional.empty());
     }
 
-    static Trace of(
-            boolean isObservable, String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
+    static Trace of(boolean isObservable, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         return isObservable
-                ? new Sampled(traceId, requestId, originUserAgent)
-                : new Unsampled(traceId, requestId, originUserAgent);
+                ? new Sampled(traceId, requestId, forUserAgent)
+                : new Unsampled(traceId, requestId, forUserAgent);
     }
 
     private static final class Sampled extends Trace {
@@ -155,16 +154,13 @@ public abstract class Trace {
         private final Deque<OpenSpan> stack;
 
         private Sampled(
-                ArrayDeque<OpenSpan> stack,
-                String traceId,
-                Optional<String> requestId,
-                Optional<String> originUserAgent) {
-            super(traceId, requestId, originUserAgent);
+                ArrayDeque<OpenSpan> stack, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
+            super(traceId, requestId, forUserAgent);
             this.stack = stack;
         }
 
-        private Sampled(String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
-            this(new ArrayDeque<>(), traceId, requestId, originUserAgent);
+        private Sampled(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
+            this(new ArrayDeque<>(), traceId, requestId, forUserAgent);
         }
 
         @Override
@@ -206,7 +202,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId(), getOriginUserAgent());
+            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId(), getForUserAgent());
         }
 
         @Override
@@ -223,14 +219,14 @@ public abstract class Trace {
         private int numberOfSpans;
 
         private Unsampled(
-                int numberOfSpans, String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
-            super(traceId, requestId, originUserAgent);
+                int numberOfSpans, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
+            super(traceId, requestId, forUserAgent);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId, Optional<String> requestId, Optional<String> originUserAgent) {
-            this(0, traceId, requestId, originUserAgent);
+        private Unsampled(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
+            this(0, traceId, requestId, forUserAgent);
         }
 
         @Override
@@ -275,7 +271,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId(), getRequestId(), getOriginUserAgent());
+            return new Unsampled(numberOfSpans, getTraceId(), getRequestId(), getForUserAgent());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
