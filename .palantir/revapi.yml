@@ -57,3 +57,8 @@ acceptedBreaks:
       old: "method com.palantir.tracing.api.OpenSpan.Builder com.palantir.tracing.api.ImmutableOpenSpan.Builder::originatingSpanId(java.util.Optional<java.lang.String>)\
         \ @ com.palantir.tracing.api.OpenSpan.Builder"
       justification: "Type is not meant for external creation"
+  "6.4.0":
+    com.palantir.tracing:tracing:
+    - code: "java.method.addedToInterface"
+      new: "method java.util.Optional<java.lang.String> com.palantir.tracing.TraceMetadata::getForUserAgent()"
+      justification: "Adding a method will not break anyone"
