@@ -20,13 +20,14 @@ import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
  * Class representing the state which is created for each {@link Trace}. Contains the globally non-unique identifier of
  * a trace and a request identifier used to identify different requests sent from the same trace.
  */
-final class CommonTraceState {
+final class CommonTraceState implements Serializable {
     private final String traceId;
     private final Optional<String> requestId;
 
