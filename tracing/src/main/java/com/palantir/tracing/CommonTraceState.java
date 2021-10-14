@@ -22,11 +22,15 @@ import static com.palantir.logsafe.Preconditions.checkNotNull;
 import com.google.common.base.Strings;
 import java.util.Optional;
 
-public final class CommonTraceState {
+/**
+ * Class representing the state which is created for each {@link Trace}. Contains the globally non-unique identifier of
+ * a trace and a request identifier used to identify different requests sent from the same trace.
+ */
+final class CommonTraceState {
     private final String traceId;
     private final Optional<String> requestId;
 
-    public static CommonTraceState create(String traceId, Optional<String> requestId) {
+    static CommonTraceState create(String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
         return new CommonTraceState(traceId, requestId);
@@ -37,11 +41,30 @@ public final class CommonTraceState {
         this.requestId = requestId;
     }
 
-    public String getTraceId() {
+    /**
+     * The globally unique non-empty identifier for this call trace.
+     * */
+    String getTraceId() {
         return traceId;
     }
 
-    public Optional<String> getRequestId() {
+    /**
+     * The request identifier of this trace.
+     *
+     * The request identifier is an implementation detail of this tracing library. A new identifier is generated
+     * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
+     * distinguish between requests with the same traceId.
+     */
+    Optional<String> getRequestId() {
         return requestId;
+    }
+
+    CommonTraceState deepCopy() {
+        return new CommonTraceState(traceId, requestId);
+    }
+
+    @Override
+    public String toString() {
+        return "CommonTraceState{" + "traceId='" + traceId + '\'' + ", requestId=" + requestId.orElse(null) + '}';
     }
 }
