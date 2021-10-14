@@ -22,22 +22,27 @@ import static com.palantir.logsafe.Preconditions.checkNotNull;
 import com.google.common.base.Strings;
 import java.io.Serializable;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * Class representing the state which is created for each {@link Trace}. Contains the globally non-unique identifier of
  * a trace and a request identifier used to identify different requests sent from the same trace.
  */
 final class CommonTraceState implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private final String traceId;
-    private final Optional<String> requestId;
+
+    @Nullable
+    private final String requestId;
 
     static CommonTraceState create(String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
-        return new CommonTraceState(traceId, requestId);
+        return new CommonTraceState(traceId, requestId.orElse(null));
     }
 
-    private CommonTraceState(String traceId, Optional<String> requestId) {
+    private CommonTraceState(String traceId, String requestId) {
         this.traceId = traceId;
         this.requestId = requestId;
     }
@@ -57,7 +62,7 @@ final class CommonTraceState implements Serializable {
      * distinguish between requests with the same traceId.
      */
     Optional<String> getRequestId() {
-        return requestId;
+        return Optional.ofNullable(requestId);
     }
 
     CommonTraceState deepCopy() {
@@ -66,6 +71,6 @@ final class CommonTraceState implements Serializable {
 
     @Override
     public String toString() {
-        return "CommonTraceState{" + "traceId='" + traceId + '\'' + ", requestId=" + requestId.orElse(null) + '}';
+        return "CommonTraceState{" + "traceId='" + traceId + '\'' + ", requestId=" + requestId + '}';
     }
 }
