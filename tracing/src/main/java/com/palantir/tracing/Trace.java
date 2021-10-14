@@ -144,7 +144,7 @@ public abstract class Trace {
 
     @Deprecated
     static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
-        return of(isObservable, CommonTraceState.create(traceId, requestId));
+        return of(isObservable, CommonTraceState.of(traceId, requestId));
     }
 
     static Trace of(boolean isObservable, CommonTraceState commonTraceState) {

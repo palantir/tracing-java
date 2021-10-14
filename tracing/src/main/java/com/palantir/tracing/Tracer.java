@@ -74,7 +74,7 @@ public final class Tracer {
     private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return Trace.of(observable, CommonTraceState.create(traceId, requestId));
+        return Trace.of(observable, CommonTraceState.of(traceId, requestId));
     }
 
     private static boolean shouldObserve(Observability observability) {
@@ -272,8 +272,8 @@ public final class Tracer {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
         return shouldObserve(observability)
-                ? new SampledDetachedSpan(operation, type, CommonTraceState.create(traceId, requestId), parentSpanId)
-                : new UnsampledDetachedSpan(CommonTraceState.create(traceId, requestId), parentSpanId);
+                ? new SampledDetachedSpan(operation, type, CommonTraceState.of(traceId, requestId), parentSpanId)
+                : new UnsampledDetachedSpan(CommonTraceState.of(traceId, requestId), parentSpanId);
     }
 
     /**
@@ -311,7 +311,7 @@ public final class Tracer {
         if (maybeCurrentTrace != null) {
             return maybeCurrentTrace.getCommonTraceState();
         }
-        return CommonTraceState.create(Tracers.randomId(), getRequestIdForSpan(newSpanType));
+        return CommonTraceState.of(Tracers.randomId(), getRequestIdForSpan(newSpanType));
     }
 
     private static Optional<String> getRequestIdForSpan(SpanType newSpanType) {

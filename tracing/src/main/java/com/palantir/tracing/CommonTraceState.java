@@ -36,7 +36,7 @@ final class CommonTraceState implements Serializable {
     @Nullable
     private final String requestId;
 
-    static CommonTraceState create(String traceId, Optional<String> requestId) {
+    static CommonTraceState of(String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
         return new CommonTraceState(traceId, requestId.orElse(null));
