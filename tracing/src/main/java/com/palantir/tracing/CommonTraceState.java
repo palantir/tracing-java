@@ -42,7 +42,7 @@ final class CommonTraceState implements Serializable {
         return new CommonTraceState(traceId, requestId.orElse(null));
     }
 
-    private CommonTraceState(String traceId, String requestId) {
+    private CommonTraceState(String traceId, @Nullable String requestId) {
         this.traceId = traceId;
         this.requestId = requestId;
     }
