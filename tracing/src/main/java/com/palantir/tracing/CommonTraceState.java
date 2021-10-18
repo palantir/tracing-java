@@ -61,7 +61,8 @@ final class CommonTraceState implements Serializable {
      * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
      * distinguish between requests with the same traceId.
      */
-    Optional<String> getRequestId() {
+    @Nullable
+    String getRequestId() {
         return Optional.ofNullable(requestId);
     }
 
