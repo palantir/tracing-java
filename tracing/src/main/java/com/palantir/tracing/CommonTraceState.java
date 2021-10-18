@@ -71,6 +71,6 @@ final class CommonTraceState implements Serializable {
 
     @Override
     public String toString() {
-        return "CommonTraceState{" + "traceId='" + traceId + '\'' + ", requestId=" + requestId + '}';
+        return "CommonTraceState{traceId='" + traceId + "', requestId=" + requestId + '}';
     }
 }
