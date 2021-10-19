@@ -53,12 +53,12 @@ import javax.annotation.Nullable;
  */
 public final class DeferredTracer implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
 
     @Nullable
-    private final CommonTraceState commonTraceState;
+    private final TraceState traceState;
 
     private final boolean isObservable;
 
@@ -95,13 +95,13 @@ public final class DeferredTracer implements Serializable {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
-            this.commonTraceState = trace.getCommonTraceState();
+            this.traceState = trace.getTraceState();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
             this.metadata = metadata;
         } else {
-            this.commonTraceState = null;
+            this.traceState = null;
             this.isObservable = false;
             this.parentSpanId = null;
             this.operation = null;
@@ -123,13 +123,13 @@ public final class DeferredTracer implements Serializable {
     @MustBeClosed
     @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
     CloseableTrace withTrace() {
-        if (commonTraceState == null) {
+        if (traceState == null) {
             return NopCloseableTrace.INSTANCE;
         }
 
         Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
-        Tracer.setTrace(Trace.of(isObservable, commonTraceState));
+        Tracer.setTrace(Trace.of(isObservable, traceState));
         if (parentSpanId != null) {
             Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {

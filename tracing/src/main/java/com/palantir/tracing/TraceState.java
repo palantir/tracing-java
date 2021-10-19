@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  * Class representing the state which is created for each {@link Trace}. Contains the globally non-unique identifier of
  * a trace and a request identifier used to identify different requests sent from the same trace.
  */
-final class CommonTraceState implements Serializable {
+final class TraceState implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final String traceId;
@@ -36,13 +36,13 @@ final class CommonTraceState implements Serializable {
     @Nullable
     private final String requestId;
 
-    static CommonTraceState of(String traceId, Optional<String> requestId) {
+    static TraceState of(String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
-        return new CommonTraceState(traceId, requestId.orElse(null));
+        return new TraceState(traceId, requestId.orElse(null));
     }
 
-    private CommonTraceState(String traceId, @Nullable String requestId) {
+    private TraceState(String traceId, @Nullable String requestId) {
         this.traceId = traceId;
         this.requestId = requestId;
     }
@@ -50,7 +50,7 @@ final class CommonTraceState implements Serializable {
     /**
      * The globally unique non-empty identifier for this call trace.
      * */
-    String getTraceId() {
+    String traceId() {
         return traceId;
     }
 
@@ -62,16 +62,12 @@ final class CommonTraceState implements Serializable {
      * distinguish between requests with the same traceId.
      */
     @Nullable
-    String getRequestId() {
-        return Optional.ofNullable(requestId);
-    }
-
-    CommonTraceState deepCopy() {
-        return new CommonTraceState(traceId, requestId);
+    String requestId() {
+        return requestId;
     }
 
     @Override
     public String toString() {
-        return "CommonTraceState{traceId='" + traceId + "', requestId=" + requestId + '}';
+        return "TraceState{traceId='" + traceId + "', requestId=" + requestId + '}';
     }
 }

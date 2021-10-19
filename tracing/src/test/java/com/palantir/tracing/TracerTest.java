@@ -146,14 +146,14 @@ public final class TracerTest {
     public void testObserversAreInvokedOnObservableTracesOnly() throws Exception {
         Tracer.subscribe("1", observer1);
 
-        Tracer.setTrace(Trace.of(true, CommonTraceState.of(Tracers.randomId(), Optional.empty())));
+        Tracer.setTrace(Trace.of(true, TraceState.of(Tracers.randomId(), Optional.empty())));
         Span span = startAndCompleteSpan();
         verify(observer1).consume(span);
         span = startAndCompleteSpan();
         verify(observer1).consume(span);
         verifyNoMoreInteractions(observer1);
 
-        Tracer.setTrace(Trace.of(false, CommonTraceState.of(Tracers.randomId(), Optional.empty())));
+        Tracer.setTrace(Trace.of(false, TraceState.of(Tracers.randomId(), Optional.empty())));
         startAndFastCompleteSpan(); // not sampled, see above
         verifyNoMoreInteractions(observer1);
     }
@@ -164,7 +164,7 @@ public final class TracerTest {
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull();
         assertThat(Tracer.hasTraceId()).isFalse();
         assertThat(Tracer.hasUnobservableTrace()).isFalse();
-        Tracer.setTrace(Trace.of(false, CommonTraceState.of(traceId, Optional.empty())));
+        Tracer.setTrace(Trace.of(false, TraceState.of(traceId, Optional.empty())));
         // Unsampled trace should still apply thread state
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(traceId);
         assertThat(Tracer.hasTraceId()).isTrue();
@@ -218,7 +218,7 @@ public final class TracerTest {
     @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
         Tracer.fastStartSpan("operation");
-        Tracer.setTrace(Trace.of(true, CommonTraceState.of("newTraceId", Optional.empty())));
+        Tracer.setTrace(Trace.of(true, TraceState.of("newTraceId", Optional.empty())));
         assertThat(Tracer.getTraceId()).isEqualTo("newTraceId");
         assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo("newTraceId");
         assertThat(Tracer.completeSpan()).isEmpty();
@@ -227,7 +227,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceSetsMdcTraceSampledKeyWhenObserved() {
-        Tracer.setTrace(Trace.of(true, CommonTraceState.of("observedTraceId", Optional.empty())));
+        Tracer.setTrace(Trace.of(true, TraceState.of("observedTraceId", Optional.empty())));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isEqualTo("1");
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -235,7 +235,7 @@ public final class TracerTest {
 
     @Test
     public void testSetTraceMissingMdcTraceSampledKeyWhenNotObserved() {
-        Tracer.setTrace(Trace.of(false, CommonTraceState.of("notObservedTraceId", Optional.empty())));
+        Tracer.setTrace(Trace.of(false, TraceState.of("notObservedTraceId", Optional.empty())));
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
         assertThat(Tracer.completeSpan()).isEmpty();
         assertThat(MDC.get(Tracers.TRACE_SAMPLED_KEY)).isNull();
@@ -336,7 +336,7 @@ public final class TracerTest {
 
     @Test
     public void testGetAndClearTraceIfPresent() {
-        Trace trace = Trace.of(true, CommonTraceState.of("newTraceId", Optional.empty()));
+        Trace trace = Trace.of(true, TraceState.of("newTraceId", Optional.empty()));
         Tracer.setTrace(trace);
 
         Optional<Trace> nonEmptyTrace = Tracer.getAndClearTraceIfPresent();
@@ -355,7 +355,7 @@ public final class TracerTest {
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
 
             Trace oldTrace = Tracer.getAndClearTrace();
-            assertThat(oldTrace.getCommonTraceState().getTraceId()).isEqualTo(startTrace);
+            assertThat(oldTrace.getTraceState().traceId()).isEqualTo(startTrace);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull(); // after clearing, it's empty
         } finally {
             Tracer.fastCompleteSpan();

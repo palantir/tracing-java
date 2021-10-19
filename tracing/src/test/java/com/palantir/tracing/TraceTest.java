@@ -28,13 +28,13 @@ public final class TraceTest {
 
     @Test
     public void constructTrace_emptyTraceId() {
-        assertThatThrownBy(() -> Trace.of(false, CommonTraceState.of("", Optional.empty())))
+        assertThatThrownBy(() -> Trace.of(false, TraceState.of("", Optional.empty())))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     public void testToString() {
-        Trace trace = Trace.of(true, CommonTraceState.of("traceId", Optional.empty()));
+        Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty()));
         OpenSpan span = trace.startSpan("operation", SpanType.LOCAL);
         assertThat(trace.toString())
                 .isEqualTo("Trace{stack=[" + span + "], isObservable=true, traceId='traceId'}")

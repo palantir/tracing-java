@@ -44,11 +44,11 @@ import java.util.Optional;
  */
 public abstract class Trace {
 
-    private final CommonTraceState commonTraceState;
+    private final TraceState traceState;
 
-    private Trace(CommonTraceState commonTraceState) {
-        checkNotNull(commonTraceState, "Common trace state should not be null");
-        this.commonTraceState = commonTraceState;
+    private Trace(TraceState traceState) {
+        checkNotNull(traceState, "Common trace state should not be null");
+        this.traceState = traceState;
     }
 
     /**
@@ -111,18 +111,15 @@ public abstract class Trace {
     /**
      * The state of the trace which is stored for each created trace.
      */
-    final CommonTraceState getCommonTraceState() {
-        return this.commonTraceState;
+    final TraceState getTraceState() {
+        return this.traceState;
     }
 
     /**
      * The globally unique non-empty identifier for this call trace.
-     *
-     * @deprecated in favor of {@code getCommonTraceState}
      * */
-    @Deprecated
     final String getTraceId() {
-        return commonTraceState.getTraceId();
+        return traceState.traceId();
     }
 
     /**
@@ -131,12 +128,9 @@ public abstract class Trace {
      * The request identifier is an implementation detail of this tracing library. A new identifier is generated
      * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
      * distinguish between requests with the same traceId.
-     *
-     * @deprecated in favor of {@code getCommonTraceState}
-     */
-    @Deprecated
+     * */
     final Optional<String> getRequestId() {
-        return commonTraceState.getRequestId();
+        return Optional.ofNullable(traceState.requestId());
     }
 
     /** Returns a copy of this Trace which can be independently mutated. */
@@ -144,24 +138,24 @@ public abstract class Trace {
 
     @Deprecated
     static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
-        return of(isObservable, CommonTraceState.of(traceId, requestId));
+        return of(isObservable, TraceState.of(traceId, requestId));
     }
 
-    static Trace of(boolean isObservable, CommonTraceState commonTraceState) {
-        return isObservable ? new Sampled(commonTraceState) : new Unsampled(commonTraceState);
+    static Trace of(boolean isObservable, TraceState traceState) {
+        return isObservable ? new Sampled(traceState) : new Unsampled(traceState);
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, CommonTraceState commonTraceState) {
-            super(commonTraceState);
+        private Sampled(ArrayDeque<OpenSpan> stack, TraceState traceState) {
+            super(traceState);
             this.stack = stack;
         }
 
-        private Sampled(CommonTraceState commonTraceState) {
-            this(new ArrayDeque<>(), commonTraceState);
+        private Sampled(TraceState traceState) {
+            this(new ArrayDeque<>(), traceState);
         }
 
         @Override
@@ -203,13 +197,12 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getCommonTraceState().deepCopy());
+            return new Sampled(new ArrayDeque<>(stack), getTraceState());
         }
 
         @Override
         public String toString() {
-            return "Trace{stack=" + stack + ", isObservable=true, traceId='"
-                    + getCommonTraceState().getTraceId() + "'}";
+            return "Trace{stack=" + stack + ", isObservable=true, state=" + getTraceState() + "'}";
         }
     }
 
@@ -220,14 +213,14 @@ public abstract class Trace {
          */
         private int numberOfSpans;
 
-        private Unsampled(int numberOfSpans, CommonTraceState commonTraceState) {
-            super(commonTraceState);
+        private Unsampled(int numberOfSpans, TraceState traceState) {
+            super(traceState);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(CommonTraceState commonTraceState) {
-            this(0, commonTraceState);
+        private Unsampled(TraceState traceState) {
+            this(0, traceState);
         }
 
         @Override
@@ -272,7 +265,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getCommonTraceState().deepCopy());
+            return new Unsampled(numberOfSpans, getTraceState());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
@@ -285,8 +278,7 @@ public abstract class Trace {
 
         @Override
         public String toString() {
-            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, commonTraceState="
-                    + getCommonTraceState() + "}";
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceState=" + getTraceState() + "}";
         }
     }
 }
