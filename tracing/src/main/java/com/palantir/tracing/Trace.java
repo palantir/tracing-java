@@ -202,7 +202,7 @@ public abstract class Trace {
 
         @Override
         public String toString() {
-            return "Trace{stack=" + stack + ", isObservable=true, state=" + getTraceState() + "'}";
+            return "Trace{stack=" + stack + ", isObservable=true, state=" + getTraceState() + "}";
         }
     }
 

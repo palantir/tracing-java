@@ -68,6 +68,6 @@ final class TraceState implements Serializable {
 
     @Override
     public String toString() {
-        return "TraceState{traceId='" + traceId + "', requestId=" + requestId + '}';
+        return "TraceState{traceId='" + traceId + "', requestId='" + requestId + "'}";
     }
 }

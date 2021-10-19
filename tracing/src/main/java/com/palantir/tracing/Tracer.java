@@ -451,9 +451,8 @@ public final class Tracer {
         public String toString() {
             return "SampledDetachedSpan{completed="
                     + (completed == COMPLETE)
-                    + ", traceState='"
+                    + ", traceState="
                     + traceState
-                    + '\''
                     + ", openSpan="
                     + openSpan
                     + '}';
@@ -490,7 +489,7 @@ public final class Tracer {
 
         @Override
         public String toString() {
-            return "SampledDetached{traceState='" + traceState + '\'' + ", openSpan=" + openSpan + '}';
+            return "SampledDetached{traceState=" + traceState + ", openSpan=" + openSpan + '}';
         }
     }
 
@@ -544,7 +543,7 @@ public final class Tracer {
 
         @Override
         public String toString() {
-            return "UnsampledDetachedSpan{traceState='" + traceState + "'}";
+            return "UnsampledDetachedSpan{traceState=" + traceState + '}';
         }
     }
 
