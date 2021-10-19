@@ -74,7 +74,7 @@ public final class Tracer {
     private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return Trace.of(observable, traceId, requestId);
+        return Trace.of(observable, TraceState.of(traceId, requestId));
     }
 
     private static boolean shouldObserve(Observability observability) {
@@ -113,19 +113,21 @@ public final class Tracer {
             return Optional.empty();
         }
 
+        String traceId = trace.getTraceId();
+        Optional<String> requestId = trace.getRequestId();
         if (trace.isObservable()) {
             return trace.top().map(openSpan -> TraceMetadata.builder()
                     .spanId(openSpan.getSpanId())
                     .parentSpanId(openSpan.getParentSpanId())
-                    .traceId(trace.getTraceId())
-                    .requestId(trace.getRequestId())
+                    .traceId(traceId)
+                    .requestId(requestId)
                     .build());
         } else {
             return Optional.of(TraceMetadata.builder()
                     .spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
-                    .traceId(trace.getTraceId())
-                    .requestId(trace.getRequestId())
+                    .traceId(traceId)
+                    .requestId(requestId)
                     .build());
         }
     }
@@ -235,13 +237,12 @@ public final class Tracer {
      */
     static DetachedSpan detachInternal(@Safe String operation, SpanType type) {
         Trace maybeCurrentTrace = currentTrace.get();
-        String traceId = maybeCurrentTrace != null ? maybeCurrentTrace.getTraceId() : Tracers.randomId();
+        TraceState traceState = getTraceState(maybeCurrentTrace, type);
         boolean sampled = maybeCurrentTrace != null ? maybeCurrentTrace.isObservable() : sampler.sample();
         Optional<String> parentSpan = getParentSpanId(maybeCurrentTrace);
-        Optional<String> requestId = getRequestId(maybeCurrentTrace, type);
         return sampled
-                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpan)
-                : new UnsampledDetachedSpan(traceId, requestId, Optional.empty());
+                ? new SampledDetachedSpan(operation, type, traceState, parentSpan)
+                : new UnsampledDetachedSpan(traceState, Optional.empty());
     }
 
     /**
@@ -272,9 +273,10 @@ public final class Tracer {
             SpanType type) {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
+        TraceState traceState = TraceState.of(traceId, requestId);
         return shouldObserve(observability)
-                ? new SampledDetachedSpan(operation, type, traceId, requestId, parentSpanId)
-                : new UnsampledDetachedSpan(traceId, requestId, parentSpanId);
+                ? new SampledDetachedSpan(operation, type, traceState, parentSpanId)
+                : new UnsampledDetachedSpan(traceState, parentSpanId);
     }
 
     /**
@@ -287,16 +289,14 @@ public final class Tracer {
             return NopDetached.INSTANCE;
         }
 
-        String traceId = trace.getTraceId();
-        Optional<String> requestId = trace.getRequestId();
         if (trace.isObservable()) {
             OpenSpan maybeOpenSpan = trace.top().orElse(null);
             if (maybeOpenSpan == null) {
                 return NopDetached.INSTANCE;
             }
-            return new SampledDetached(traceId, requestId, maybeOpenSpan);
+            return new SampledDetached(trace.getTraceState(), maybeOpenSpan);
         } else {
-            return new UnsampledDetachedSpan(traceId, requestId, Optional.empty());
+            return new UnsampledDetachedSpan(trace.getTraceState(), Optional.empty());
         }
     }
 
@@ -310,22 +310,27 @@ public final class Tracer {
         return Optional.empty();
     }
 
-    private static Optional<String> getRequestId(@Nullable Trace maybeCurrentTrace, SpanType newSpanType) {
+    private static TraceState getTraceState(@Nullable Trace maybeCurrentTrace, SpanType newSpanType) {
         if (maybeCurrentTrace != null) {
-            return maybeCurrentTrace.getRequestId();
+            return maybeCurrentTrace.getTraceState();
         }
+        return TraceState.of(Tracers.randomId(), getRequestIdForSpan(newSpanType));
+    }
+
+    private static Optional<String> getRequestIdForSpan(SpanType newSpanType) {
         if (newSpanType == SpanType.SERVER_INCOMING) {
             return Optional.of(Tracers.randomId());
         }
         return Optional.empty();
     }
 
-    static Optional<String> getRequestId(DetachedSpan detachedSpan) {
+    @Nullable
+    static String getRequestId(DetachedSpan detachedSpan) {
         if (detachedSpan instanceof SampledDetachedSpan) {
-            return ((SampledDetachedSpan) detachedSpan).requestId;
+            return ((SampledDetachedSpan) detachedSpan).traceState.requestId();
         }
         if (detachedSpan instanceof UnsampledDetachedSpan) {
-            return ((UnsampledDetachedSpan) detachedSpan).requestId;
+            return ((UnsampledDetachedSpan) detachedSpan).traceState.requestId();
         }
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
@@ -372,36 +377,28 @@ public final class Tracer {
         private static final AtomicIntegerFieldUpdater<SampledDetachedSpan> completedUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(SampledDetachedSpan.class, "completed");
 
-        private final String traceId;
-        private final Optional<String> requestId;
+        private final TraceState traceState;
         private final OpenSpan openSpan;
 
         private volatile int completed;
 
         @SuppressWarnings("ImmutablesBuilderMissingInitialization")
         // OpenSpan#builder sets these
-        SampledDetachedSpan(
-                String operation,
-                SpanType type,
-                String traceId,
-                Optional<String> requestId,
-                Optional<String> parentSpanId) {
-            this.traceId = traceId;
-            this.requestId = requestId;
+        SampledDetachedSpan(String operation, SpanType type, TraceState traceState, Optional<String> parentSpanId) {
+            this.traceState = traceState;
             this.openSpan = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         }
 
         @MustBeClosed
         private static <T> CloseableSpan childSpan(
-                String traceId,
+                TraceState traceState,
                 OpenSpan openSpan,
-                Optional<String> requestId,
                 String operationName,
                 TagTranslator<? super T> translator,
                 T data,
                 SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(true, traceId, requestId));
+            setTrace(Trace.of(true, traceState));
             Tracer.fastStartSpan(operationName, openSpan.getSpanId(), type);
             return TraceRestoringCloseableSpanWithMetadata.of(maybeCurrentTrace, translator, data);
         }
@@ -410,18 +407,18 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            return childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
+            return childSpan(traceState, openSpan, operationName, translator, data, type);
         }
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            return new SampledDetachedSpan(operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()));
+            return new SampledDetachedSpan(operation, type, traceState, Optional.of(openSpan.getSpanId()));
         }
 
         @MustBeClosed
-        private static CloseableSpan attach(String traceId, OpenSpan openSpan, Optional<String> requestId) {
+        private static CloseableSpan attach(OpenSpan openSpan, TraceState traceState) {
             Trace maybeCurrentTrace = currentTrace.get();
-            Trace newTrace = Trace.of(true, traceId, requestId);
+            Trace newTrace = Trace.of(true, traceState);
             // Push the DetachedSpan OpenSpan to provide the correct parent information
             // to child spans created within the context of this attach.
             // It is VITAL that this span is never completed, it exists only for attribution.
@@ -435,7 +432,7 @@ public final class Tracer {
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            return attach(traceId, openSpan, requestId);
+            return attach(openSpan, traceState);
         }
 
         @Override
@@ -446,7 +443,7 @@ public final class Tracer {
         @Override
         public <T> void complete(TagTranslator<? super T> tagTranslator, T data) {
             if (NOT_COMPLETE == completedUpdater.getAndSet(this, COMPLETE)) {
-                Tracer.notifyObservers(toSpan(openSpan, tagTranslator, data, traceId));
+                Tracer.notifyObservers(toSpan(openSpan, tagTranslator, data, traceState.traceId()));
             }
         }
 
@@ -454,12 +451,8 @@ public final class Tracer {
         public String toString() {
             return "SampledDetachedSpan{completed="
                     + (completed == COMPLETE)
-                    + ", traceId='"
-                    + traceId
-                    + '\''
-                    + ", requestId='"
-                    + requestId.orElse(null)
-                    + '\''
+                    + ", traceState="
+                    + traceState
                     + ", openSpan="
                     + openSpan
                     + '}';
@@ -468,13 +461,11 @@ public final class Tracer {
 
     private static final class SampledDetached implements Detached {
 
-        private final String traceId;
-        private final Optional<String> requestId;
+        private final TraceState traceState;
         private final OpenSpan openSpan;
 
-        SampledDetached(String traceId, Optional<String> requestId, OpenSpan openSpan) {
-            this.traceId = traceId;
-            this.requestId = requestId;
+        SampledDetached(TraceState traceState, OpenSpan openSpan) {
+            this.traceState = traceState;
             this.openSpan = openSpan;
         }
 
@@ -482,43 +473,33 @@ public final class Tracer {
         @MustBeClosed
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> translator, T data, SpanType type) {
-            return SampledDetachedSpan.childSpan(traceId, openSpan, requestId, operationName, translator, data, type);
+            return SampledDetachedSpan.childSpan(traceState, openSpan, operationName, translator, data, type);
         }
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            return new SampledDetachedSpan(operation, type, traceId, requestId, Optional.of(openSpan.getSpanId()));
+            return new SampledDetachedSpan(operation, type, traceState, Optional.of(openSpan.getSpanId()));
         }
 
         @Override
         @MustBeClosed
         public CloseableSpan attach() {
-            return SampledDetachedSpan.attach(traceId, openSpan, requestId);
+            return SampledDetachedSpan.attach(openSpan, traceState);
         }
 
         @Override
         public String toString() {
-            return "SampledDetached{traceId='"
-                    + traceId
-                    + '\''
-                    + ", requestId='"
-                    + requestId.orElse(null)
-                    + '\''
-                    + ", openSpan="
-                    + openSpan
-                    + '}';
+            return "SampledDetached{traceState=" + traceState + ", openSpan=" + openSpan + '}';
         }
     }
 
     private static final class UnsampledDetachedSpan implements DetachedSpan {
 
-        private final String traceId;
-        private final Optional<String> requestId;
+        private final TraceState traceState;
         private final Optional<String> parentSpanId;
 
-        UnsampledDetachedSpan(String traceId, Optional<String> requestId, Optional<String> parentSpanId) {
-            this.traceId = traceId;
-            this.requestId = requestId;
+        UnsampledDetachedSpan(TraceState traceState, Optional<String> parentSpanId) {
+            this.traceState = traceState;
             this.parentSpanId = parentSpanId;
         }
 
@@ -526,7 +507,7 @@ public final class Tracer {
         public <T> CloseableSpan childSpan(
                 String operationName, TagTranslator<? super T> _translator, T _data, SpanType type) {
             Trace maybeCurrentTrace = currentTrace.get();
-            setTrace(Trace.of(false, traceId, requestId));
+            setTrace(Trace.of(false, traceState));
             if (parentSpanId.isPresent()) {
                 Tracer.fastStartSpan(operationName, parentSpanId.get(), type);
             } else {
@@ -562,7 +543,7 @@ public final class Tracer {
 
         @Override
         public String toString() {
-            return "UnsampledDetachedSpan{traceId='" + traceId + "', requestId='" + requestId.orElse(null) + "'}";
+            return "UnsampledDetachedSpan{traceState=" + traceState + '}';
         }
     }
 

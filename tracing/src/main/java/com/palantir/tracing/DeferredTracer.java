@@ -53,12 +53,12 @@ import javax.annotation.Nullable;
  */
 public final class DeferredTracer implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
 
     @Nullable
-    private final String traceId;
+    private final TraceState traceState;
 
     private final boolean isObservable;
 
@@ -70,9 +70,6 @@ public final class DeferredTracer implements Serializable {
 
     @Nullable
     private final String parentSpanId;
-
-    @Nullable
-    private final transient String requestId;
 
     /**
      * Deprecated.
@@ -98,15 +95,13 @@ public final class DeferredTracer implements Serializable {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
-            this.traceId = trace.getTraceId();
-            this.requestId = trace.getRequestId().orElse(null);
+            this.traceState = trace.getTraceState();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
             this.metadata = metadata;
         } else {
-            this.traceId = null;
-            this.requestId = null;
+            this.traceState = null;
             this.isObservable = false;
             this.parentSpanId = null;
             this.operation = null;
@@ -128,13 +123,13 @@ public final class DeferredTracer implements Serializable {
     @MustBeClosed
     @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
     CloseableTrace withTrace() {
-        if (traceId == null) {
+        if (traceState == null) {
             return NopCloseableTrace.INSTANCE;
         }
 
         Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
-        Tracer.setTrace(Trace.of(isObservable, traceId, Optional.ofNullable(requestId)));
+        Tracer.setTrace(Trace.of(isObservable, traceState));
         if (parentSpanId != null) {
             Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {

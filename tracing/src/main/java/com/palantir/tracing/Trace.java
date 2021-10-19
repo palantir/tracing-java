@@ -44,14 +44,11 @@ import java.util.Optional;
  */
 public abstract class Trace {
 
-    private final String traceId;
+    private final TraceState traceState;
 
-    private final Optional<String> requestId;
-
-    private Trace(String traceId, Optional<String> requestId) {
-        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
-        this.traceId = traceId;
-        this.requestId = checkNotNull(requestId, "requestId");
+    private Trace(TraceState traceState) {
+        checkNotNull(traceState, "Trace state must not be null");
+        this.traceState = traceState;
     }
 
     /**
@@ -111,9 +108,14 @@ public abstract class Trace {
      */
     abstract boolean isObservable();
 
+    /** The state of the trace which is stored for each created trace. */
+    final TraceState getTraceState() {
+        return this.traceState;
+    }
+
     /** The globally unique non-empty identifier for this call trace. */
     final String getTraceId() {
-        return traceId;
+        return traceState.traceId();
     }
 
     /**
@@ -124,27 +126,32 @@ public abstract class Trace {
      * distinguish between requests with the same traceId.
      */
     final Optional<String> getRequestId() {
-        return requestId;
+        return Optional.ofNullable(traceState.requestId());
     }
 
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
+    @Deprecated
     static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
-        return isObservable ? new Sampled(traceId, requestId) : new Unsampled(traceId, requestId);
+        return of(isObservable, TraceState.of(traceId, requestId));
+    }
+
+    static Trace of(boolean isObservable, TraceState traceState) {
+        return isObservable ? new Sampled(traceState) : new Unsampled(traceState);
     }
 
     private static final class Sampled extends Trace {
 
         private final Deque<OpenSpan> stack;
 
-        private Sampled(ArrayDeque<OpenSpan> stack, String traceId, Optional<String> requestId) {
-            super(traceId, requestId);
+        private Sampled(ArrayDeque<OpenSpan> stack, TraceState traceState) {
+            super(traceState);
             this.stack = stack;
         }
 
-        private Sampled(String traceId, Optional<String> requestId) {
-            this(new ArrayDeque<>(), traceId, requestId);
+        private Sampled(TraceState traceState) {
+            this(new ArrayDeque<>(), traceState);
         }
 
         @Override
@@ -186,12 +193,12 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceId(), getRequestId());
+            return new Sampled(new ArrayDeque<>(stack), getTraceState());
         }
 
         @Override
         public String toString() {
-            return "Trace{stack=" + stack + ", isObservable=true, traceId='" + getTraceId() + "'}";
+            return "Trace{stack=" + stack + ", isObservable=true, state=" + getTraceState() + "}";
         }
     }
 
@@ -202,14 +209,14 @@ public abstract class Trace {
          */
         private int numberOfSpans;
 
-        private Unsampled(int numberOfSpans, String traceId, Optional<String> requestId) {
-            super(traceId, requestId);
+        private Unsampled(int numberOfSpans, TraceState traceState) {
+            super(traceState);
             this.numberOfSpans = numberOfSpans;
             validateNumberOfSpans();
         }
 
-        private Unsampled(String traceId, Optional<String> requestId) {
-            this(0, traceId, requestId);
+        private Unsampled(TraceState traceState) {
+            this(0, traceState);
         }
 
         @Override
@@ -254,7 +261,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceId(), getRequestId());
+            return new Unsampled(numberOfSpans, getTraceState());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
@@ -267,8 +274,7 @@ public abstract class Trace {
 
         @Override
         public String toString() {
-            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceId='" + getTraceId()
-                    + "', requestId='" + getRequestId().orElse(null) + "'}";
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceState=" + getTraceState() + "}";
         }
     }
 }
