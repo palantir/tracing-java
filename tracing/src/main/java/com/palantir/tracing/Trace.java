@@ -47,7 +47,7 @@ public abstract class Trace {
     private final TraceState traceState;
 
     private Trace(TraceState traceState) {
-        checkNotNull(traceState, "Common trace state should not be null");
+        checkNotNull(traceState, "Trace state must not be null");
         this.traceState = traceState;
     }
 
