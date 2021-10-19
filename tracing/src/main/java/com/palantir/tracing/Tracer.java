@@ -588,8 +588,7 @@ public final class Tracer {
         if (trace != null) {
             Optional<OpenSpan> span = popCurrentSpan(trace);
             if (trace.isObservable()) {
-                completeSpanAndNotifyObservers(
-                        span, tag, state, trace.getTraceState().traceId());
+                completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
             }
         }
     }
@@ -624,11 +623,7 @@ public final class Tracer {
             return Optional.empty();
         }
         Optional<Span> maybeSpan = popCurrentSpan(trace)
-                .map(openSpan -> toSpan(
-                        openSpan,
-                        MapTagTranslator.INSTANCE,
-                        metadata,
-                        trace.getTraceState().traceId()));
+                .map(openSpan -> toSpan(openSpan, MapTagTranslator.INSTANCE, metadata, trace.getTraceId()));
 
         // Notify subscribers iff trace is observable
         if (maybeSpan.isPresent() && trace.isObservable()) {
@@ -752,9 +747,7 @@ public final class Tracer {
      * Returns the globally unique identifier for this thread's trace.
      */
     public static String getTraceId() {
-        return checkNotNull(currentTrace.get(), "There is no trace")
-                .getTraceState()
-                .traceId();
+        return checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
     }
 
     /**
