@@ -37,7 +37,10 @@ public final class TraceTest {
         Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty()));
         OpenSpan span = trace.startSpan("operation", SpanType.LOCAL);
         assertThat(trace.toString())
-                .isEqualTo("Trace{stack=[" + span + "], isObservable=true, traceId='traceId'}")
+                .isEqualTo("Trace{"
+                        + "stack=[" + span + "], "
+                        + "isObservable=true, "
+                        + "state=TraceState{traceId='traceId', requestId='null'}}")
                 .contains(span.getOperation())
                 .contains(span.getSpanId());
     }
