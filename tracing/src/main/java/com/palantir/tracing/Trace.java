@@ -108,16 +108,12 @@ public abstract class Trace {
      */
     abstract boolean isObservable();
 
-    /**
-     * The state of the trace which is stored for each created trace.
-     */
+    /** The state of the trace which is stored for each created trace. */
     final TraceState getTraceState() {
         return this.traceState;
     }
 
-    /**
-     * The globally unique non-empty identifier for this call trace.
-     * */
+    /** The globally unique non-empty identifier for this call trace. */
     final String getTraceId() {
         return traceState.traceId();
     }
@@ -128,7 +124,7 @@ public abstract class Trace {
      * The request identifier is an implementation detail of this tracing library. A new identifier is generated
      * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
      * distinguish between requests with the same traceId.
-     * */
+     */
     final Optional<String> getRequestId() {
         return Optional.ofNullable(traceState.requestId());
     }
