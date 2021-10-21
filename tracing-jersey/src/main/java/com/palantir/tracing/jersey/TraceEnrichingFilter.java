@@ -35,6 +35,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ExtendedUriInfo;
@@ -68,8 +69,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // The following strings are all nullable
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
-        Optional<String> forUserAgent =
-                Optional.ofNullable(requestContext.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT));
+        Optional<String> forUserAgent = getForUserAgent(requestContext);
 
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
@@ -141,6 +141,18 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         } else {
             return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
+    }
+
+    private static Optional<String> getForUserAgent(ContainerRequestContext context) {
+        String forUserAgent = context.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT);
+        if (forUserAgent != null) {
+            return Optional.of(forUserAgent);
+        }
+        String fetchUserAgent = context.getHeaderString(TraceHttpHeaders.FETCH_USER_AGENT);
+        if (fetchUserAgent != null) {
+            return Optional.of(fetchUserAgent);
+        }
+        return Optional.ofNullable(context.getHeaderString(HttpHeaders.USER_AGENT));
     }
 
     private String getPathTemplate() {
