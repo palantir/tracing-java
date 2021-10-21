@@ -30,7 +30,7 @@ public interface TraceHttpHeaders {
     String SPAN_ID = "X-B3-SpanId";
     String IS_SAMPLED = "X-B3-Sampled"; // Boolean (either “1” or “0”, can be absent)
 
-    String FOR_USER_AGENT = "ForUserAgent";
+    String FOR_USER_AGENT = "For-User-Agent";
 
     /**
      * Field is no longer used by the tracing library.
