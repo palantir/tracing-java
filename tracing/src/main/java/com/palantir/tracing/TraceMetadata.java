@@ -34,8 +34,8 @@ public interface TraceMetadata {
     Optional<String> getRequestId();
 
     /**
-     * Return the user agent propagated across the trace.
-     * Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#FOR_USER_AGENT} on incoming requests.
+     * Returns the user agent propagated across the trace.
+     * Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#FOR_USER_AGENT}.
      */
     Optional<String> getForUserAgent();
 

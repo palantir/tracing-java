@@ -21,6 +21,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.SpanType;
+import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -260,6 +262,23 @@ public final class Tracers {
             }
         }
         return result;
+    }
+
+    public static <T> void addTracingHeaders(
+            T state, TracingHeadersEnrichingFunction<T> tracingHeadersEnrichingFunction) {
+        Optional<TraceMetadata> maybeTraceMetadata = Tracer.maybeGetTraceMetadata();
+        if (maybeTraceMetadata.isEmpty()) {
+            return;
+        }
+        TraceMetadata traceMetadata = maybeTraceMetadata.get();
+        tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.TRACE_ID, traceMetadata.getTraceId(), state);
+        tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.SPAN_ID, traceMetadata.getSpanId(), state);
+        tracingHeadersEnrichingFunction.addHeader(
+                TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0", state);
+        Optional<String> forUserAgent = traceMetadata.getForUserAgent();
+        if (forUserAgent.isPresent()) {
+            tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get(), state);
+        }
     }
 
     private static final class ListenableFutureSpanListener implements Runnable {
