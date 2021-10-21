@@ -71,6 +71,13 @@ public final class Tracer {
     /**
      * Creates a new trace, but does not set it as the current trace.
      */
+    private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
+        return createTrace(observability, traceId, requestId, Optional.empty());
+    }
+
+    /**
+     * Creates a new trace, but does not set it as the current trace.
+     */
     private static Trace createTrace(
             Observability observability, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
@@ -147,7 +154,7 @@ public final class Tracer {
                 .map(observable -> observable ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
                 .orElse(Observability.UNDECIDED);
 
-        setTrace(createTrace(observability, traceId, Optional.empty(), Optional.empty()));
+        setTrace(createTrace(observability, traceId, Optional.empty()));
     }
 
     /**
@@ -157,7 +164,7 @@ public final class Tracer {
      */
     @Deprecated
     public static void initTrace(Observability observability, String traceId) {
-        setTrace(createTrace(observability, traceId, Optional.empty(), Optional.empty()));
+        setTrace(createTrace(observability, traceId, Optional.empty()));
     }
 
     /**
@@ -172,8 +179,7 @@ public final class Tracer {
         setTrace(createTrace(
                 observability,
                 traceId,
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
-                Optional.empty()));
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty()));
         fastStartSpan(operation, parentSpanId, type);
     }
 
@@ -186,8 +192,7 @@ public final class Tracer {
         setTrace(createTrace(
                 observability,
                 traceId,
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
-                Optional.empty()));
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty()));
         fastStartSpan(operation, type);
     }
 
@@ -893,7 +898,7 @@ public final class Tracer {
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            trace = createTrace(Observability.UNDECIDED, Tracers.randomId(), Optional.empty(), Optional.empty());
+            trace = createTrace(Observability.UNDECIDED, Tracers.randomId(), Optional.empty());
             setTrace(trace);
         }
         return trace;
