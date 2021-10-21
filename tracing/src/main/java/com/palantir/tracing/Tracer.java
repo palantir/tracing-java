@@ -388,17 +388,6 @@ public final class Tracer {
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
 
-    @Nullable
-    static String getForUserAgent(DetachedSpan detachedSpan) {
-        if (detachedSpan instanceof SampledDetachedSpan) {
-            return ((SampledDetachedSpan) detachedSpan).traceState.forUserAgent();
-        }
-        if (detachedSpan instanceof UnsampledDetachedSpan) {
-            return ((UnsampledDetachedSpan) detachedSpan).traceState.forUserAgent();
-        }
-        throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
-    }
-
     static boolean isSampled(DetachedSpan detachedSpan) {
         return detachedSpan instanceof SampledDetachedSpan;
     }
