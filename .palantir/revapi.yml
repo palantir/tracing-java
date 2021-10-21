@@ -66,3 +66,11 @@ acceptedBreaks:
     - code: "java.method.addedToInterface"
       new: "method java.util.Optional<java.lang.String> com.palantir.tracing.TraceMetadata::getForUserAgent()"
       justification: "Addition of an optional to an immutable is safe"
+    - code: "java.method.numberOfParametersChanged"
+      old: "method com.palantir.tracing.DetachedSpan com.palantir.tracing.DetachedSpan::start(com.palantir.tracing.Observability,\
+        \ java.lang.String, java.util.Optional<java.lang.String>, java.lang.String,\
+        \ com.palantir.tracing.api.SpanType)"
+      new: "method com.palantir.tracing.DetachedSpan com.palantir.tracing.DetachedSpan::start(com.palantir.tracing.Observability,\
+        \ java.lang.String, java.util.Optional<java.lang.String>, java.util.Optional<java.lang.String>,\
+        \ java.lang.String, com.palantir.tracing.api.SpanType)"
+      justification: "Part of internal API"
