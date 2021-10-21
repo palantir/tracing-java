@@ -21,4 +21,6 @@ package com.palantir.tracing;
  */
 public interface InternalTraceHttpHeaders {
     String FOR_USER_AGENT = "For-User-Agent";
+
+    String FETCH_USER_AGENT = "Fetch-User-Agent";
 }

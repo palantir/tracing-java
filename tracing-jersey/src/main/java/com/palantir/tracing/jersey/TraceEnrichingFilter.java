@@ -57,8 +57,6 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
-    private static final String FETCH_USER_AGENT = "Fetch-User-Agent";
-
     @Context
     @SuppressWarnings("NullAway") // instantiated using by Jersey using reflection
     private ExtendedUriInfo uriInfo;
@@ -151,7 +149,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         if (forUserAgent != null) {
             return Optional.of(forUserAgent);
         }
-        String fetchUserAgent = context.getHeaderString(FETCH_USER_AGENT);
+        String fetchUserAgent = context.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT);
         if (fetchUserAgent != null) {
             return Optional.of(fetchUserAgent);
         }
