@@ -22,6 +22,7 @@ import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.logsafe.logger.SafeLogger;
 import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.DetachedSpan;
+import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
 import com.palantir.tracing.TagTranslator;
@@ -49,8 +50,8 @@ final class UndertowTracing {
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
     private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
-    private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(TraceHttpHeaders.FOR_USER_AGENT);
     // Tracing headers for obtaining for constructing for user agent.
+    private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(InternalTraceHttpHeaders.FOR_USER_AGENT);
     private static final HttpString FETCH_USER_AGENT = HttpString.tryFromString("Fetch-User-Agent");
 
     // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated

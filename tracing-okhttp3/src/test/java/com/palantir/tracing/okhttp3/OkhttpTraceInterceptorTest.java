@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.Observability;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -124,7 +125,7 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
-        assertThat(intercepted.headers(TraceHttpHeaders.FOR_USER_AGENT)).containsOnly(forUserAgent);
+        assertThat(intercepted.headers(InternalTraceHttpHeaders.FOR_USER_AGENT)).containsOnly(forUserAgent);
     }
 
     @Test

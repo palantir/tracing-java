@@ -16,6 +16,7 @@
 
 package com.palantir.tracing.okhttp3;
 
+import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
@@ -56,7 +57,7 @@ public enum OkhttpTraceInterceptor implements Interceptor {
                 .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
         Optional<String> forUserAgent = Tracer.getForUserAgent();
         if (forUserAgent.isPresent()) {
-            tracedRequest.header(TraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get());
+            tracedRequest.header(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get());
         }
 
         Response response;

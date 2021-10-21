@@ -17,6 +17,7 @@
 package com.palantir.tracing.jersey;
 
 import com.google.common.base.Strings;
+import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.Observability;
 import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.TraceMetadata;
@@ -146,7 +147,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     }
 
     private static Optional<String> getForUserAgent(ContainerRequestContext context) {
-        String forUserAgent = context.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT);
+        String forUserAgent = context.getHeaderString(InternalTraceHttpHeaders.FOR_USER_AGENT);
         if (forUserAgent != null) {
             return Optional.of(forUserAgent);
         }
