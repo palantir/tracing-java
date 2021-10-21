@@ -30,7 +30,6 @@ public interface TraceHttpHeaders {
     String SPAN_ID = "X-B3-SpanId";
     String IS_SAMPLED = "X-B3-Sampled"; // Boolean (either “1” or “0”, can be absent)
 
-    String FETCH_USER_AGENT = "Fetch-User-Agent";
     String FOR_USER_AGENT = "For-User-Agent";
 
     /**

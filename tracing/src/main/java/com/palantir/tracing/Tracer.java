@@ -303,12 +303,13 @@ public final class Tracer {
     static DetachedSpan detachInternal(
             Observability observability,
             String traceId,
+            Optional<String> forUserAgent,
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type) {
         Optional<String> requestId =
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
-        return detachInternal(observability, traceId, requestId, Optional.empty(), parentSpanId, operation, type);
+        return detachInternal(observability, traceId, requestId, forUserAgent, parentSpanId, operation, type);
     }
 
     /**
@@ -383,6 +384,17 @@ public final class Tracer {
         }
         if (detachedSpan instanceof UnsampledDetachedSpan) {
             return ((UnsampledDetachedSpan) detachedSpan).traceState.requestId();
+        }
+        throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
+    }
+
+    @Nullable
+    static String getForUserAgent(DetachedSpan detachedSpan) {
+        if (detachedSpan instanceof SampledDetachedSpan) {
+            return ((SampledDetachedSpan) detachedSpan).traceState.forUserAgent();
+        }
+        if (detachedSpan instanceof UnsampledDetachedSpan) {
+            return ((UnsampledDetachedSpan) detachedSpan).traceState.forUserAgent();
         }
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }

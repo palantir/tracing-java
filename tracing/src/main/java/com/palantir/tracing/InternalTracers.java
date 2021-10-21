@@ -31,7 +31,7 @@ public final class InternalTracers {
         return Tracer.isSampled(detachedSpan);
     }
 
-    /** Returns true if the provided detachedSpan is sampled. */
+    /** Returns requestId if the provided detachedSpan is sampled. */
     public static Optional<String> getRequestId(DetachedSpan detachedSpan) {
         return Optional.ofNullable(Tracer.getRequestId(detachedSpan));
     }
