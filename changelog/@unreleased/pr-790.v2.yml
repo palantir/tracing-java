@@ -1,0 +1,6 @@
+type: feature
+feature:
+  description: User agent specified inside `ForUserAgent` http header will be propagated
+    to requests made in the same trace.
+  links:
+  - https://github.com/palantir/tracing-java/pull/790
