@@ -373,7 +373,7 @@ public final class Tracers {
      */
     public static <V> Callable<V> wrapWithNewTrace(
             String operation, Observability observability, Callable<V> delegate) {
-        return wrapTrace(Tracers.randomId(), operation, observability, delegate);
+        return wrapTrace(Tracers::randomId, operation, observability, delegate);
     }
 
     /**
@@ -397,7 +397,7 @@ public final class Tracers {
      * fresh trace. The given {@link String operation} is used to create the initial span.
      */
     public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
-        return wrapTrace(Tracers.randomId(), Optional.empty(), operation, observability, delegate);
+        return wrapTrace(Tracers::randomId, Optional.empty(), operation, observability, delegate);
     }
 
     /**
@@ -409,7 +409,7 @@ public final class Tracers {
      */
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
-        return wrapTrace(traceId, operation, observability, delegate);
+        return wrapTrace(() -> traceId, operation, observability, delegate);
     }
 
     /**
@@ -435,17 +435,17 @@ public final class Tracers {
      */
     public static Runnable wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Runnable delegate) {
-        return wrapTrace(traceId, Optional.empty(), operation, observability, delegate);
+        return wrapTrace(() -> traceId, Optional.empty(), operation, observability, delegate);
     }
 
     private static <V> Callable<V> wrapTrace(
-            String traceId, String operation, Observability observability, Callable<V> delegate) {
+            Supplier<String> traceId, String operation, Observability observability, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
+                Tracer.initTraceWithSpan(observability, traceId.get(), operation, SpanType.LOCAL);
                 return delegate.call();
             } finally {
                 Tracer.fastCompleteSpan();
@@ -455,7 +455,7 @@ public final class Tracers {
     }
 
     private static Runnable wrapTrace(
-            String traceId,
+            Supplier<String> traceId,
             Optional<String> forUserAgent,
             String operation,
             Observability observability,
@@ -465,7 +465,7 @@ public final class Tracers {
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
-                Tracer.initTraceWithSpan(observability, traceId, forUserAgent, operation, SpanType.LOCAL);
+                Tracer.initTraceWithSpan(observability, traceId.get(), forUserAgent, operation, SpanType.LOCAL);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();
