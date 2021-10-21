@@ -129,12 +129,19 @@ public abstract class Trace {
         return Optional.ofNullable(traceState.requestId());
     }
 
+    /**
+     * The user agent propagated across this trace.
+     */
+    final Optional<String> getForUserAgent() {
+        return Optional.ofNullable(traceState.forUserAgent());
+    }
+
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
     @Deprecated
     static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
-        return of(isObservable, TraceState.of(traceId, requestId));
+        return of(isObservable, TraceState.of(traceId, requestId, Optional.empty()));
     }
 
     static Trace of(boolean isObservable, TraceState traceState) {

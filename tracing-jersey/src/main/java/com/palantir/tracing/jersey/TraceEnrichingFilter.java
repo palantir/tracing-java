@@ -53,6 +53,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
 
+    public static final String FOR_USER_AGENT_PROPERTY_NAME = "com.palantir.tracing.forUserAgent";
+
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
@@ -68,6 +70,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // The following strings are all nullable
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
+        Optional<String> forUserAgent =
+                Optional.ofNullable(requestContext.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT));
 
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
@@ -75,20 +79,33 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
             Tracer.initTraceWithSpan(
                     getObservabilityFromHeader(requestContext),
                     Tracers.randomId(),
+                    forUserAgent,
                     operation,
                     SpanType.SERVER_INCOMING);
         } else if (spanId == null) {
             Tracer.initTraceWithSpan(
-                    getObservabilityFromHeader(requestContext), traceId, operation, SpanType.SERVER_INCOMING);
+                    getObservabilityFromHeader(requestContext),
+                    traceId,
+                    forUserAgent,
+                    operation,
+                    SpanType.SERVER_INCOMING);
         } else {
             // caller's span is this span's parent.
             Tracer.initTraceWithSpan(
-                    getObservabilityFromHeader(requestContext), traceId, operation, spanId, SpanType.SERVER_INCOMING);
+                    getObservabilityFromHeader(requestContext),
+                    traceId,
+                    forUserAgent,
+                    operation,
+                    spanId,
+                    SpanType.SERVER_INCOMING);
         }
 
         // Give asynchronous downstream handlers access to the trace id
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
+        Tracer.maybeGetTraceMetadata()
+                .flatMap(TraceMetadata::getForUserAgent)
+                .ifPresent(value -> requestContext.setProperty(FOR_USER_AGENT_PROPERTY_NAME, value));
         Tracer.maybeGetTraceMetadata()
                 .flatMap(TraceMetadata::getRequestId)
                 .ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
@@ -108,6 +125,10 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                 Object requestId = requestContext.getProperty(REQUEST_ID_PROPERTY_NAME);
                 if (requestId instanceof String) {
                     sink.accept(TraceTags.HTTP_REQUEST_ID, (String) requestId);
+                }
+                Object forUserAgent = requestContext.getProperty(FOR_USER_AGENT_PROPERTY_NAME);
+                if (forUserAgent instanceof String) {
+                    sink.accept(TraceTags.HTTP_FOR_USER_AGENT, (String) forUserAgent);
                 }
             });
             headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);

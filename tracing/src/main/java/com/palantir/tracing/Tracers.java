@@ -373,18 +373,7 @@ public final class Tracers {
      */
     public static <V> Callable<V> wrapWithNewTrace(
             String operation, Observability observability, Callable<V> delegate) {
-        return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
-                return delegate.call();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
-            }
-        };
+        return wrapTrace(Tracers.randomId(), operation, observability, delegate);
     }
 
     /**
@@ -408,18 +397,7 @@ public final class Tracers {
      * fresh trace. The given {@link String operation} is used to create the initial span.
      */
     public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
-        return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
-                delegate.run();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
-            }
-        };
+        return wrapTrace(Tracers.randomId(), Optional.empty(), operation, observability, delegate);
     }
 
     /**
@@ -431,18 +409,7 @@ public final class Tracers {
      */
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
-        return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
-                return delegate.call();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
-            }
-        };
+        return wrapTrace(traceId, operation, observability, delegate);
     }
 
     /**
@@ -468,12 +435,37 @@ public final class Tracers {
      */
     public static Runnable wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Runnable delegate) {
+        return wrapTrace(traceId, Optional.empty(), operation, observability, delegate);
+    }
+
+    private static <V> Callable<V> wrapTrace(
+            String traceId, String operation, Observability observability, Callable<V> delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
             Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
             try {
                 Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
+                return delegate.call();
+            } finally {
+                Tracer.fastCompleteSpan();
+                restoreTrace(originalTrace);
+            }
+        };
+    }
+
+    private static Runnable wrapTrace(
+            String traceId,
+            Optional<String> forUserAgent,
+            String operation,
+            Observability observability,
+            Runnable delegate) {
+        return () -> {
+            // clear the existing trace and keep it around for restoration when we're done
+            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
+
+            try {
+                Tracer.initTraceWithSpan(observability, traceId, forUserAgent, operation, SpanType.LOCAL);
                 delegate.run();
             } finally {
                 Tracer.fastCompleteSpan();

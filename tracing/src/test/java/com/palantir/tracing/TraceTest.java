@@ -28,19 +28,19 @@ public final class TraceTest {
 
     @Test
     public void constructTrace_emptyTraceId() {
-        assertThatThrownBy(() -> Trace.of(false, TraceState.of("", Optional.empty())))
+        assertThatThrownBy(() -> Trace.of(false, TraceState.of("", Optional.empty(), Optional.empty())))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     public void testToString() {
-        Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty()));
+        Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty(), Optional.empty()));
         OpenSpan span = trace.startSpan("operation", SpanType.LOCAL);
         assertThat(trace.toString())
                 .isEqualTo("Trace{"
                         + "stack=[" + span + "], "
                         + "isObservable=true, "
-                        + "state=TraceState{traceId='traceId', requestId='null'}}")
+                        + "state=TraceState{traceId='traceId', requestId='null', forUserAgent='null'}}")
                 .contains(span.getOperation())
                 .contains(span.getSpanId());
     }

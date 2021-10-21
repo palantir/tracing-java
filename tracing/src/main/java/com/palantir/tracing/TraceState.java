@@ -36,15 +36,20 @@ final class TraceState implements Serializable {
     @Nullable
     private final String requestId;
 
-    static TraceState of(String traceId, Optional<String> requestId) {
+    @Nullable
+    private final String forUserAgent;
+
+    static TraceState of(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
-        return new TraceState(traceId, requestId.orElse(null));
+        checkNotNull(forUserAgent, "forUserAgent should be not-null");
+        return new TraceState(traceId, requestId.orElse(null), forUserAgent.orElse(null));
     }
 
-    private TraceState(String traceId, @Nullable String requestId) {
+    private TraceState(String traceId, @Nullable String requestId, @Nullable String forUserAgent) {
         this.traceId = traceId;
         this.requestId = requestId;
+        this.forUserAgent = forUserAgent;
     }
 
     /**
@@ -66,8 +71,20 @@ final class TraceState implements Serializable {
         return requestId;
     }
 
+    /**
+     * The user agent propagated throughout the duration of this trace.
+     */
+    @Nullable
+    String forUserAgent() {
+        return forUserAgent;
+    }
+
     @Override
     public String toString() {
-        return "TraceState{traceId='" + traceId + "', requestId='" + requestId + "'}";
+        return "TraceState{"
+                + "traceId='" + traceId + "', "
+                + "requestId='" + requestId + "', "
+                + "forUserAgent='" + forUserAgent
+                + "'}";
     }
 }
