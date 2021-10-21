@@ -53,8 +53,6 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
 
-    public static final String FOR_USER_AGENT_PROPERTY_NAME = "com.palantir.tracing.forUserAgent";
-
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
     @Context
@@ -104,9 +102,6 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         requestContext.setProperty(TRACE_ID_PROPERTY_NAME, Tracer.getTraceId());
         requestContext.setProperty(SAMPLED_PROPERTY_NAME, Tracer.isTraceObservable());
         Tracer.maybeGetTraceMetadata()
-                .flatMap(TraceMetadata::getForUserAgent)
-                .ifPresent(value -> requestContext.setProperty(FOR_USER_AGENT_PROPERTY_NAME, value));
-        Tracer.maybeGetTraceMetadata()
                 .flatMap(TraceMetadata::getRequestId)
                 .ifPresent(requestId -> requestContext.setProperty(REQUEST_ID_PROPERTY_NAME, requestId));
     }
@@ -125,10 +120,6 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                 Object requestId = requestContext.getProperty(REQUEST_ID_PROPERTY_NAME);
                 if (requestId instanceof String) {
                     sink.accept(TraceTags.HTTP_REQUEST_ID, (String) requestId);
-                }
-                Object forUserAgent = requestContext.getProperty(FOR_USER_AGENT_PROPERTY_NAME);
-                if (forUserAgent instanceof String) {
-                    sink.accept(TraceTags.HTTP_FOR_USER_AGENT, (String) forUserAgent);
                 }
             });
             headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);
