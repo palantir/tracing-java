@@ -63,3 +63,6 @@ acceptedBreaks:
       old: "field com.palantir.tracing.DeferredTracer.serialVersionUID"
       new: "field com.palantir.tracing.DeferredTracer.serialVersionUID"
       justification: "Library versions are in usually in sync"
+    - code: "java.method.addedToInterface"
+      new: "method java.util.Optional<java.lang.String> com.palantir.tracing.TraceMetadata::getForUserAgent()"
+      justification: "Addition of an optional to an immutable is safe"
