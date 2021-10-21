@@ -798,6 +798,14 @@ public final class Tracer {
     }
 
     /**
+     * Returns the user agent propagated inside the trace.
+     */
+    public static Optional<String> getForUserAgent() {
+        Trace trace = currentTrace.get();
+        return trace == null ? Optional.empty() : trace.getForUserAgent();
+    }
+
+    /**
      * Clears the current trace id and returns it if present.
      */
     static Optional<Trace> getAndClearTraceIfPresent() {
