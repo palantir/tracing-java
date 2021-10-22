@@ -801,11 +801,24 @@ public final class Tracer {
     }
 
     /**
-     * Returns the user agent propagated inside the trace.
+     * Returns the forUserAgent propagated inside the trace.
      */
     public static Optional<String> getForUserAgent() {
         Trace trace = currentTrace.get();
         return trace == null ? Optional.empty() : trace.getForUserAgent();
+    }
+
+    /**
+     * Returns the forUserAgent propagated inside the trace.
+     */
+    static String getForUserAgent(DetachedSpan detachedSpan) {
+        if (detachedSpan instanceof SampledDetachedSpan) {
+            return ((SampledDetachedSpan) detachedSpan).traceState.forUserAgent();
+        }
+        if (detachedSpan instanceof UnsampledDetachedSpan) {
+            return ((UnsampledDetachedSpan) detachedSpan).traceState.forUserAgent();
+        }
+        throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
 
     /**

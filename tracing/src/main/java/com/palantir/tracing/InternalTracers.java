@@ -36,5 +36,10 @@ public final class InternalTracers {
         return Optional.ofNullable(Tracer.getRequestId(detachedSpan));
     }
 
+    /** Returns the forUserAgent in the provided detachedSpan. */
+    public static Optional<String> getForUserAgent(DetachedSpan detachedSpan) {
+        return Optional.ofNullable(Tracer.getForUserAgent(detachedSpan));
+    }
+
     private InternalTracers() {}
 }
