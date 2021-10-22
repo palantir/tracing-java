@@ -275,7 +275,7 @@ public final class Tracers {
         tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.SPAN_ID, traceMetadata.getSpanId(), state);
         tracingHeadersEnrichingFunction.addHeader(
                 TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0", state);
-        Optional<String> forUserAgent = traceMetadata.getForUserAgent();
+        Optional<String> forUserAgent = Tracer.getForUserAgent();
         if (forUserAgent.isPresent()) {
             tracingHeadersEnrichingFunction.addHeader(
                     InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get(), state);

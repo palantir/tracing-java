@@ -20,6 +20,7 @@ import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import okhttp3.Interceptor;
 import okhttp3.Request;
@@ -51,9 +52,10 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
                     .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
                     .header(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
                     .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
-            metadata.getForUserAgent()
-                    .ifPresent(forUserAgent ->
-                            requestBuilder.header(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent));
+            Optional<String> forUserAgent = Tracer.getForUserAgent();
+            if (forUserAgent.isPresent()) {
+                requestBuilder.header(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get());
+            }
             return chain.proceed(requestBuilder.build());
         }
     }

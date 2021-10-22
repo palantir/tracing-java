@@ -123,14 +123,12 @@ public final class Tracer {
 
         String traceId = trace.getTraceId();
         Optional<String> requestId = trace.getRequestId();
-        Optional<String> forUserAgent = trace.getForUserAgent();
         if (trace.isObservable()) {
             return trace.top().map(openSpan -> TraceMetadata.builder()
                     .spanId(openSpan.getSpanId())
                     .parentSpanId(openSpan.getParentSpanId())
                     .traceId(traceId)
                     .requestId(requestId)
-                    .forUserAgent(forUserAgent)
                     .build());
         } else {
             return Optional.of(TraceMetadata.builder()
@@ -138,7 +136,6 @@ public final class Tracer {
                     .parentSpanId(Optional.empty())
                     .traceId(traceId)
                     .requestId(requestId)
-                    .forUserAgent(forUserAgent)
                     .build());
         }
     }

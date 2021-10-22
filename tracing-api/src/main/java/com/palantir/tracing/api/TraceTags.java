@@ -62,7 +62,7 @@ public final class TraceTags {
     public static final String HTTP_REQUEST_ID = "http.request_id";
     /** The User-Agent as it is sent (raw format). */
     public static final String HTTP_USER_AGENT = "http.useragent";
-    /** The User-Agent propagated across service boundaries. */
+    /** The User-Agent propagated across service boundaries as it is sent (raw format). */
     public static final String HTTP_FOR_USER_AGENT = "http.for_useragent";
     /** The version of HTTP used for the request. */
     public static final String HTTP_VERSION = "http.version";
