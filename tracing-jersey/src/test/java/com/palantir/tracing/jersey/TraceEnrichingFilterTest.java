@@ -252,7 +252,6 @@ public final class TraceEnrichingFilterTest {
     @Test
     public void testFilter_setsFetchUserAgentAsForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
-        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
         when(request.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT)).thenReturn("fetchUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
@@ -262,8 +261,6 @@ public final class TraceEnrichingFilterTest {
     @Test
     public void testFilter_propagatesProvidedForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
-        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
-        when(request.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT)).thenReturn("fetchUserAgent");
         when(request.getHeaderString(InternalTraceHttpHeaders.FOR_USER_AGENT)).thenReturn("forUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
