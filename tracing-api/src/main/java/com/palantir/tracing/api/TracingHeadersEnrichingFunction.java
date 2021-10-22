@@ -16,6 +16,7 @@
 
 package com.palantir.tracing.api;
 
+/** Function used to adapt the tracing library to any arbitrary request type. */
 public interface TracingHeadersEnrichingFunction<T> {
     void addHeader(String headerName, String headerValue, T state);
 }
