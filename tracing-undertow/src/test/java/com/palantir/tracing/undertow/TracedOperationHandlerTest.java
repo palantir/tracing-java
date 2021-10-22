@@ -24,6 +24,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.DetachedSpan;
+import com.palantir.tracing.InternalTraceHttpHeaders;
+import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -33,6 +36,7 @@ import com.palantir.tracing.api.TraceHttpHeaders;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -126,6 +130,39 @@ public class TracedOperationHandlerTest {
     }
 
     @Test
+    public void whenOnlyUserAgentIsProvided_setsItAsForUserAgent() throws Exception {
+        setRequestTraceId(traceId);
+        setUserAgent("userAgent");
+        handler.handleRequest(exchange);
+
+        DetachedSpan detachedSpan = exchange.getAttachment(UndertowTracing.REQUEST_SPAN);
+        assertThat(InternalTracers.getForUserAgent(detachedSpan)).contains("userAgent");
+    }
+
+    @Test
+    public void whenFetchUserAgentIsProvided_setsItAsForUserAgent() throws Exception {
+        setRequestTraceId(traceId);
+        setUserAgent("userAgent");
+        setFetchUserAgent("fetchUserAgent");
+        handler.handleRequest(exchange);
+
+        DetachedSpan detachedSpan = exchange.getAttachment(UndertowTracing.REQUEST_SPAN);
+        assertThat(InternalTracers.getForUserAgent(detachedSpan)).contains("fetchUserAgent");
+    }
+
+    @Test
+    public void whenForUserAgentIsProvided_propagateItFurther() throws Exception {
+        setRequestTraceId(traceId);
+        setUserAgent("userAgent");
+        setFetchUserAgent("fetchUserAgent");
+        setForUserAgent("forUserAgent");
+        handler.handleRequest(exchange);
+
+        DetachedSpan detachedSpan = exchange.getAttachment(UndertowTracing.REQUEST_SPAN);
+        assertThat(InternalTracers.getForUserAgent(detachedSpan)).contains("forUserAgent");
+    }
+
+    @Test
     public void whenTraceIsAlreadySampled_doesNotCallSampler() throws Exception {
         exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED), "1");
         handler.handleRequest(exchange);
@@ -184,10 +221,30 @@ public class TracedOperationHandlerTest {
     }
 
     private void setRequestTraceId(String theTraceId) {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.TRACE_ID), theTraceId);
+        setHeader(TraceHttpHeaders.TRACE_ID, theTraceId);
     }
 
     private void setRequestSpanId(String spanId) {
-        exchange.getRequestHeaders().put(HttpString.tryFromString(TraceHttpHeaders.SPAN_ID), spanId);
+        setHeader(TraceHttpHeaders.SPAN_ID, spanId);
+    }
+
+    private void setUserAgent(String userAgent) {
+        setHeader(Headers.USER_AGENT, userAgent);
+    }
+
+    private void setFetchUserAgent(String fetchUserAgent) {
+        setHeader(InternalTraceHttpHeaders.FETCH_USER_AGENT, fetchUserAgent);
+    }
+
+    private void setForUserAgent(String forUserAgent) {
+        setHeader(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent);
+    }
+
+    private void setHeader(String headerName, String headerValue) {
+        setHeader(HttpString.tryFromString(headerName), headerValue);
+    }
+
+    private void setHeader(HttpString headerName, String headerValue) {
+        exchange.getRequestHeaders().put(headerName, headerValue);
     }
 }
