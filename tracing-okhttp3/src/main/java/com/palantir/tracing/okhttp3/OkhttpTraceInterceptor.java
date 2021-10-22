@@ -16,15 +16,15 @@
 
 package com.palantir.tracing.okhttp3;
 
-import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.Tracer;
+import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
-import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.io.IOException;
-import java.util.Optional;
 import okhttp3.Interceptor;
 import okhttp3.Request;
+import okhttp3.Request.Builder;
 import okhttp3.Response;
 
 /**
@@ -51,14 +51,8 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         }
 
         OpenSpan span = Tracer.startSpan(spanName, SpanType.CLIENT_OUTGOING);
-        Request.Builder tracedRequest = request.newBuilder()
-                .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                .header(TraceHttpHeaders.SPAN_ID, span.getSpanId())
-                .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
-        Optional<String> forUserAgent = Tracer.getForUserAgent();
-        if (forUserAgent.isPresent()) {
-            tracedRequest.header(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get());
-        }
+        Request.Builder tracedRequest = request.newBuilder();
+        Tracers.addTracingHeaders(tracedRequest, EnrichingFunction.INSTANCE);
 
         Response response;
         try {
@@ -68,5 +62,14 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         }
 
         return response;
+    }
+
+    private enum EnrichingFunction implements TracingHeadersEnrichingFunction<Builder> {
+        INSTANCE;
+
+        @Override
+        public void addHeader(String headerName, String headerValue, Builder state) {
+            state.header(headerName, headerValue);
+        }
     }
 }

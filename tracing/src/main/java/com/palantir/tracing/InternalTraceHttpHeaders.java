@@ -20,7 +20,5 @@ package com.palantir.tracing;
  * Internal header names meant for consumption only inside of the tracing codebase.
  */
 public interface InternalTraceHttpHeaders {
-    String FOR_USER_AGENT = "For-User-Agent";
-
     String FETCH_USER_AGENT = "Fetch-User-Agent";
 }

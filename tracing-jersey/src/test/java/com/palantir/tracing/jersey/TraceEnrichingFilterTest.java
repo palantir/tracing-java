@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.palantir.tracing.InternalTraceHttpHeaders;
+import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -246,7 +247,7 @@ public final class TraceEnrichingFilterTest {
         when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
-        assertThat(Tracer.getForUserAgent()).contains("userAgent");
+        assertThat(InternalTracers.getForUserAgent()).contains("userAgent");
     }
 
     @Test
@@ -255,16 +256,16 @@ public final class TraceEnrichingFilterTest {
         when(request.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT)).thenReturn("fetchUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
-        assertThat(Tracer.getForUserAgent()).contains("fetchUserAgent");
+        assertThat(InternalTracers.getForUserAgent()).contains("fetchUserAgent");
     }
 
     @Test
     public void testFilter_propagatesProvidedForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
-        when(request.getHeaderString(InternalTraceHttpHeaders.FOR_USER_AGENT)).thenReturn("forUserAgent");
+        when(request.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT)).thenReturn("forUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
-        assertThat(Tracer.getForUserAgent()).contains("forUserAgent");
+        assertThat(InternalTracers.getForUserAgent()).contains("forUserAgent");
     }
 
     @Test

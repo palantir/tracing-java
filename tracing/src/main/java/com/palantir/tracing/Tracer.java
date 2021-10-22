@@ -803,7 +803,7 @@ public final class Tracer {
     /**
      * Returns the forUserAgent propagated inside the trace.
      */
-    public static Optional<String> getForUserAgent() {
+    static Optional<String> getForUserAgent() {
         Trace trace = currentTrace.get();
         return trace == null ? Optional.empty() : trace.getForUserAgent();
     }

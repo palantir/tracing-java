@@ -17,13 +17,13 @@
 package com.palantir.tracing;
 
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
-import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Function;
 import okhttp3.Interceptor;
 import okhttp3.Request;
+import okhttp3.Request.Builder;
 import okhttp3.Response;
 
 /** An OkHttp interceptor that adds Zipkin-style trace/span/parent-span headers to the HTTP request. */
@@ -45,18 +45,24 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
         Request request = chain.request();
 
         try (Closeable span = createNetworkCallSpan.apply(request)) {
-            TraceMetadata metadata = Tracer.maybeGetTraceMetadata()
-                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
-
-            Request.Builder requestBuilder = request.newBuilder()
-                    .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                    .header(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
-                    .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
-            Optional<String> forUserAgent = Tracer.getForUserAgent();
-            if (forUserAgent.isPresent()) {
-                requestBuilder.header(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get());
+            if (!Tracer.hasTraceId()) {
+                throw new SafeRuntimeException("Trace with no spans in progress");
             }
+
+            Request.Builder requestBuilder = request.newBuilder();
+
+            Tracers.addTracingHeaders(requestBuilder, EnrichingFunction.INSTANCE);
+
             return chain.proceed(requestBuilder.build());
+        }
+    }
+
+    private enum EnrichingFunction implements TracingHeadersEnrichingFunction<Request.Builder> {
+        INSTANCE;
+
+        @Override
+        public void addHeader(String headerName, String headerValue, Builder state) {
+            state.header(headerName, headerValue);
         }
     }
 }

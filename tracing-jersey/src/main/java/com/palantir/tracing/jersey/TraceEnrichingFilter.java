@@ -145,7 +145,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     }
 
     private static Optional<String> getForUserAgent(ContainerRequestContext context) {
-        String forUserAgent = context.getHeaderString(InternalTraceHttpHeaders.FOR_USER_AGENT);
+        String forUserAgent = context.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT);
         if (forUserAgent != null) {
             return Optional.of(forUserAgent);
         }

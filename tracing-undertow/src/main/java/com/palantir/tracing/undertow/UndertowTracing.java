@@ -51,7 +51,7 @@ final class UndertowTracing {
     private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
     // Tracing headers for obtaining for constructing forUserAgent.
-    private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(InternalTraceHttpHeaders.FOR_USER_AGENT);
+    private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(TraceHttpHeaders.FOR_USER_AGENT);
     private static final HttpString FETCH_USER_AGENT =
             HttpString.tryFromString(InternalTraceHttpHeaders.FETCH_USER_AGENT);
 

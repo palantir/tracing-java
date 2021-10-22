@@ -237,7 +237,7 @@ public class TracedOperationHandlerTest {
     }
 
     private void setForUserAgent(String forUserAgent) {
-        setHeader(InternalTraceHttpHeaders.FOR_USER_AGENT, forUserAgent);
+        setHeader(TraceHttpHeaders.FOR_USER_AGENT, forUserAgent);
     }
 
     private void setHeader(String headerName, String headerValue) {
