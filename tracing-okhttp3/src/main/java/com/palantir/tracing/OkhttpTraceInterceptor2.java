@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.function.Function;
 import okhttp3.Interceptor;
 import okhttp3.Request;
-import okhttp3.Request.Builder;
 import okhttp3.Response;
 
 /** An OkHttp interceptor that adds Zipkin-style trace/span/parent-span headers to the HTTP request. */
@@ -61,7 +60,7 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
         INSTANCE;
 
         @Override
-        public void addHeader(String headerName, String headerValue, Builder state) {
+        public void addHeader(String headerName, String headerValue, Request.Builder state) {
             state.header(headerName, headerValue);
         }
     }
