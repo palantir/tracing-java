@@ -811,6 +811,7 @@ public final class Tracer {
     /**
      * Returns the forUserAgent propagated inside the trace.
      */
+    @Nullable
     static String getForUserAgent(DetachedSpan detachedSpan) {
         if (detachedSpan instanceof SampledDetachedSpan) {
             return ((SampledDetachedSpan) detachedSpan).traceState.forUserAgent();
