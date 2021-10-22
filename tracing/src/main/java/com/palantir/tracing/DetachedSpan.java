@@ -64,6 +64,21 @@ public interface DetachedSpan extends Detached {
     static DetachedSpan start(
             Observability observability,
             String traceId,
+            Optional<String> parentSpanId,
+            @Safe String operation,
+            SpanType type) {
+        return start(observability, traceId, Optional.empty(), parentSpanId, operation, type);
+    }
+
+    /**
+     * Marks the beginning of a span, which you can {@link #complete} on any other thread.
+     *
+     * @see DetachedSpan#start(String)
+     */
+    @CheckReturnValue
+    static DetachedSpan start(
+            Observability observability,
+            String traceId,
             Optional<String> forUserAgent,
             Optional<String> parentSpanId,
             @Safe String operation,
