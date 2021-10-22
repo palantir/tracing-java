@@ -18,7 +18,6 @@ package com.palantir.tracing.okhttp3;
 
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
-import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.io.IOException;
@@ -50,7 +49,7 @@ public enum OkhttpTraceInterceptor implements Interceptor {
             request = request.newBuilder().removeHeader(PATH_TEMPLATE_HEADER).build();
         }
 
-        OpenSpan span = Tracer.startSpan(spanName, SpanType.CLIENT_OUTGOING);
+        Tracer.fastStartSpan(spanName, SpanType.CLIENT_OUTGOING);
         Request.Builder tracedRequest = request.newBuilder();
         Tracers.addTracingHeaders(tracedRequest, EnrichingFunction.INSTANCE);
 
