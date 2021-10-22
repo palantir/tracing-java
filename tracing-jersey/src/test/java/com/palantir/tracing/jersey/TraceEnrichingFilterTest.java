@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
@@ -45,6 +46,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -236,6 +238,36 @@ public final class TraceEnrichingFilterTest {
         // Note: this will be set to a random value; we want to check whether the value is being set
         verify(request).setProperty(eq(TraceEnrichingFilter.SAMPLED_PROPERTY_NAME), anyBoolean());
         verify(request).setProperty(eq(TraceEnrichingFilter.REQUEST_ID_PROPERTY_NAME), anyString());
+    }
+
+    @Test
+    public void testFilter_setsUserAgentAsForUserAgent() throws Exception {
+        when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
+        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
+        TraceEnrichingFilter.INSTANCE.filter(request);
+
+        assertThat(Tracer.getForUserAgent()).contains("userAgent");
+    }
+
+    @Test
+    public void testFilter_setsFetchUserAgentAsForUserAgent() throws Exception {
+        when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
+        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
+        when(request.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT)).thenReturn("fetchUserAgent");
+        TraceEnrichingFilter.INSTANCE.filter(request);
+
+        assertThat(Tracer.getForUserAgent()).contains("fetchUserAgent");
+    }
+
+    @Test
+    public void testFilter_propagatesProvidedForUserAgent() throws Exception {
+        when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
+        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
+        when(request.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT)).thenReturn("fetchUserAgent");
+        when(request.getHeaderString(InternalTraceHttpHeaders.FOR_USER_AGENT)).thenReturn("forUserAgent");
+        TraceEnrichingFilter.INSTANCE.filter(request);
+
+        assertThat(Tracer.getForUserAgent()).contains("forUserAgent");
     }
 
     @Test
