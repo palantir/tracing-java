@@ -25,7 +25,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
@@ -253,7 +252,8 @@ public final class TraceEnrichingFilterTest {
     @Test
     public void testFilter_setsFetchUserAgentAsForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
-        when(request.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT)).thenReturn("fetchUserAgent");
+        when(request.getHeaderString(TraceEnrichingFilter.FETCH_USER_AGENT_HEADER))
+                .thenReturn("fetchUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
         assertThat(InternalTracers.getForUserAgent()).contains("fetchUserAgent");

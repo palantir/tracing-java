@@ -16,13 +16,13 @@
 
 package com.palantir.tracing.undertow;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.logsafe.logger.SafeLogger;
 import com.palantir.logsafe.logger.SafeLoggerFactory;
 import com.palantir.tracing.DetachedSpan;
-import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
 import com.palantir.tracing.TagTranslator;
@@ -52,8 +52,9 @@ final class UndertowTracing {
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
     // Tracing headers for obtaining for constructing forUserAgent.
     private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(TraceHttpHeaders.FOR_USER_AGENT);
-    private static final HttpString FETCH_USER_AGENT =
-            HttpString.tryFromString(InternalTraceHttpHeaders.FETCH_USER_AGENT);
+
+    @VisibleForTesting
+    static final HttpString FETCH_USER_AGENT = HttpString.tryFromString("Fetch-User-Agent");
 
     // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated
     // here because we expect the two handler implementations to be sufficient.

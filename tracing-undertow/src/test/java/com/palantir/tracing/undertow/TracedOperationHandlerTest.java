@@ -25,7 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.palantir.tracing.DetachedSpan;
-import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
@@ -233,7 +232,7 @@ public class TracedOperationHandlerTest {
     }
 
     private void setFetchUserAgent(String fetchUserAgent) {
-        setHeader(InternalTraceHttpHeaders.FETCH_USER_AGENT, fetchUserAgent);
+        setHeader(UndertowTracing.FETCH_USER_AGENT, fetchUserAgent);
     }
 
     private void setForUserAgent(String forUserAgent) {

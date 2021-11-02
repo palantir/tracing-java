@@ -16,8 +16,8 @@
 
 package com.palantir.tracing.jersey;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
-import com.palantir.tracing.InternalTraceHttpHeaders;
 import com.palantir.tracing.Observability;
 import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.TraceMetadata;
@@ -56,6 +56,9 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     public static final String REQUEST_ID_PROPERTY_NAME = "com.palantir.tracing.requestId";
 
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
+
+    @VisibleForTesting
+    static final String FETCH_USER_AGENT_HEADER = "Fetch-User-Agent";
 
     @Context
     @SuppressWarnings("NullAway") // instantiated using by Jersey using reflection
@@ -149,7 +152,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         if (forUserAgent != null) {
             return Optional.of(forUserAgent);
         }
-        String fetchUserAgent = context.getHeaderString(InternalTraceHttpHeaders.FETCH_USER_AGENT);
+        String fetchUserAgent = context.getHeaderString(FETCH_USER_AGENT_HEADER);
         if (fetchUserAgent != null) {
             return Optional.of(fetchUserAgent);
         }
