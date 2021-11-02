@@ -29,7 +29,6 @@ import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
-import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;

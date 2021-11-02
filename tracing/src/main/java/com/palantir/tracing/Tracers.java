@@ -22,7 +22,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
-import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;

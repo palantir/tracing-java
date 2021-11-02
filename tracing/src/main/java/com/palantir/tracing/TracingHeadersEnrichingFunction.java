@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.api;
+package com.palantir.tracing;
 
 /** Function used to adapt the tracing library to any arbitrary request type. */
 public interface TracingHeadersEnrichingFunction<T> {

@@ -18,8 +18,8 @@ package com.palantir.tracing.okhttp3;
 
 import com.palantir.tracing.Tracer;
 import com.palantir.tracing.Tracers;
+import com.palantir.tracing.TracingHeadersEnrichingFunction;
 import com.palantir.tracing.api.SpanType;
-import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.io.IOException;
 import okhttp3.Interceptor;
 import okhttp3.Request;

@@ -17,7 +17,6 @@
 package com.palantir.tracing;
 
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
-import com.palantir.tracing.api.TracingHeadersEnrichingFunction;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.function.Function;
