@@ -17,9 +17,9 @@
 package com.palantir.tracing.okhttp3;
 
 import com.palantir.tracing.Tracer;
-import com.palantir.tracing.api.OpenSpan;
+import com.palantir.tracing.Tracers;
+import com.palantir.tracing.TracingHeadersEnrichingFunction;
 import com.palantir.tracing.api.SpanType;
-import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
 import okhttp3.Interceptor;
 import okhttp3.Request;
@@ -48,11 +48,9 @@ public enum OkhttpTraceInterceptor implements Interceptor {
             request = request.newBuilder().removeHeader(PATH_TEMPLATE_HEADER).build();
         }
 
-        OpenSpan span = Tracer.startSpan(spanName, SpanType.CLIENT_OUTGOING);
-        Request.Builder tracedRequest = request.newBuilder()
-                .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                .header(TraceHttpHeaders.SPAN_ID, span.getSpanId())
-                .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0");
+        Tracer.fastStartSpan(spanName, SpanType.CLIENT_OUTGOING);
+        Request.Builder tracedRequest = request.newBuilder();
+        Tracers.addTracingHeaders(tracedRequest, EnrichingFunction.INSTANCE);
 
         Response response;
         try {
@@ -62,5 +60,14 @@ public enum OkhttpTraceInterceptor implements Interceptor {
         }
 
         return response;
+    }
+
+    private enum EnrichingFunction implements TracingHeadersEnrichingFunction<Request.Builder> {
+        INSTANCE;
+
+        @Override
+        public void addHeader(String headerName, String headerValue, Request.Builder state) {
+            state.header(headerName, headerValue);
+        }
     }
 }

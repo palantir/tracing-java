@@ -16,6 +16,7 @@
 
 package com.palantir.tracing.undertow;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
@@ -32,6 +33,7 @@ import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.HeaderMap;
+import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.Optional;
 
@@ -48,6 +50,11 @@ final class UndertowTracing {
     private static final HttpString TRACE_ID = HttpString.tryFromString(TraceHttpHeaders.TRACE_ID);
     private static final HttpString SPAN_ID = HttpString.tryFromString(TraceHttpHeaders.SPAN_ID);
     private static final HttpString IS_SAMPLED = HttpString.tryFromString(TraceHttpHeaders.IS_SAMPLED);
+    // Tracing headers for obtaining for constructing forUserAgent.
+    private static final HttpString FOR_USER_AGENT = HttpString.tryFromString(TraceHttpHeaders.FOR_USER_AGENT);
+
+    @VisibleForTesting
+    static final HttpString FETCH_USER_AGENT = HttpString.tryFromString("Fetch-User-Agent");
 
     // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated
     // here because we expect the two handler implementations to be sufficient.
@@ -77,7 +84,8 @@ final class UndertowTracing {
         String maybeTraceId = requestHeaders.getFirst(TRACE_ID);
         boolean newTraceId = maybeTraceId == null;
         String traceId = newTraceId ? Tracers.randomId() : maybeTraceId;
-        DetachedSpan detachedSpan = detachedSpan(operationName, newTraceId, traceId, requestHeaders);
+        Optional<String> forUserAgent = getForUserAgent(requestHeaders);
+        DetachedSpan detachedSpan = detachedSpan(operationName, newTraceId, traceId, forUserAgent, requestHeaders);
         setExchangeState(exchange, detachedSpan, traceId, translator);
         return detachedSpan;
     }
@@ -92,7 +100,7 @@ final class UndertowTracing {
         boolean isSampled = InternalTracers.isSampled(detachedSpan);
         exchange.putAttachment(TracingAttachments.IS_SAMPLED, isSampled);
         Optional<String> requestId = InternalTracers.getRequestId(detachedSpan);
-        if (!requestId.isPresent()) {
+        if (requestId.isEmpty()) {
             throw new SafeIllegalStateException("No requestId is set", SafeArg.of("span", detachedSpan));
         }
         exchange.putAttachment(TracingAttachments.REQUEST_ID, requestId.get());
@@ -102,10 +110,15 @@ final class UndertowTracing {
     }
 
     private static DetachedSpan detachedSpan(
-            String operationName, boolean newTrace, String traceId, HeaderMap requestHeaders) {
+            String operationName,
+            boolean newTrace,
+            String traceId,
+            Optional<String> forUserAgent,
+            HeaderMap requestHeaders) {
         return DetachedSpan.start(
                 getObservabilityFromHeader(requestHeaders),
                 traceId,
+                forUserAgent,
                 newTrace ? Optional.empty() : Optional.ofNullable(requestHeaders.getFirst(SPAN_ID)),
                 operationName,
                 SpanType.SERVER_INCOMING);
@@ -146,6 +159,18 @@ final class UndertowTracing {
         } else {
             return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
+    }
+
+    private static Optional<String> getForUserAgent(HeaderMap requestHeaders) {
+        String forUserAgent = requestHeaders.getFirst(FOR_USER_AGENT);
+        if (forUserAgent != null) {
+            return Optional.of(forUserAgent);
+        }
+        String fetchUserAgent = requestHeaders.getFirst(FETCH_USER_AGENT);
+        if (fetchUserAgent != null) {
+            return Optional.of(fetchUserAgent);
+        }
+        return Optional.ofNullable(requestHeaders.getFirst(Headers.USER_AGENT));
     }
 
     private UndertowTracing() {}

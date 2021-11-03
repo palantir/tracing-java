@@ -16,6 +16,7 @@
 
 package com.palantir.tracing.jersey;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.palantir.tracing.Observability;
 import com.palantir.tracing.TagTranslator;
@@ -35,6 +36,7 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
 import org.glassfish.jersey.server.ExtendedUriInfo;
@@ -55,6 +57,9 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
     public static final String SAMPLED_PROPERTY_NAME = "com.palantir.tracing.sampled";
 
+    @VisibleForTesting
+    static final String FETCH_USER_AGENT_HEADER = "Fetch-User-Agent";
+
     @Context
     @SuppressWarnings("NullAway") // instantiated using by Jersey using reflection
     private ExtendedUriInfo uriInfo;
@@ -68,6 +73,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         // The following strings are all nullable
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
+        Optional<String> forUserAgent = getForUserAgent(requestContext);
 
         // Set up thread-local span that inherits state from HTTP headers
         if (Strings.isNullOrEmpty(traceId)) {
@@ -75,15 +81,25 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
             Tracer.initTraceWithSpan(
                     getObservabilityFromHeader(requestContext),
                     Tracers.randomId(),
+                    forUserAgent,
                     operation,
                     SpanType.SERVER_INCOMING);
         } else if (spanId == null) {
             Tracer.initTraceWithSpan(
-                    getObservabilityFromHeader(requestContext), traceId, operation, SpanType.SERVER_INCOMING);
+                    getObservabilityFromHeader(requestContext),
+                    traceId,
+                    forUserAgent,
+                    operation,
+                    SpanType.SERVER_INCOMING);
         } else {
             // caller's span is this span's parent.
             Tracer.initTraceWithSpan(
-                    getObservabilityFromHeader(requestContext), traceId, operation, spanId, SpanType.SERVER_INCOMING);
+                    getObservabilityFromHeader(requestContext),
+                    traceId,
+                    forUserAgent,
+                    operation,
+                    spanId,
+                    SpanType.SERVER_INCOMING);
         }
 
         // Give asynchronous downstream handlers access to the trace id
@@ -129,6 +145,18 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
         } else {
             return "1".equals(header) ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE;
         }
+    }
+
+    private static Optional<String> getForUserAgent(ContainerRequestContext context) {
+        String forUserAgent = context.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT);
+        if (forUserAgent != null) {
+            return Optional.of(forUserAgent);
+        }
+        String fetchUserAgent = context.getHeaderString(FETCH_USER_AGENT_HEADER);
+        if (fetchUserAgent != null) {
+            return Optional.of(fetchUserAgent);
+        }
+        return Optional.ofNullable(context.getHeaderString(HttpHeaders.USER_AGENT));
     }
 
     private String getPathTemplate() {

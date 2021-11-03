@@ -72,9 +72,17 @@ public final class Tracer {
      * Creates a new trace, but does not set it as the current trace.
      */
     private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
+        return createTrace(observability, traceId, requestId, Optional.empty());
+    }
+
+    /**
+     * Creates a new trace, but does not set it as the current trace.
+     */
+    private static Trace createTrace(
+            Observability observability, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         boolean observable = shouldObserve(observability);
-        return Trace.of(observable, TraceState.of(traceId, requestId));
+        return Trace.of(observable, TraceState.of(traceId, requestId, forUserAgent));
     }
 
     private static boolean shouldObserve(Observability observability) {
@@ -159,7 +167,10 @@ public final class Tracer {
     /**
      * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
+     *
+     * @deprecated Use {@link #initTraceWithSpan(Observability, String, Optional, String, String, SpanType)}
      */
+    @Deprecated
     public static void initTraceWithSpan(
             Observability observability, String traceId, @Safe String operation, String parentSpanId, SpanType type) {
         setTrace(createTrace(
@@ -179,6 +190,43 @@ public final class Tracer {
                 observability,
                 traceId,
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty()));
+        fastStartSpan(operation, type);
+    }
+
+    /**
+     * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
+     * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
+     */
+    public static void initTraceWithSpan(
+            Observability observability,
+            String traceId,
+            Optional<String> forUserAgent,
+            @Safe String operation,
+            String parentSpanId,
+            SpanType type) {
+        setTrace(createTrace(
+                observability,
+                traceId,
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
+                forUserAgent));
+        fastStartSpan(operation, parentSpanId, type);
+    }
+
+    /**
+     * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
+     * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
+     */
+    public static void initTraceWithSpan(
+            Observability observability,
+            String traceId,
+            Optional<String> forUserAgent,
+            @Safe String operation,
+            SpanType type) {
+        setTrace(createTrace(
+                observability,
+                traceId,
+                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
+                forUserAgent));
         fastStartSpan(operation, type);
     }
 
@@ -252,12 +300,13 @@ public final class Tracer {
     static DetachedSpan detachInternal(
             Observability observability,
             String traceId,
+            Optional<String> forUserAgent,
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type) {
         Optional<String> requestId =
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
-        return detachInternal(observability, traceId, requestId, parentSpanId, operation, type);
+        return detachInternal(observability, traceId, requestId, forUserAgent, parentSpanId, operation, type);
     }
 
     /**
@@ -268,12 +317,13 @@ public final class Tracer {
             Observability observability,
             String traceId,
             Optional<String> requestId,
+            Optional<String> forUserAgent,
             Optional<String> parentSpanId,
             @Safe String operation,
             SpanType type) {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
-        TraceState traceState = TraceState.of(traceId, requestId);
+        TraceState traceState = TraceState.of(traceId, requestId, forUserAgent);
         return shouldObserve(observability)
                 ? new SampledDetachedSpan(operation, type, traceState, parentSpanId)
                 : new UnsampledDetachedSpan(traceState, parentSpanId);
@@ -314,7 +364,7 @@ public final class Tracer {
         if (maybeCurrentTrace != null) {
             return maybeCurrentTrace.getTraceState();
         }
-        return TraceState.of(Tracers.randomId(), getRequestIdForSpan(newSpanType));
+        return TraceState.of(Tracers.randomId(), getRequestIdForSpan(newSpanType), Optional.empty());
     }
 
     private static Optional<String> getRequestIdForSpan(SpanType newSpanType) {
@@ -748,6 +798,28 @@ public final class Tracer {
      */
     public static String getTraceId() {
         return checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
+    }
+
+    /**
+     * Returns the forUserAgent propagated inside the trace.
+     */
+    static Optional<String> getForUserAgent() {
+        Trace trace = currentTrace.get();
+        return trace == null ? Optional.empty() : trace.getForUserAgent();
+    }
+
+    /**
+     * Returns the forUserAgent propagated inside the trace.
+     */
+    @Nullable
+    static String getForUserAgent(DetachedSpan detachedSpan) {
+        if (detachedSpan instanceof SampledDetachedSpan) {
+            return ((SampledDetachedSpan) detachedSpan).traceState.forUserAgent();
+        }
+        if (detachedSpan instanceof UnsampledDetachedSpan) {
+            return ((UnsampledDetachedSpan) detachedSpan).traceState.forUserAgent();
+        }
+        throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
 
     /**

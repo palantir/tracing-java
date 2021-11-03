@@ -31,6 +31,7 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.IOException;
+import java.util.Optional;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import org.junit.After;
@@ -102,6 +103,28 @@ public final class OkhttpTraceInterceptorTest {
         Request intercepted = requestCaptor.getValue();
         assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
         assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
+    }
+
+    @Test
+    public void testPopulatesNewTrace_whenForUserAgentIsPresent() throws IOException {
+        String forUserAgent = "forUserAgent";
+        Tracer.initTraceWithSpan(
+                Observability.SAMPLE, "id", Optional.of(forUserAgent), "operation", "parent", SpanType.SERVER_INCOMING);
+        String traceId = Tracer.getTraceId();
+        try {
+            OkhttpTraceInterceptor.INSTANCE.intercept(chain);
+        } finally {
+            Tracer.fastCompleteSpan();
+        }
+
+        verify(chain).request();
+        verify(chain).proceed(requestCaptor.capture());
+        verifyNoMoreInteractions(chain);
+
+        Request intercepted = requestCaptor.getValue();
+        assertThat(intercepted.headers(TraceHttpHeaders.SPAN_ID)).isNotNull();
+        assertThat(intercepted.headers(TraceHttpHeaders.TRACE_ID)).containsOnly(traceId);
+        assertThat(intercepted.headers(TraceHttpHeaders.FOR_USER_AGENT)).containsOnly(forUserAgent);
     }
 
     @Test

@@ -17,7 +17,6 @@
 package com.palantir.tracing;
 
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
-import com.palantir.tracing.api.TraceHttpHeaders;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.function.Function;
@@ -44,14 +43,24 @@ public final class OkhttpTraceInterceptor2 implements Interceptor {
         Request request = chain.request();
 
         try (Closeable span = createNetworkCallSpan.apply(request)) {
-            TraceMetadata metadata = Tracer.maybeGetTraceMetadata()
-                    .orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
+            if (!Tracer.hasTraceId()) {
+                throw new SafeRuntimeException("Trace with no spans in progress");
+            }
 
-            return chain.proceed(request.newBuilder()
-                    .header(TraceHttpHeaders.TRACE_ID, Tracer.getTraceId())
-                    .header(TraceHttpHeaders.SPAN_ID, metadata.getSpanId())
-                    .header(TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0")
-                    .build());
+            Request.Builder requestBuilder = request.newBuilder();
+
+            Tracers.addTracingHeaders(requestBuilder, EnrichingFunction.INSTANCE);
+
+            return chain.proceed(requestBuilder.build());
+        }
+    }
+
+    private enum EnrichingFunction implements TracingHeadersEnrichingFunction<Request.Builder> {
+        INSTANCE;
+
+        @Override
+        public void addHeader(String headerName, String headerValue, Request.Builder state) {
+            state.header(headerName, headerValue);
         }
     }
 }

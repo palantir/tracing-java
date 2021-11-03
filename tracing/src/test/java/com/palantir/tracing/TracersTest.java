@@ -31,8 +31,10 @@ import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -61,7 +63,8 @@ public final class TracersTest {
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         // Initialize a new trace for each test
-        Tracer.initTraceWithSpan(Observability.SAMPLE, "defaultTraceId", "rootOperation", SpanType.LOCAL);
+        Tracer.initTraceWithSpan(
+                Observability.SAMPLE, "defaultTraceId", Optional.of("forUserAgent"), "rootOperation", SpanType.LOCAL);
     }
 
     @After
@@ -888,6 +891,22 @@ public final class TracersTest {
         assertThat(tracedStackTrace.get())
                 .describedAs("Tracing should only add one additional stack frame")
                 .hasSize(rawStackTrace.get().length + 1);
+    }
+
+    @Test
+    public void testAddTracingHeaders_populates() {
+        Map<String, String> headers = new HashMap<>();
+        TracingHeadersEnrichingFunction<Map<String, String>> enrichingFunction =
+                (headerName, headerValue, state) -> state.put(headerName, headerValue);
+
+        Tracers.addTracingHeaders(headers, enrichingFunction);
+
+        assertThat(headers)
+                .containsAllEntriesOf(Map.of(
+                        "For-User-Agent", "forUserAgent",
+                        "X-B3-TraceId", "defaultTraceId",
+                        "X-B3-Sampled", "1"));
+        assertThat(headers).containsKey("X-B3-SpanId");
     }
 
     private static Callable<Void> newTraceExpectingCallable(String expectedOperation) {
