@@ -37,6 +37,7 @@ apply plugin: 'com.palantir.external-publish'
 apply plugin: 'com.palantir.git-version'
 apply plugin: 'com.palantir.baseline'
 apply plugin: 'com.palantir.consistent-versions'
+apply plugin: 'com.palantir.baseline-java-versions'
 
 repositories {
     mavenCentral()
@@ -56,7 +57,6 @@ subprojects {
         mavenCentral()
     }
 
-    sourceCompatibility = 11
     tasks.check.dependsOn(javadoc)
 
     tasks.withType(JavaCompile) {
@@ -73,4 +73,8 @@ subprojects {
             options.errorprone.errorproneArgs.add '-XepOpt:NullAway:AnnotatedPackages=com.palantir'
         }
     })
+}
+
+javaVersions {
+    libraryTarget = 11
 }
