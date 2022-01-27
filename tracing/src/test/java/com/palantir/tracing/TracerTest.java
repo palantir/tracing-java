@@ -262,7 +262,7 @@ public final class TracerTest {
         Tracer.fastStartSpan("operation");
         Optional<Span> maybeSpan = Tracer.completeSpan(metadata);
         assertThat(maybeSpan).isPresent();
-        assertThat(maybeSpan.get().getMetadata()).isEqualTo(metadata);
+        assertThat(maybeSpan.get().getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
     }
 
     @Test
@@ -287,7 +287,7 @@ public final class TracerTest {
         verify(observer1).consume(spanCaptor.capture());
         Span span = spanCaptor.getValue();
         assertThat(span.getOperation()).isEqualTo("operation");
-        assertThat(span.getMetadata()).isEqualTo(ImmutableMap.of("baz", "bang"));
+        assertThat(span.getMetadata()).containsExactlyInAnyOrderEntriesOf(ImmutableMap.of("baz", "bang"));
     }
 
     @Test
@@ -315,7 +315,7 @@ public final class TracerTest {
         Tracer.fastCompleteSpan(metadata);
         verify(observer1).consume(spanCaptor.capture());
         assertThat(spanCaptor.getValue().getOperation()).isEqualTo(operation);
-        assertThat(spanCaptor.getValue().getMetadata()).isEqualTo(metadata);
+        assertThat(spanCaptor.getValue().getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
     }
 
     @Test
