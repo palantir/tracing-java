@@ -88,6 +88,12 @@ public class TracingBenchmark {
         nestedSpans.run();
     }
 
+    @Benchmark
+    public static void traceWithSingleSpan() {
+        Tracer.fastStartSpan("benchmark");
+        Tracer.fastCompleteSpan();
+    }
+
     private static Runnable createNestedSpan(int depth) {
         if (depth <= 0) {
             return Runnables.doNothing();
