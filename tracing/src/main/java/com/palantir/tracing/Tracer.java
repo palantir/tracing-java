@@ -918,7 +918,9 @@ public final class Tracer {
 
     @VisibleForTesting
     static void clearCurrentTrace() {
-        logClearingTrace();
+        if (log.isDebugEnabled()) {
+            logClearingTrace();
+        }
         currentTrace.remove();
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
@@ -926,11 +928,9 @@ public final class Tracer {
     }
 
     private static void logClearingTrace() {
-        if (log.isDebugEnabled()) {
-            log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
-            if (log.isTraceEnabled()) {
-                log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
-            }
+        log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
+        if (log.isTraceEnabled()) {
+            log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
         }
     }
 }
