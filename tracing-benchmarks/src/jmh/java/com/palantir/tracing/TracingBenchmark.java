@@ -43,7 +43,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
-@Fork(1)
+@Fork(value = 1, jvmArgsAppend = "-Dlog4j2.garbagefreeThreadContextMap=true")
 @Threads(4)
 @SuppressWarnings({"checkstyle:hideutilityclassconstructor", "checkstyle:VisibilityModifier"})
 public class TracingBenchmark {
@@ -86,6 +86,12 @@ public class TracingBenchmark {
     @Benchmark
     public static void nestedSpans() {
         nestedSpans.run();
+    }
+
+    @Benchmark
+    public static void traceWithSingleSpan() {
+        Tracer.fastStartSpan("benchmark");
+        Tracer.fastCompleteSpan();
     }
 
     private static Runnable createNestedSpan(int depth) {

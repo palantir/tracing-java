@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Trace threadlocal entry is never removed, only nulled
+  links:
+  - https://github.com/palantir/tracing-java/pull/849

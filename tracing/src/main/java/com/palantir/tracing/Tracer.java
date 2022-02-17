@@ -919,7 +919,7 @@ public final class Tracer {
     @VisibleForTesting
     static void clearCurrentTrace() {
         logClearingTrace();
-        currentTrace.remove();
+        currentTrace.set(null);
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
         MDC.remove(Tracers.REQUEST_ID_KEY);

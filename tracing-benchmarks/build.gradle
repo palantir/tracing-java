@@ -16,7 +16,7 @@ tasks.jmhCompileGeneratedClasses {
 }
 
 dependencies {
-    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
+    jmhAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess'
     compileOnly 'org.openjdk.jmh:jmh-generator-annprocess'
     api 'org.immutables:value::annotations'
     api 'org.openjdk.jmh:jmh-core'
