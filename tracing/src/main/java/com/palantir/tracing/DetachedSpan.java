@@ -107,7 +107,7 @@ public interface DetachedSpan extends Detached {
     }
 
     @MustBeClosed
-    default CloseableSpan completeAndStartChild(String operationName) {
+    default CloseableSpan completeAndStartChild(@Safe String operationName) {
         return completeAndStartChild(operationName, SpanType.LOCAL);
     }
 
