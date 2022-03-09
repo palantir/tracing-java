@@ -26,7 +26,6 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
-import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.logsafe.logger.SafeLogger;
@@ -86,16 +85,8 @@ public final class Tracer {
     }
 
     private static boolean shouldObserve(Observability observability) {
-        switch (observability) {
-            case SAMPLE:
-                return true;
-            case DO_NOT_SAMPLE:
-                return false;
-            case UNDECIDED:
-                return sampler.sample();
-        }
-
-        throw new SafeIllegalArgumentException("Unknown observability", SafeArg.of("observability", observability));
+        // Simplified implementation of 'switch(observability) {' for fast inlining (30 bytes)
+        return observability == Observability.SAMPLE || (observability == Observability.UNDECIDED && sampler.sample());
     }
 
     /**
