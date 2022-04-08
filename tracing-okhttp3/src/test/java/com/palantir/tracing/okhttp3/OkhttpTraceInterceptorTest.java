@@ -34,16 +34,19 @@ import java.io.IOException;
 import java.util.Optional;
 import okhttp3.Interceptor;
 import okhttp3.Request;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @SuppressWarnings("deprecation")
 public final class OkhttpTraceInterceptorTest {
 
@@ -59,14 +62,14 @@ public final class OkhttpTraceInterceptorTest {
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
-    @Before
+    @BeforeEach
     public void before() {
         Request request = new Request.Builder().url("http://localhost").build();
         when(chain.request()).thenReturn(request);
         Tracer.subscribe("", observer);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         Tracer.unsubscribe("");

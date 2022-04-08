@@ -52,18 +52,21 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriInfo;
 import org.glassfish.jersey.client.JerseyClientBuilder;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.slf4j.MDC;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public final class TraceEnrichingFilterTest {
 
     @ClassRule
@@ -89,7 +92,7 @@ public final class TraceEnrichingFilterTest {
 
     private WebTarget target;
 
-    @Before
+    @BeforeEach
     public void before() {
         String endpointUri = "http://localhost:" + APP.getLocalPort();
         JerseyClientBuilder builder = new JerseyClientBuilder();
@@ -104,7 +107,7 @@ public final class TraceEnrichingFilterTest {
         when(traceSampler.sample()).thenReturn(true);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Tracer.unsubscribe("");
     }
