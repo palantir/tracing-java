@@ -14,6 +14,7 @@ org.glassfish.jersey.*:* = 2.22.2
 org.slf4j:slf4j-api = 1.7.12
 
 # dependency-upgrader:ON
+com.fasterxml.jackson.core:jackson-databind = 2.13.2.1
 junit:junit = 4.13.2
 org.assertj:assertj-core = 3.22.0
 org.hamcrest:hamcrest-* = 1.3
