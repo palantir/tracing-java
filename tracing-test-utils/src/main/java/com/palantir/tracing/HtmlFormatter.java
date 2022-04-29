@@ -163,16 +163,18 @@ final class HtmlFormatter {
                         .put("{{HUE}}", Long.toString(hue))
                         .put("{{SPANID}}", span.getSpanId())
                         .put("{{CLASS}}", config.problemSpanIds().contains(span.getSpanId()) ? "problem-span" : "")
-                        .put("{{START}}", Utils.renderDuration(transposedStartMicros, TimeUnit.MICROSECONDS))
+                        .put("{{START}}", Utils.renderDuration((double) transposedStartMicros, TimeUnit.MICROSECONDS))
                         .put(
                                 "{{FINISH}}",
                                 Utils.renderDuration(
-                                        transposedStartMicros
+                                        (double) (transposedStartMicros
                                                 + TimeUnit.MICROSECONDS.convert(
-                                                        Duration.ofNanos(span.getDurationNanoSeconds())),
+                                                        Duration.ofNanos(span.getDurationNanoSeconds()))),
                                         TimeUnit.MICROSECONDS))
                         .put("{{OPERATION}}", span.getOperation())
-                        .put("{{DURATION}}", Utils.renderDuration(span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
+                        .put(
+                                "{{DURATION}}",
+                                Utils.renderDuration((double) span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
                         .put("{{COLLISION}}", suspectedCollision ? " (collision)" : "")
                         .build()));
     }
