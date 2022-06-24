@@ -26,6 +26,6 @@ ch.qos.logback:logback-classic = 1.2.11
 org.apache.logging.log4j:log4j-slf4j-impl = 2.17.2
 org.junit.jupiter:* = 5.8.2
 org.junit.vintage:* = 5.8.2
-com.uber.nullaway:nullaway = 0.9.7
+com.uber.nullaway:nullaway = 0.9.8
 com.spotify.dataenum:* = 1.4.1
 com.palantir.conjure.java.runtime:* = 7.33.0
