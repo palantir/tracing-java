@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Tracer avoids allocating Optional for requestId
+  links:
+  - https://github.com/palantir/tracing-java/pull/948
