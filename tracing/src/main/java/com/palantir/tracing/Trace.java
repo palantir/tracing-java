@@ -30,6 +30,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import javax.annotation.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -73,7 +74,7 @@ public abstract class Trace {
     final OpenSpan startSpan(String operation, SpanType type) {
         Optional<OpenSpan> prevState = top();
         final OpenSpan span;
-        // Avoid lambda allocation in hot paths
+        //noinspection OptionalIsPresent - Avoid lambda allocation in hot paths
         if (prevState.isPresent()) {
             span = OpenSpan.of(
                     operation,
@@ -119,14 +120,15 @@ public abstract class Trace {
     }
 
     /**
-     * The request identifier of this trace.
-     *
+     * The request identifier of this trace, or null if undefined.
+     * <p>
      * The request identifier is an implementation detail of this tracing library. A new identifier is generated
      * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
      * distinguish between requests with the same traceId.
      */
-    final Optional<String> getRequestId() {
-        return Optional.ofNullable(traceState.requestId());
+    @Nullable
+    final String maybeGetRequestId() {
+        return traceState.requestId();
     }
 
     /**

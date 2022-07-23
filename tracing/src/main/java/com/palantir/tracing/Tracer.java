@@ -112,21 +112,19 @@ public final class Tracer {
             return Optional.empty();
         }
 
-        String traceId = trace.getTraceId();
-        Optional<String> requestId = trace.getRequestId();
+        TraceMetadata.Builder builder = TraceMetadata.builder().traceId(trace.getTraceId());
+        String requestId = trace.maybeGetRequestId();
+        if (requestId != null) {
+            builder.requestId(requestId);
+        }
+
         if (trace.isObservable()) {
-            return trace.top().map(openSpan -> TraceMetadata.builder()
-                    .spanId(openSpan.getSpanId())
+            return trace.top().map(openSpan -> builder.spanId(openSpan.getSpanId())
                     .parentSpanId(openSpan.getParentSpanId())
-                    .traceId(traceId)
-                    .requestId(requestId)
                     .build());
         } else {
-            return Optional.of(TraceMetadata.builder()
-                    .spanId(Tracers.randomId())
+            return Optional.of(builder.spanId(Tracers.randomId())
                     .parentSpanId(Optional.empty())
-                    .traceId(traceId)
-                    .requestId(requestId)
                     .build());
         }
     }
@@ -636,6 +634,7 @@ public final class Tracer {
 
     private static <T> void completeSpanAndNotifyObservers(
             Optional<OpenSpan> openSpan, TagTranslator<? super T> tag, T state, String traceId) {
+        //noinspection OptionalIsPresent - Avoid lambda allocation in hot paths
         if (openSpan.isPresent()) {
             Tracer.notifyObservers(toSpan(openSpan.get(), tag, state, traceId));
         }
@@ -720,7 +719,7 @@ public final class Tracer {
 
     /**
      * Subscribes the given (named) span observer to all "span completed" events. Observers are expected to be "cheap",
-     * i.e., do all non-trivial work (logging, sending network messages, etc) asynchronously. If an observer is already
+     * i.e., do all non-trivial work (logging, sending network messages, etc.) asynchronously. If an observer is already
      * registered for the given name, then it gets overwritten by this call. Returns the observer previously associated
      * with the given name, or null if there is no such observer.
      */
@@ -870,7 +869,7 @@ public final class Tracer {
         // Give log appenders access to the trace id and whether the trace is being sampled
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
-        setTraceRequestId(trace.getRequestId());
+        setTraceRequestId(trace.maybeGetRequestId());
 
         logSettingTrace();
     }
@@ -885,12 +884,12 @@ public final class Tracer {
         }
     }
 
-    private static void setTraceRequestId(Optional<String> requestId) {
-        if (requestId.isPresent()) {
-            MDC.put(Tracers.REQUEST_ID_KEY, requestId.get());
-        } else {
+    private static void setTraceRequestId(@Nullable String requestId) {
+        if (requestId == null) {
             // Ensure MDC state is cleared when there is no request identifier
             MDC.remove(Tracers.REQUEST_ID_KEY);
+        } else {
+            MDC.put(Tracers.REQUEST_ID_KEY, requestId);
         }
     }
 
