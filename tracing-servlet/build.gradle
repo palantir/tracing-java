@@ -17,6 +17,13 @@
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
+configurations.all {
+    resolutionStrategy {
+        force 'jakarta.servlet:jakarta.servlet-api:4.0.4'
+        force 'io.dropwizard:dropwizard-testing:2.0.10'
+    }
+}
+
 dependencies {
     // tracing is used to clear tracing state, but not exposed to other consumers
     implementation project(":tracing")

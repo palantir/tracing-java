@@ -17,8 +17,21 @@
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
+configurations.all {
+    resolutionStrategy {
+        force 'org.glassfish.jersey.core:jersey-server:2.22.2'
+        force 'jakarta.ws.rs:jakarta.ws.rs-api:2.1.6'
+        force 'jakarta.annotation:jakarta.annotation-api:1.3.5'
+        force 'io.dropwizard:dropwizard-testing:2.0.10'
+    }
+}
+
 dependencies {
-    api "org.glassfish.jersey.core:jersey-server"
+    api "org.glassfish.jersey.core:jersey-server", {
+        version {
+            strictly '2.22.2'
+        }
+    }
     api project(":tracing")
 
     implementation 'com.google.guava:guava'

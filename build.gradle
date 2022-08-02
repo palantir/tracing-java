@@ -18,6 +18,10 @@ buildscript {
     repositories {
         mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
         gradlePluginPortal() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
+        maven {
+            url 'https://artifactory.palantir.build/artifactory/release-jar'
+        }
+        mavenLocal()
     }
 
     dependencies {

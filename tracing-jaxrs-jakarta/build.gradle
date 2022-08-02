@@ -21,11 +21,7 @@ apply plugin: 'com.palantir.revapi'
 
 dependencies {
     api project(":tracing")
-    api "jakarta.ws.rs:jakarta.ws.rs-api", {
-        version {
-            strictly("2.1.6")
-        }
-    }
+    api "jakarta.ws.rs:jakarta.ws.rs-api"
 
     testImplementation "ch.qos.logback:logback-classic"
     testImplementation "junit:junit"

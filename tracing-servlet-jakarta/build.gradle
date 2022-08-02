@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-apply plugin: 'org.inferred.processors'
-
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
 dependencies {
-    api project(":tracing")
-    api "jakarta.ws.rs:jakarta.ws.rs-api", {
-        version {
-            strictly("2.1.6")
-        }
-    }
+    // tracing is used to clear tracing state, but not exposed to other consumers
+    implementation project(":tracing")
 
-    testImplementation "ch.qos.logback:logback-classic"
-    testImplementation "junit:junit"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.jmock:jmock"
-    testImplementation "org.mockito:mockito-core"
+    // servlet-api should be the only exposed dependency
+    api "jakarta.servlet:jakarta.servlet-api"
+
+    implementation 'com.palantir.safe-logging:logger'
+
+    testImplementation "io.dropwizard:dropwizard-testing"
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation 'org.assertj:assertj-core'
 }
