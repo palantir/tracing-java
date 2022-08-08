@@ -19,7 +19,7 @@ apply plugin: 'com.palantir.revapi'
 
 dependencies {
     api project(':tracing')
-    api 'io.undertow:undertow-core'
+    api 'io.undertow:undertow-core:2.0.17.Final'
 
     implementation project(':tracing-api')
     implementation 'com.google.guava:guava'

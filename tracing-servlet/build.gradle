@@ -17,11 +17,8 @@
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
-configurations.all {
-    resolutionStrategy {
-        force 'jakarta.servlet:jakarta.servlet-api:4.0.4'
-        force 'io.dropwizard:dropwizard-testing:2.0.10'
-    }
+versionsLock {
+    disableJavaPluginDefaults()
 }
 
 dependencies {
@@ -29,11 +26,33 @@ dependencies {
     implementation project(":tracing")
 
     // servlet-api should be the only exposed dependency
-    api "jakarta.servlet:jakarta.servlet-api"
+    api "javax.servlet:javax.servlet-api", {
+        version {
+            strictly '4.0.1'
+        }
+    }
 
     implementation 'com.palantir.safe-logging:logger'
 
-    testImplementation "io.dropwizard:dropwizard-testing"
+    testImplementation "io.dropwizard:dropwizard-testing", {
+        version {
+            strictly '2.0.10'
+        }
+    }
     testImplementation "junit:junit"
     testImplementation 'org.assertj:assertj-core'
+
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group.startsWith('org.glassfish.jersey')) {
+            details.useVersion '2.22.2'
+            details.because 'forcing the legacy javax version'
+        }
+        if (details.requested.group == 'org.glassfish.jersey.inject') {
+            details.useVersion '2.26'
+            details.because 'forcing the legacy javax version'
+        }
+    }
 }
