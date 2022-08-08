@@ -24,7 +24,8 @@ versionsLock {
 dependencies {
     implementation "org.glassfish.jersey.core:jersey-server", {
         version {
-            strictly '2.22.2'
+            strictly "2.22.2"
+            because "need to pin to the javax version of Jersey"
         }
     }
     api project(":tracing")
