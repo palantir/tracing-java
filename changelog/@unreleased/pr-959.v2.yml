@@ -1,0 +1,12 @@
+type: improvement
+improvement:
+  description: |-
+    Introduced jakarta equivalents of all modules which had a javax dependency
+
+    Additionally had to do a few things:
+
+    1. Migrated from spotify's ADT to derive4j which generates types without a legacy javax.annotation.Generated type
+    2. Fixed a few tests
+    3. Upgraded newer libraries to Junit5
+  links:
+  - https://github.com/palantir/tracing-java/pull/959
