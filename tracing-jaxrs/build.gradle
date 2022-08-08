@@ -25,7 +25,7 @@ versionsLock {
 
 dependencies {
     api project(":tracing")
-    api "javax.ws.rs:javax.ws.rs-api:2.1.1"
+    api "javax.ws.rs:javax.ws.rs-api"
 
     testImplementation "ch.qos.logback:logback-classic"
     testImplementation "junit:junit"

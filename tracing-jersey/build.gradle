@@ -30,22 +30,8 @@ dependencies {
     api project(":tracing")
 
     implementation 'com.google.guava:guava'
-    implementation 'javax.ws.rs:javax.ws.rs-api', {
-        version {
-            strictly '2.1.1'
-        }
-    }
+    implementation 'javax.ws.rs:javax.ws.rs-api'
     implementation project(':tracing-api')
-
-    testImplementation "io.dropwizard:dropwizard-testing", {
-        version {
-            strictly '2.0.10'
-        }
-    }
-    testImplementation "junit:junit"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.hamcrest:hamcrest-all"
-    testImplementation "org.mockito:mockito-core"
 
     modules {
         module("org.glassfish.hk2.external:javax.inject") {
