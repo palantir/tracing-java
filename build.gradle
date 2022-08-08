@@ -41,7 +41,6 @@ apply plugin: 'com.palantir.baseline'
 apply plugin: 'com.palantir.consistent-versions'
 apply plugin: 'com.palantir.baseline-java-versions'
 apply plugin: 'com.palantir.jdks.latest'
-apply plugin: 'com.palantir.consistent-versions'
 
 repositories {
     mavenCentral() { metadataSources { mavenPom(); ignoreGradleMetadataRedirection() } }
