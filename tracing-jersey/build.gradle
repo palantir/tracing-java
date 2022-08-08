@@ -14,32 +14,8 @@
  * limitations under the License.
  */
 
-import com.palantir.gradle.JakartaVersionForcingPlugin
-
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
-
-apply plugin: com.palantir.gradle.JakartaVersionForcingPlugin
-
-configurations {
-    legacy
-    legacyTest
-
-    compileClasspath.extendsFrom(legacy)
-    testCompileClasspath.extendsFrom(legacyTest)
-}
-
-versionRecommendations {
-    excludeConfigurations 'legacy', 'legacyTest'
-}
-
-//configurations {
-//    compileClasspath {
-//        attributes {
-//            it.attribute(JakartaVersionForcingPlugin.LEGACY_ATTRIBUTE, "yes")
-//        }
-//    }
-//}
 
 versionsLock {
     disableJavaPluginDefaults()
