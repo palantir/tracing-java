@@ -17,16 +17,16 @@
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
-versionsLock {
-    disableJavaPluginDefaults()
-}
-
 dependencies {
     // tracing is used to clear tracing state, but not exposed to other consumers
     implementation project(":tracing")
 
     // servlet-api should be the only exposed dependency
-    api "javax.servlet:javax.servlet-api"
+    api "jakarta.servlet:jakarta.servlet-api"
 
     implementation 'com.palantir.safe-logging:logger'
+
+    testImplementation "io.dropwizard:dropwizard-testing"
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation 'org.assertj:assertj-core'
 }

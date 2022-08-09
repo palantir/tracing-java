@@ -9,10 +9,10 @@ dependencies {
     compileOnly 'junit:junit'
     compileOnly 'org.junit.jupiter:junit-jupiter-api'
     implementation 'com.palantir.conjure.java.runtime:conjure-java-jackson-serialization'
-    implementation 'com.spotify.dataenum:dataenum'
+    compileOnly "org.derive4j:derive4j-annotation"
     implementation "org.slf4j:slf4j-api"
 
-    annotationProcessor 'com.spotify.dataenum:dataenum-processor'
+    annotationProcessor "org.derive4j:derive4j"
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
     compileOnly "jakarta.annotation:jakarta.annotation-api"

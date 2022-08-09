@@ -20,39 +20,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.tracing.AlwaysSampler;
 import com.palantir.tracing.Tracer;
-import io.dropwizard.Application;
-import io.dropwizard.Configuration;
-import io.dropwizard.setup.Environment;
+import io.dropwizard.core.Application;
+import io.dropwizard.core.Configuration;
+import io.dropwizard.core.setup.Environment;
+import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.EnumSet;
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import org.glassfish.jersey.client.JerseyClientBuilder;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(DropwizardExtensionsSupport.class)
 public class LeakedTraceFilterTest {
-    @ClassRule
-    @SuppressWarnings("deprecation")
-    public static final io.dropwizard.testing.junit.DropwizardAppRule<Configuration> APP =
-            new io.dropwizard.testing.junit.DropwizardAppRule<>(
+    public static final io.dropwizard.testing.junit5.DropwizardAppExtension<Configuration> APP =
+            new io.dropwizard.testing.junit5.DropwizardAppExtension<>(
                     TracingTestServer.class, "src/test/resources/test-server.yml");
 
     private WebTarget target;
 
-    @Before
+    @BeforeEach
     public void before() {
         String endpointUri = "http://localhost:" + APP.getLocalPort();
         JerseyClientBuilder builder = new JerseyClientBuilder();
