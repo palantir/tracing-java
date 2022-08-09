@@ -8,11 +8,9 @@ include 'tracing-okhttp3'
 include 'tracing-test-utils'
 include 'tracing-undertow'
 
-withJakarta('tracing-servlet')
-withJakarta('tracing-jaxrs')
-withJakarta('tracing-jersey')
-
-def withJakarta(name) {
-  include name
-  include "${name}-jakarta"
-}
+include 'tracing-servlet'
+include 'tracing-jaxrs'
+include 'tracing-jersey'
+include 'tracing-servlet-jakarta'
+include 'tracing-jaxrs-jakarta'
+include 'tracing-jersey-jakarta'
