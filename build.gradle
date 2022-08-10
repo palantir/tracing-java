@@ -76,6 +76,20 @@ subprojects {
             options.errorprone.errorproneArgs.add '-XepOpt:NullAway:AnnotatedPackages=com.palantir'
         }
     })
+
+    dependencies {
+        modules {
+            module('org.glassfish.hk2.external:javax.inject') {
+                replacedBy("javax.inject:javax.inject", "javax version is preferred")
+            }
+            module('jakarta.ws.rs:jakarta.ws.rs-api') {
+                replacedBy("javax.ws.rs:javax.ws.rs-api", "javax version is preferred (for now, until jakarta packages are prevalent)")
+            }
+            module('org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec') {
+                replacedBy("javax.annotation:javax.annotation-api", "javax version is preferred")
+            }
+        }
+    }
 }
 
 javaVersions {
