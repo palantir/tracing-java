@@ -25,9 +25,13 @@ dependencies {
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation project(':tracing-api')
 
-    testImplementation "io.dropwizard:dropwizard-testing"
-    testImplementation "junit:junit"
+    testImplementation project(":tracing-undertow-testing")
+    testImplementation "org.junit.jupiter:junit-jupiter"
     testImplementation "org.assertj:assertj-core"
     testImplementation "org.hamcrest:hamcrest-all"
     testImplementation "org.mockito:mockito-core"
+    testImplementation "org.mockito:mockito-junit-jupiter"
+
+    // needed for MDC tests
+    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }

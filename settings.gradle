@@ -10,3 +10,5 @@ include 'tracing-okhttp3'
 include 'tracing-servlet'
 include 'tracing-test-utils'
 include 'tracing-undertow'
+
+include 'tracing-undertow-testing'

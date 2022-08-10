@@ -1,0 +1,6 @@
+dependencies {
+    api 'org.junit.jupiter:junit-jupiter'
+    api 'io.undertow:undertow-core'
+    api 'io.undertow:undertow-servlet-jakarta'
+    implementation 'com.palantir.safe-logging:preconditions'
+}

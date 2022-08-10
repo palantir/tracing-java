@@ -15,7 +15,7 @@ dependencies {
     annotationProcessor 'com.spotify.dataenum:dataenum-processor'
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
-    compileOnly "jakarta.annotation:jakarta.annotation-api"
+    compileOnly "javax.annotation:javax.annotation-api"
 
     testImplementation "junit:junit"
     testCompileOnly "org.immutables:value::annotations"
