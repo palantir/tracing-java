@@ -53,9 +53,11 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+@SuppressWarnings("NullAway")
 public final class UndertowServerExtension implements BeforeAllCallback, AfterAllCallback {
 
     private Undertow server;
+
     private CloseableHttpClient httpClient;
 
     private List<ServletInfo> servlets = new ArrayList<>();
