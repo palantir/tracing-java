@@ -1,0 +1,9 @@
+type: fix
+fix:
+  description: |-
+    Rewrite all tests to use undertow...not dropwizard
+
+    This lets us then upgrade to Jakarta without also upgrading
+    slf4j versions
+  links:
+  - https://github.com/palantir/tracing-java/pull/961
