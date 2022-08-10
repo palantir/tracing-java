@@ -113,7 +113,7 @@ final class SpanAnalyzer {
 
     static Stream<ComparisonFailure> compareSpansRecursively(Result expected, Result actual, Span ex, Span ac) {
         if (!ex.getOperation().equals(ac.getOperation())) {
-            return Stream.of(ComparisonFailures.unequalOperation(ex, ac));
+            return Stream.of(ComparisonFailure.unequalOperation(ex, ac));
         }
         // other fields, type, params, metadata(???)
 
@@ -122,14 +122,14 @@ final class SpanAnalyzer {
         List<Span> sortedActualChildren = sortedChildren(actual.graph(), ac);
         if (sortedExpectedChildren.size() != sortedActualChildren.size()) {
             // just highlighting the parents for now.
-            return Stream.of(ComparisonFailures.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
+            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
         }
 
         boolean expectedContainsOverlappingSpans = containsOverlappingSpans(sortedExpectedChildren);
         boolean actualContainsOverlappingSpans = containsOverlappingSpans(sortedActualChildren);
         if (expectedContainsOverlappingSpans ^ actualContainsOverlappingSpans) {
             // Either Both or neither tree should have concurrent spans
-            return Stream.of(ComparisonFailures.incompatibleStructure(ex, ac));
+            return Stream.of(ComparisonFailure.incompatibleStructure(ex, ac));
         }
 
         if (!actualContainsOverlappingSpans) {
@@ -140,7 +140,7 @@ final class SpanAnalyzer {
         }
 
         if (!compatibleOverlappingSpans(expected, actual, sortedExpectedChildren, sortedActualChildren)) {
-            return Stream.of(ComparisonFailures.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
+            return Stream.of(ComparisonFailure.unequalChildren(ex, ac, sortedExpectedChildren, sortedActualChildren));
         }
         return Stream.empty();
     }

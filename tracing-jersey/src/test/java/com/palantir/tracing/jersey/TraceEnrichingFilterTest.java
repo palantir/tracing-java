@@ -34,44 +34,42 @@ import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
 import com.palantir.tracing.api.TraceTags;
-import io.dropwizard.core.Application;
-import io.dropwizard.core.Configuration;
-import io.dropwizard.core.setup.Environment;
-import io.dropwizard.testing.junit5.DropwizardExtensionsSupport;
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.client.WebTarget;
-import jakarta.ws.rs.container.ContainerRequestContext;
-import jakarta.ws.rs.core.HttpHeaders;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.StreamingOutput;
-import jakarta.ws.rs.core.UriInfo;
+import io.dropwizard.Application;
+import io.dropwizard.Configuration;
+import io.dropwizard.setup.Environment;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
+import javax.ws.rs.core.UriInfo;
 import org.glassfish.jersey.client.JerseyClientBuilder;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.slf4j.MDC;
 
-@ExtendWith(DropwizardExtensionsSupport.class)
-@ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+@RunWith(MockitoJUnitRunner.class)
 public final class TraceEnrichingFilterTest {
 
-    public static final io.dropwizard.testing.junit5.DropwizardAppExtension<Configuration> APP =
-            new io.dropwizard.testing.junit5.DropwizardAppExtension<>(
+    @ClassRule
+    @SuppressWarnings("deprecation")
+    public static final io.dropwizard.testing.junit.DropwizardAppRule<Configuration> APP =
+            new io.dropwizard.testing.junit.DropwizardAppRule<>(
                     TracingTestServer.class, "src/test/resources/test-server.yml");
 
     @Captor
@@ -91,7 +89,7 @@ public final class TraceEnrichingFilterTest {
 
     private WebTarget target;
 
-    @BeforeEach
+    @Before
     public void before() {
         String endpointUri = "http://localhost:" + APP.getLocalPort();
         JerseyClientBuilder builder = new JerseyClientBuilder();
@@ -106,7 +104,7 @@ public final class TraceEnrichingFilterTest {
         when(traceSampler.sample()).thenReturn(true);
     }
 
-    @AfterEach
+    @After
     public void after() {
         Tracer.unsubscribe("");
     }

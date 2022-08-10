@@ -106,11 +106,10 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
                 .path(actualPath)
                 .displayName("actual")
                 .problemSpanIds(failures.stream()
-                        .map(res -> ComparisonFailures.cases()
-                                .unequalOperation((e, _a) -> e)
-                                .unequalChildren((e, _a, _ec, _ac) -> e)
-                                .incompatibleStructure((e, _a) -> e)
-                                .apply(res))
+                        .map(res -> res.map(
+                                ComparisonFailure.unequalOperation::expected,
+                                ComparisonFailure.unequalChildren::expected,
+                                ComparisonFailure.incompatibleStructure::expected))
                         .map(Span::getSpanId)
                         .collect(ImmutableSet.toImmutableSet()))
                 .layoutStrategy(annotation.layout())
@@ -121,11 +120,10 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
                 .path(expectedPath)
                 .displayName("expected")
                 .problemSpanIds(failures.stream()
-                        .map(res -> ComparisonFailures.cases()
-                                .unequalOperation((_e, a) -> a)
-                                .unequalChildren((_e, a, _ec, _ac) -> a)
-                                .incompatibleStructure((_e, a) -> a)
-                                .apply(res))
+                        .map(res -> res.map(
+                                ComparisonFailure.unequalOperation::actual,
+                                ComparisonFailure.unequalChildren::actual,
+                                ComparisonFailure.incompatibleStructure::actual))
                         .map(Span::getSpanId)
                         .collect(ImmutableSet.toImmutableSet()))
                 .layoutStrategy(annotation.layout())
@@ -147,15 +145,16 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
     }
 
     private static String renderFailure(ComparisonFailure failure) {
-        return ComparisonFailures.cases()
-                .unequalOperation((expected, actual) -> String.format(
-                        "Expected operation %s but received %s", expected.getOperation(), actual.getOperation()))
-                .unequalChildren((_e, _a, expectedChildren, actualChildren) -> String.format(
+        return failure.map(
+                (ComparisonFailure.unequalOperation t) -> String.format(
+                        "Expected operation %s but received %s",
+                        t.expected().getOperation(), t.actual().getOperation()),
+                (ComparisonFailure.unequalChildren t) -> String.format(
                         "Expected children with operations %s but received %s",
-                        expectedChildren.stream().map(Span::getOperation).collect(ImmutableList.toImmutableList()),
-                        actualChildren.stream().map(Span::getOperation).collect(ImmutableList.toImmutableList())))
-                .incompatibleStructure((_e, _a) -> "Expected children to be structured similarly")
-                .apply(failure);
+                        t.expectedChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList()),
+                        t.actualChildren().stream().map(Span::getOperation).collect(ImmutableList.toImmutableList())),
+                (ComparisonFailure.incompatibleStructure _t) ->
+                        String.format("Expected children to structured similarly"));
     }
 
     private static String testName(ExtensionContext context) {

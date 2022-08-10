@@ -1,0 +1,6 @@
+type: fix
+fix:
+  description: Revert jakarta additions temporarily to avoid dangerous transitive
+    dependency bumps
+  links:
+  - https://github.com/palantir/tracing-java/pull/960
