@@ -22,11 +22,11 @@ dependencies {
     implementation project(":tracing")
 
     // servlet-api should be the only exposed dependency
-    api "jakarta.servlet:jakarta.servlet-api"
+    api "javax.servlet:javax.servlet-api"
 
     implementation 'com.palantir.safe-logging:logger'
 
-    testImplementation "io.dropwizard:dropwizard-testing"
-    testImplementation "junit:junit"
+    testImplementation project(":tracing-undertow-testing")
+    testImplementation "org.junit.jupiter:junit-jupiter"
     testImplementation 'org.assertj:assertj-core'
 }
