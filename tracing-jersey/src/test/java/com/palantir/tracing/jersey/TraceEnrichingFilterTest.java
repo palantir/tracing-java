@@ -205,15 +205,15 @@ public final class TraceEnrichingFilterTest {
 
         HttpGet sampled = new HttpGet("/trace");
         sampled.setHeader(TraceHttpHeaders.IS_SAMPLED, "1");
-        undertow.runRequest(notSampled, response -> {
+        undertow.runRequest(notSampled, _response -> {
             verify(traceSampler, never()).sample();
         });
 
-        undertow.runRequest(sampled, response -> {
+        undertow.runRequest(sampled, _response -> {
             verify(traceSampler, never()).sample();
         });
 
-        undertow.runRequest(new HttpGet("/trace"), response -> {
+        undertow.runRequest(new HttpGet("/trace"), _response -> {
             verify(traceSampler, times(1)).sample();
         });
     }
