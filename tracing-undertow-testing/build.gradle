@@ -1,7 +1,7 @@
 // Avoid including test dependencies from this module in
 // gradle module metadata.
 versionsLock {
-    disableJavaPluginDefaults()
+    testProject()
 }
 
 dependencies {
