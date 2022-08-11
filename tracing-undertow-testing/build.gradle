@@ -1,3 +1,9 @@
+// Avoid including test dependencies from this module in
+// gradle module metadata.
+versionsLock {
+    disableJavaPluginDefaults()
+}
+
 dependencies {
     api 'org.junit.jupiter:junit-jupiter'
     api 'io.undertow:undertow-core'
