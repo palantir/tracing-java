@@ -126,31 +126,4 @@ public class LeakedTraceFilterTest {
                                 }
                             }))
                     .addMappings("/standard", "/previous-request-leaked"));
-
-    /*
-
-
-            // Register the filter we're testing
-            env.servlets()
-                    .addFilter("leakedTraceFilter", new LeakedTraceFilter())
-                    .addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
-
-            env.servlets()
-                    .addServlet("alwaysLeaks", new HttpServlet() {
-                        @Override
-                        protected void service(HttpServletRequest _value, HttpServletResponse resp) {
-                        }
-                    })
-                    .addMapping("/leaky");
-
-            env.servlets()
-                    .addServlet("reportingServlet", new HttpServlet() {
-                        @Override
-                        protected void service(HttpServletRequest _value, HttpServletResponse resp) {
-                        }
-                    })
-                    .addMapping("/standard", "/previous-request-leaked");
-        }
-    }
-     */
 }
