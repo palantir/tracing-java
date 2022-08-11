@@ -112,7 +112,7 @@ public class LeakedTraceFilterTest {
             .servlet(Servlets.servlet(
                             "alwaysLeaks", HttpServlet.class, new ImmediateInstanceFactory<>(new HttpServlet() {
                                 @Override
-                                protected void service(HttpServletRequest req, HttpServletResponse resp) {
+                                protected void service(HttpServletRequest _req, HttpServletResponse resp) {
                                     Tracer.fastStartSpan("leaky");
                                     resp.addHeader("Leaky-Invoked", "true");
                                 }
@@ -121,7 +121,7 @@ public class LeakedTraceFilterTest {
             .servlet(Servlets.servlet(
                             "reportingServlet", HttpServlet.class, new ImmediateInstanceFactory<>(new HttpServlet() {
                                 @Override
-                                protected void service(HttpServletRequest req, HttpServletResponse resp) {
+                                protected void service(HttpServletRequest _req, HttpServletResponse resp) {
                                     resp.addHeader("Servlet-Has-Trace", Boolean.toString(Tracer.hasTraceId()));
                                 }
                             }))
