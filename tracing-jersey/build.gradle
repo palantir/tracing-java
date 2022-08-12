@@ -22,11 +22,16 @@ versionsLock {
 }
 
 dependencies {
-    api "org.glassfish.jersey.core:jersey-server:2.26"
+    api "org.glassfish.jersey.core:jersey-server", {
+        version {
+            strictly '2.22.2'
+        }
+    }
     api project(":tracing")
 
     implementation 'com.google.guava:guava'
     implementation 'javax.ws.rs:javax.ws.rs-api'
+    implementation 'javax.annotation:javax.annotation-api'
     implementation project(':tracing-api')
 
     testImplementation project(":tracing-undertow-testing")

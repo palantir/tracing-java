@@ -1,7 +1,6 @@
 // Avoid including test dependencies from this module in
 // gradle module metadata.
 versionsLock {
-    testProject()
     disableJavaPluginDefaults()
 }
 
@@ -11,7 +10,20 @@ dependencies {
     api 'io.undertow:undertow-servlet'
     api 'org.apache.httpcomponents.client5:httpclient5'
     implementation 'com.palantir.safe-logging:preconditions'
-    implementation 'org.glassfish.jersey.core:jersey-server:2.26'
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.26'
-    implementation 'org.glassfish.jersey.media:jersey-media-json-jackson:2.26'
+    implementation 'org.glassfish.jersey.core:jersey-server', {
+        version {
+            strictly '2.22.2'
+            because "need to pin to the javax version of Jersey"
+        }
+    }
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core', {
+        version {
+            strictly '2.22.2'
+        }
+    }
+    implementation 'org.glassfish.jersey.media:jersey-media-json-jackson', {
+        version {
+            strictly '2.22.2'
+        }
+    }
 }
