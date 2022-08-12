@@ -7,10 +7,12 @@ com.palantir.safe-logging:* = 1.18.0
 com.squareup.okhttp3:okhttp = 3.9.0
 io.undertow:* = 2.2.18.Final
 io.zipkin.java:* = 1.13.1
-jakarta.servlet:jakarta.servlet-api = 4.0.4
-jakarta.ws.rs:jakarta.ws.rs-api = 2.1.6
-org.glassfish.jersey.*:* = 2.22.2
 org.slf4j:slf4j-api = 1.7.12
+
+# Jakarta EE9 Versions
+jakarta.servlet:jakarta.servlet-api = 5.0.0
+jakarta.ws.rs:jakarta.ws.rs-api = 3.1.0
+org.glassfish.jersey.*:* = 3.0.6
 
 # legacy javax versions
 javax.ws.rs:javax.ws.rs-api = 2.1.1

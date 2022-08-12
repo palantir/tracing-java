@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.palantir.tracing.AlwaysSampler;
 import com.palantir.tracing.Tracer;
+import jakarta.ws.rs.core.StreamingOutput;
 import java.io.ByteArrayOutputStream;
-import javax.ws.rs.core.StreamingOutput;
 import org.junit.jupiter.api.Test;
 
 public final class JaxRsTracersTest {

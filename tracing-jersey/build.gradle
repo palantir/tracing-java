@@ -17,12 +17,16 @@
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
+versionsLock {
+    disableJavaPluginDefaults()
+}
+
 dependencies {
-    api "org.glassfish.jersey.core:jersey-server"
+    api "org.glassfish.jersey.core:jersey-server:2.26"
     api project(":tracing")
 
     implementation 'com.google.guava:guava'
-    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+    implementation 'javax.ws.rs:javax.ws.rs-api'
     implementation project(':tracing-api')
 
     testImplementation project(":tracing-undertow-testing")
