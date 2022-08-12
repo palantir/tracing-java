@@ -15,7 +15,10 @@
  */
 
 apply plugin: 'com.palantir.external-publish-jar'
-apply plugin: 'com.palantir.revapi'
+
+versionsLock {
+    disableJavaPluginDefaults()
+}
 
 dependencies {
     // tracing is used to clear tracing state, but not exposed to other consumers
@@ -25,8 +28,4 @@ dependencies {
     api "javax.servlet:javax.servlet-api"
 
     implementation 'com.palantir.safe-logging:logger'
-
-    testImplementation project(":tracing-undertow-testing")
-    testImplementation "org.junit.jupiter:junit-jupiter"
-    testImplementation 'org.assertj:assertj-core'
 }

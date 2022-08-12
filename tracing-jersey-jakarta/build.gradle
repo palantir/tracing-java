@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-apply plugin: 'org.inferred.processors'
-
 apply plugin: 'com.palantir.external-publish-jar'
-
-versionsLock {
-    disableJavaPluginDefaults()
-}
+apply plugin: 'com.palantir.revapi'
 
 dependencies {
+    api "org.glassfish.jersey.core:jersey-server"
     api project(":tracing")
-    api "javax.ws.rs:javax.ws.rs-api"
+
+    implementation 'com.google.guava:guava'
+    implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+    implementation project(':tracing-api')
+
+    testImplementation project(":tracing-undertow-jakarta-testing")
+    testImplementation 'org.glassfish.jersey.inject:jersey-hk2'
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testImplementation "org.assertj:assertj-core"
+    testImplementation "org.hamcrest:hamcrest-all"
+    testImplementation "org.mockito:mockito-core"
+    testImplementation "org.mockito:mockito-junit-jupiter"
+
+    // needed for MDC tests
+    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }
