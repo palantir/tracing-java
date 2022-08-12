@@ -12,6 +12,7 @@ org.slf4j:slf4j-api = 1.7.12
 # Jakarta EE9 Versions
 jakarta.servlet:jakarta.servlet-api = 5.0.0
 jakarta.ws.rs:jakarta.ws.rs-api = 3.1.0
+jakarta.annotation:jakarta.annotation-api = 2.0.0
 org.glassfish.jersey.*:* = 3.0.6
 
 # legacy javax versions
