@@ -14,5 +14,4 @@ include 'tracing-servlet-jakarta'
 include 'tracing-test-utils'
 include 'tracing-undertow'
 
-include 'tracing-undertow-testing'
 include 'tracing-undertow-jakarta-testing'

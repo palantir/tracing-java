@@ -33,14 +33,4 @@ dependencies {
     implementation 'javax.ws.rs:javax.ws.rs-api'
     implementation 'javax.annotation:javax.annotation-api'
     implementation project(':tracing-api')
-
-    testImplementation project(":tracing-undertow-testing")
-    testImplementation "org.junit.jupiter:junit-jupiter"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.hamcrest:hamcrest-all"
-    testImplementation "org.mockito:mockito-core"
-    testImplementation "org.mockito:mockito-junit-jupiter"
-
-    // needed for MDC tests
-    testRuntimeOnly "org.apache.logging.log4j:log4j-slf4j-impl"
 }

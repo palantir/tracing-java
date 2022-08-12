@@ -19,13 +19,11 @@ apply plugin: 'org.inferred.processors'
 apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
+versionsLock {
+    disableJavaPluginDefaults()
+}
+
 dependencies {
     api project(":tracing")
     api "javax.ws.rs:javax.ws.rs-api"
-
-    testImplementation "ch.qos.logback:logback-classic"
-    testImplementation "org.junit.jupiter:junit-jupiter"
-    testImplementation "org.assertj:assertj-core"
-    testImplementation "org.jmock:jmock"
-    testImplementation "org.mockito:mockito-core"
 }
