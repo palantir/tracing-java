@@ -23,6 +23,7 @@ dependencies {
 
     implementation 'com.google.guava:guava'
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
+    implementation 'org.glassfish.jersey.inject:jersey-hk2'
     implementation project(':tracing-api')
 
     testImplementation project(":tracing-undertow-jakarta-testing")
