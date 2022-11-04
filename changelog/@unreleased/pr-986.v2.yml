@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Add enable flag to closeable tracers
+  links:
+  - https://github.com/palantir/tracing-java/pull/986
