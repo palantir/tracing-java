@@ -110,4 +110,22 @@ public final class CloseableTracerTest {
             Tracer.unsubscribe(name);
         }
     }
+
+    @Test
+    public void startsAndClosesSpanIfEnabled() {
+        try (CloseableTracer tracer = CloseableTracer.startSpan("foo", true)) {
+            OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+            assertThat(openSpan.getOperation()).isEqualTo("foo");
+            assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
+        }
+        assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+    }
+
+    @Test
+    public void doesNotTraceIfDisabled() {
+        try (CloseableTracer tracer = CloseableTracer.startSpan("foo", false)) {
+            assertThat(Tracer.copyTrace()).isEmpty();
+        }
+        assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+    }
 }

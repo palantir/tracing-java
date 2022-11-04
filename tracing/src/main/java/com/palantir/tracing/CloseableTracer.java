@@ -80,6 +80,73 @@ public class CloseableTracer implements AutoCloseable {
         return new TaggedCloseableTracer<>(translator, data);
     }
 
+    /**
+     * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     */
+    public static CloseableTracer startSpan(@Safe String operation, boolean enable) {
+        if (!enable) {
+            return INSTANCE;
+        }
+
+        return startSpan(operation);
+    }
+
+    /**
+     * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
+     */
+    public static CloseableTracer startSpan(
+            @Safe String operation, boolean enable, @Safe Map<String, String> metadata) {
+        if (!enable) {
+            return INSTANCE;
+        }
+
+        return startSpan(operation, metadata);
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation.
+     *
+     * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
+     */
+    public static CloseableTracer startSpan(@Safe String operation, boolean enable, SpanType spanType) {
+        if (!enable) {
+            return INSTANCE;
+        }
+
+        return startSpan(operation, spanType);
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation. Equivalent to {@link #startSpan(String, TagTranslator, Object, SpanType)} with {@link SpanType#LOCAL}.
+     *
+     * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
+     */
+    public static <T> CloseableTracer startSpan(
+            @Safe String operation, boolean enable, TagTranslator<? super T> translator, T data) {
+        if (!enable) {
+            return INSTANCE;
+        }
+
+        return startSpan(operation, translator, data);
+    }
+
+    /**
+     * Opens a new span for this thread's call trace with the provided {@link SpanType}, labeled with the provided
+     * operation.
+     *
+     * <p>If you need to a span that may complete on another thread, use {@link DetachedSpan#start} instead.
+     */
+    public static <T> CloseableTracer startSpan(
+            @Safe String operation, boolean enable, TagTranslator<? super T> translator, T data, SpanType spanType) {
+        if (!enable) {
+            return INSTANCE;
+        }
+
+        return startSpan(operation, translator, data, spanType);
+    }
+
     @Override
     public void close() {
         Tracer.fastCompleteSpan();
