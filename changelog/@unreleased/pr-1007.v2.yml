@@ -1,0 +1,7 @@
+type: improvement
+improvement:
+  description: Introduce trace locals. Each trace gets its own independently settable
+    copy of the variable. Observers can be registered, which get called with the value
+    of the trace local when a trace completes.
+  links:
+  - https://github.com/palantir/tracing-java/pull/1007
