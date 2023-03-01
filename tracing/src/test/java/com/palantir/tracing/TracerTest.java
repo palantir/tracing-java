@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -702,6 +703,35 @@ public final class TracerTest {
                     .isEqualTo(currentTraceId);
             span.complete();
         }
+    }
+
+    @Test
+    public void testDetachedState_traceLocals() {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+
+        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
+        Tracer.subscribeTraceLocal("1", traceLocal, traceLocalObserver);
+
+        try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
+            traceLocal.set("outer");
+
+            DetachedSpan span =
+                    DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            try (CloseableSpan attached = span.attach()) {
+                assertThat(traceLocal.get()).isEqualTo("initial");
+                traceLocal.set("inner");
+            }
+
+            // nothing called yet, detached spans must be explicitly completed
+            verifyNoInteractions(traceLocalObserver);
+
+            span.complete();
+            verify(traceLocalObserver, times(1)).accept("inner");
+            verifyNoMoreInteractions(traceLocalObserver);
+        }
+
+        verify(traceLocalObserver, times(1)).accept("outer");
+        verifyNoMoreInteractions(traceLocalObserver);
     }
 
     private static void startAndFastCompleteSpan() {
