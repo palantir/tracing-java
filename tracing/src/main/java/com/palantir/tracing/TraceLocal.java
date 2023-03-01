@@ -18,11 +18,13 @@ package com.palantir.tracing;
 
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
+import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
 import com.palantir.logsafe.logger.SafeLogger;
 import com.palantir.logsafe.logger.SafeLoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class TraceLocal<T> {
@@ -60,7 +62,11 @@ public final class TraceLocal<T> {
         return Tracer.getTraceLocalValue(this, initialValue);
     }
 
-    public void set(T value) {
+    public void set(@Nonnull T value) {
+        if (value == null) {
+            throw new SafeIllegalArgumentException("value must not be null");
+        }
+
         Tracer.setTraceLocalValue(this, value);
     }
 
