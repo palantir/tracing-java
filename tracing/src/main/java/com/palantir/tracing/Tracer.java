@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.slf4j.MDC;
 
@@ -63,6 +64,10 @@ public final class Tracer {
     // we want iterating through tracers to be very fast, and it's faster to pre-define observer execution
     // when our observers are modified.
     private static volatile Consumer<Span> compositeObserver = _span -> {};
+
+    private static final Map<String, TraceLocalObserver<?>> traceLocalObservers = new HashMap<>();
+    // see above comment on compositeObserver
+    private static volatile Consumer<TraceState> compositeTraceLocalObserver = _traceState -> {};
 
     // Thread-safe since stateless
     private static volatile TraceSampler sampler = RandomSampler.create(0.0005f);
@@ -374,6 +379,35 @@ public final class Tracer {
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
 
+    @Nullable
+    static <T> T getTraceLocalValue(TraceLocal<T> traceLocal) {
+        Trace maybeCurrentTrace = currentTrace.get();
+        if (maybeCurrentTrace == null) {
+            return null;
+        }
+
+        return maybeCurrentTrace.getTraceState().getTraceLocalValue(traceLocal);
+    }
+
+    @Nullable
+    static <T> T getTraceLocalValue(TraceLocal<T> traceLocal, Supplier<T> initialValue) {
+        Trace maybeCurrentTrace = currentTrace.get();
+        if (maybeCurrentTrace == null) {
+            return null;
+        }
+
+        return maybeCurrentTrace.getTraceState().getTraceLocalValue(traceLocal, initialValue);
+    }
+
+    static <T> void setTraceLocalValue(TraceLocal<T> traceLocal, T value) {
+        Trace maybeCurrentTrace = currentTrace.get();
+        if (maybeCurrentTrace == null) {
+            return;
+        }
+
+        maybeCurrentTrace.getTraceState().setTraceLocalValue(traceLocal, value);
+    }
+
     static boolean isSampled(DetachedSpan detachedSpan) {
         return detachedSpan instanceof SampledDetachedSpan;
     }
@@ -678,9 +712,16 @@ public final class Tracer {
         compositeObserver.accept(span);
     }
 
+    private static void notifyObservers(Trace trace) {
+        compositeTraceLocalObserver.accept(trace.getTraceState());
+    }
+
     private static Optional<OpenSpan> popCurrentSpan(Trace trace) {
         Optional<OpenSpan> span = trace.pop();
         if (trace.isEmpty()) {
+            if (trace.isObservable()) {
+                notifyObservers(trace);
+            }
             clearCurrentTrace();
         }
         return span;
@@ -748,6 +789,36 @@ public final class Tracer {
         return removedObserver;
     }
 
+    // add trace local observer?
+    public static synchronized <T> void subscribeTraceLocal(
+            String name, TraceLocal<T> traceLocal, Consumer<T> observer) {
+        if (traceLocalObservers.containsKey(name)) {
+            log.warn(
+                    "Overwriting existing trace local observer with name {} by new observer: {}",
+                    SafeArg.of("name", name),
+                    UnsafeArg.of("observer", observer));
+        }
+        if (traceLocalObservers.size() >= 5) {
+            log.warn(
+                    "Five or more trace local observers registered: {}",
+                    SafeArg.of("observers", traceLocalObservers.keySet()));
+        }
+
+        traceLocalObservers.put(
+                name,
+                TraceLocalObserver.<T>builder()
+                        .traceLocal(traceLocal)
+                        .observer(observer)
+                        .build());
+
+        computeTraceLocalObserversList();
+    }
+
+    public static synchronized void unsubscribeTracelocal(String name) {
+        traceLocalObservers.remove(name);
+        computeTraceLocalObserversList();
+    }
+
     private static void computeObserversList() {
         Consumer<Span> newCompositeObserver = _span -> {};
         for (Map.Entry<String, SpanObserver> entry : observers.entrySet()) {
@@ -767,6 +838,35 @@ public final class Tracer {
         }
         // Single volatile write, updating observers should not disrupt tracing
         compositeObserver = newCompositeObserver;
+    }
+
+    private static void computeTraceLocalObserversList() {
+        Consumer<TraceState> traceLocalCompositeConsumer = _traceState -> {};
+        for (Map.Entry<String, TraceLocalObserver<?>> entry : traceLocalObservers.entrySet()) {
+            traceLocalCompositeConsumer =
+                    traceLocalCompositeConsumer.andThen(computeTraceLocalObserver(entry.getKey(), entry.getValue()));
+        }
+
+        // Single volatile write
+        compositeTraceLocalObserver = traceLocalCompositeConsumer;
+    }
+
+    private static <T> Consumer<TraceState> computeTraceLocalObserver(
+            String observerName, TraceLocalObserver<T> observer) {
+        return traceState -> {
+            try {
+                T value = traceState.getTraceLocalValue(observer.traceLocal());
+                if (value != null) {
+                    observer.observer().accept(value);
+                }
+            } catch (RuntimeException e) {
+                log.error(
+                        "Failed to invoke trace local observer {} registered as {}",
+                        SafeArg.of("observer", observer),
+                        SafeArg.of("name", observerName),
+                        e);
+            }
+        };
     }
 
     /**

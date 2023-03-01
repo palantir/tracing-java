@@ -19,6 +19,7 @@ package com.palantir.tracing;
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.assertj.core.util.Sets;
 import org.junit.After;
 import org.junit.Test;
@@ -51,6 +53,9 @@ public final class TracerTest {
 
     @Mock
     private SpanObserver observer2;
+
+    @Mock
+    private Consumer<String> traceLocalObserver;
 
     @Mock
     private TraceSampler sampler;
@@ -418,6 +423,34 @@ public final class TracerTest {
             Tracer.fastCompleteSpan();
         }
         assertThat(Tracer.hasUnobservableTrace()).isFalse();
+    }
+
+    @Test
+    public void testTraceLocals() {
+        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
+        Tracer.subscribeTraceLocal("1", traceLocal, traceLocalObserver);
+
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+        Tracer.fastStartSpan("outer");
+
+        try (CloseableTracer trace = CloseableTracer.startSpan("operation")) {
+            assertThat(traceLocal.get()).isEqualTo("initial");
+
+            traceLocal.set("some-value");
+            assertThat(traceLocal.get()).isEqualTo("some-value");
+        }
+
+        try (CloseableTracer trace = CloseableTracer.startSpan("operation")) {
+            assertThat(traceLocal.get()).isEqualTo("some-value");
+            traceLocal.set("other-value");
+        }
+
+        verify(traceLocalObserver, never()).accept(any());
+
+        // outer...
+        Tracer.fastCompleteSpan();
+
+        verify(traceLocalObserver, times(1)).accept("other-value");
     }
 
     @Test

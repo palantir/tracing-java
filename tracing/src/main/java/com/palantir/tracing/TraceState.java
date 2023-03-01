@@ -21,7 +21,9 @@ import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
 import java.io.Serializable;
+import java.util.IdentityHashMap;
 import java.util.Optional;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
@@ -39,6 +41,8 @@ final class TraceState implements Serializable {
     @Nullable
     private final String forUserAgent;
 
+    private final IdentityHashMap<TraceLocal<?>, Object> traceLocals;
+
     static TraceState of(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
@@ -50,6 +54,7 @@ final class TraceState implements Serializable {
         this.traceId = traceId;
         this.requestId = requestId;
         this.forUserAgent = forUserAgent;
+        this.traceLocals = new IdentityHashMap<>();
     }
 
     /**
@@ -77,6 +82,19 @@ final class TraceState implements Serializable {
     @Nullable
     String forUserAgent() {
         return forUserAgent;
+    }
+
+    @Nullable
+    public synchronized <T> T getTraceLocalValue(TraceLocal<T> traceLocal) {
+        return (T) traceLocals.get(traceLocal);
+    }
+
+    public synchronized <T> T getTraceLocalValue(TraceLocal<T> traceLocal, Supplier<T> initialValue) {
+        return (T) traceLocals.computeIfAbsent(traceLocal, _key -> initialValue.get());
+    }
+
+    public synchronized <T> void setTraceLocalValue(TraceLocal<T> traceLocal, T value) {
+        traceLocals.put(traceLocal, value);
     }
 
     @Override
