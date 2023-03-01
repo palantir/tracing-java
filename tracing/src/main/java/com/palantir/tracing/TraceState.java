@@ -93,8 +93,8 @@ final class TraceState implements Serializable {
         return "TraceState{"
                 + "traceId='" + traceId + "', "
                 + "requestId='" + requestId + "', "
-                + "forUserAgent='" + forUserAgent + ", "
+                + "forUserAgent='" + forUserAgent + "', "
                 + "traceLocals=" + traceLocals
-                + "'}";
+                + "}";
     }
 }
