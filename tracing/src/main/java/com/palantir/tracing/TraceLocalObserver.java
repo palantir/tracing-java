@@ -16,19 +16,6 @@
 
 package com.palantir.tracing;
 
-import java.util.function.Consumer;
-import org.immutables.value.Value;
-
-@Value.Immutable
-@ImmutablesStyle
 public interface TraceLocalObserver<T> {
-    TraceLocal<T> traceLocal();
-
-    Consumer<T> observer();
-
-    class Builder<T> extends ImmutableTraceLocalObserver.Builder<T> {}
-
-    static <T> Builder<T> builder() {
-        return new Builder<>();
-    }
+    void onTraceComplete(T value);
 }

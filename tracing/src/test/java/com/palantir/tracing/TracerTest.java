@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import org.assertj.core.util.Sets;
 import org.junit.After;
 import org.junit.Test;
@@ -56,7 +55,7 @@ public final class TracerTest {
     private SpanObserver observer2;
 
     @Mock
-    private Consumer<String> traceLocalObserver;
+    private TraceLocalObserver<String> traceLocalObserver;
 
     @Mock
     private TraceSampler sampler;
@@ -429,7 +428,7 @@ public final class TracerTest {
     @Test
     public void testTraceLocals() {
         TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
-        Tracer.subscribeTraceLocal("1", traceLocal, traceLocalObserver);
+        traceLocal.subscribe("1", traceLocalObserver);
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.fastStartSpan("outer");
@@ -446,12 +445,12 @@ public final class TracerTest {
             traceLocal.set("other-value");
         }
 
-        verify(traceLocalObserver, never()).accept(any());
+        verify(traceLocalObserver, never()).onTraceComplete(any());
 
         // outer...
         Tracer.fastCompleteSpan();
 
-        verify(traceLocalObserver, times(1)).accept("other-value");
+        verify(traceLocalObserver, times(1)).onTraceComplete("other-value");
     }
 
     @Test
@@ -710,7 +709,7 @@ public final class TracerTest {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
 
         TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
-        Tracer.subscribeTraceLocal("1", traceLocal, traceLocalObserver);
+        traceLocal.subscribe("1", traceLocalObserver);
 
         try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
             traceLocal.set("outer");
@@ -726,12 +725,55 @@ public final class TracerTest {
             verifyNoInteractions(traceLocalObserver);
 
             span.complete();
-            verify(traceLocalObserver, times(1)).accept("inner");
+            verify(traceLocalObserver, times(1)).onTraceComplete("inner");
             verifyNoMoreInteractions(traceLocalObserver);
         }
 
-        verify(traceLocalObserver, times(1)).accept("outer");
+        verify(traceLocalObserver, times(1)).onTraceComplete("outer");
         verifyNoMoreInteractions(traceLocalObserver);
+    }
+
+    @Test
+    public void testTraceLocals_notObservedIfUnset() {
+        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
+        traceLocal.subscribe("1", traceLocalObserver);
+
+        DetachedSpan span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+        // don't touch the trace local...
+        span.complete();
+        verifyNoInteractions(traceLocalObserver);
+
+        span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+        try (CloseableSpan attach = span.attach()) {
+            traceLocal.set("some value");
+            // explict unset
+            traceLocal.remove();
+        }
+        span.complete();
+        verifyNoInteractions(traceLocalObserver);
+
+        // but getting it is enough
+        span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+        try (CloseableSpan attach = span.attach()) {
+            assertThat(traceLocal.get()).isEqualTo("initial");
+        }
+        span.complete();
+        verify(traceLocalObserver, times(1)).onTraceComplete("initial");
+        verifyNoMoreInteractions(traceLocalObserver);
+    }
+
+    @Test
+    public void testTraceLocals_notObservedIfUnsampled() {
+        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
+        traceLocal.subscribe("1", traceLocalObserver);
+
+        DetachedSpan span =
+                DetachedSpan.start(Observability.DO_NOT_SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+        try (CloseableSpan attach = span.attach()) {
+            traceLocal.set("some value");
+        }
+        span.complete();
+        verifyNoInteractions(traceLocalObserver);
     }
 
     private static void startAndFastCompleteSpan() {

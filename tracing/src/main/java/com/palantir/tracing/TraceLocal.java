@@ -16,15 +16,43 @@
 
 package com.palantir.tracing;
 
+import com.palantir.logsafe.SafeArg;
+import com.palantir.logsafe.UnsafeArg;
+import com.palantir.logsafe.logger.SafeLogger;
+import com.palantir.logsafe.logger.SafeLoggerFactory;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 public final class TraceLocal<T> {
 
+    private static final SafeLogger log = SafeLoggerFactory.get(TraceLocal.class);
+
     private final Supplier<T> initialValue;
+    private final ConcurrentHashMap<String, TraceLocalObserver<T>> observers;
 
     public TraceLocal(Supplier<T> initialValue) {
         this.initialValue = initialValue;
+        this.observers = new ConcurrentHashMap<>();
+    }
+
+    public void subscribe(String name, TraceLocalObserver<T> observer) {
+        if (observers.containsKey(name)) {
+            log.warn(
+                    "Overwriting existing TraceLocalObserver with name {} by new observer: {}",
+                    SafeArg.of("name", name),
+                    UnsafeArg.of("observer", observer));
+        }
+        if (observers.size() >= 5) {
+            log.warn("Five or more TraceLocalObservers registered: {}", SafeArg.of("observers", observers.keySet()));
+        }
+
+        observers.put(name, observer);
+    }
+
+    public void unsubscribe(String name) {
+        observers.remove(name);
     }
 
     @Nullable
@@ -34,5 +62,35 @@ public final class TraceLocal<T> {
 
     public void set(T value) {
         Tracer.setTraceLocalValue(this, value);
+    }
+
+    public void remove() {
+        Tracer.setTraceLocalValue(this, null);
+    }
+
+    void onTraceComplete(T value) {
+        for (Map.Entry<String, TraceLocalObserver<T>> entry : observers.entrySet()) {
+            try {
+                entry.getValue().onTraceComplete(value);
+            } catch (RuntimeException e) {
+                log.error(
+                        "Failed to invoke observer {} registered as {}",
+                        SafeArg.of("observer", entry.getValue()),
+                        SafeArg.of("name", entry.getKey()),
+                        e);
+            }
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        // identity semantics
+        return super.equals(obj);
+    }
+
+    @Override
+    public int hashCode() {
+        // identity semantics
+        return super.hashCode();
     }
 }
