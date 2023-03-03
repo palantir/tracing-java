@@ -29,15 +29,35 @@ public final class TraceLocal<T> {
 
     private final Supplier<T> initialValue;
 
+    /**
+     * Creates a trace local variable.
+     *
+     * When not already set, and this variable is accessed in a trace with the {@link #get()} method, the supplier
+     * will be invoked to supply a value (which will then be stored for future accesses).
+     *
+     * The supplier is thus normally invoked once per trace, but may be invoked again in case of subsequent
+     * invocations of {@link #remove()} followed by get.
+     */
     public TraceLocal(Supplier<T> initialValue) {
         this.initialValue = initialValue;
     }
 
+    /**
+     * Retrieve the current value of the trace local, with respect to the current trace.
+     *
+     * If there is no current trace, i.e. {@link Tracer#hasTraceId()} is null, then this will return null.
+     *
+     * If the value of this trace local has not been set for the current trace, then the supplier passed in the
+     * constructor will be called to supply a value.
+     */
     @Nullable
     public T get() {
         return Tracer.getTraceLocalValue(this, initialValue);
     }
 
+    /**
+     * Sets the value of this trace local for the current trace.
+     */
     public void set(@Nonnull T value) {
         if (value == null) {
             throw new SafeIllegalArgumentException("value must not be null");
