@@ -17,17 +17,15 @@
 package com.palantir.tracing;
 
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
-import com.palantir.logsafe.logger.SafeLogger;
-import com.palantir.logsafe.logger.SafeLoggerFactory;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class TraceLocal<T> {
 
-    private static final SafeLogger log = SafeLoggerFactory.get(TraceLocal.class);
-
-    private final Supplier<T> initialValue;
+    @Nullable
+    private final Function<? super TraceLocal<?>, T> initialValue;
 
     /**
      * Creates a trace local variable.
@@ -38,8 +36,22 @@ public final class TraceLocal<T> {
      * The supplier is thus normally invoked once per trace, but may be invoked again in case of subsequent
      * invocations of {@link #remove()} followed by get.
      */
-    public TraceLocal(Supplier<T> initialValue) {
-        this.initialValue = initialValue;
+    private TraceLocal(Supplier<T> initialValue) {
+        if (initialValue == null) {
+            this.initialValue = null;
+        } else {
+            // eagerly transform supplier to avoid allocation per get invocation
+            // (computeIfAbsent called in Tracer#getTraceLocalvalue takes a Function)
+            this.initialValue = _ignored -> initialValue.get();
+        }
+    }
+
+    public static <T> TraceLocal<T> of() {
+        return new TraceLocal(null);
+    }
+
+    public static <T> TraceLocal<T> withInitialValue(@Nonnull Supplier<T> initialValue) {
+        return new TraceLocal(initialValue);
     }
 
     /**

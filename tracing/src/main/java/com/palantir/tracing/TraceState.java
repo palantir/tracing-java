@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 /**
@@ -41,7 +42,9 @@ final class TraceState implements Serializable {
     @Nullable
     private final String forUserAgent;
 
-    private final Map<TraceLocal<?>, Object> traceLocals;
+    private volatile TraceLocalMap traceLocals;
+    private static final AtomicReferenceFieldUpdater<TraceState, TraceLocalMap> traceLocalsUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TraceState.class, TraceLocalMap.class, "traceLocals");
 
     static TraceState of(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
@@ -54,7 +57,7 @@ final class TraceState implements Serializable {
         this.traceId = traceId;
         this.requestId = requestId;
         this.forUserAgent = forUserAgent;
-        this.traceLocals = new ConcurrentHashMap<>();
+        this.traceLocals = null;
     }
 
     /**
@@ -85,7 +88,16 @@ final class TraceState implements Serializable {
     }
 
     public Map<TraceLocal<?>, Object> getTraceLocals() {
-        return traceLocals;
+        TraceLocalMap result = traceLocalsUpdater.get(this);
+
+        if (result == null) {
+            result = new TraceLocalMap();
+            if (!traceLocalsUpdater.compareAndSet(this, null, result)) {
+                return traceLocalsUpdater.get(this);
+            }
+        }
+
+        return result;
     }
 
     @Override
@@ -97,4 +109,6 @@ final class TraceState implements Serializable {
                 + "traceLocals=" + traceLocals
                 + "}";
     }
+
+    private class TraceLocalMap extends ConcurrentHashMap<TraceLocal<?>, Object> {}
 }

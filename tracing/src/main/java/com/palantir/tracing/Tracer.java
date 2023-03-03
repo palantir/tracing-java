@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.slf4j.MDC;
 
@@ -376,16 +376,21 @@ public final class Tracer {
     }
 
     @Nullable
-    static <T> T getTraceLocalValue(TraceLocal<T> traceLocal, Supplier<T> initialValue) {
+    static <T> T getTraceLocalValue(
+            TraceLocal<T> traceLocal, @Nullable Function<? super TraceLocal<?>, T> initialValue) {
         Trace maybeCurrentTrace = currentTrace.get();
         if (maybeCurrentTrace == null) {
             return null;
         }
 
-        return (T) maybeCurrentTrace
-                .getTraceState()
-                .getTraceLocals()
-                .computeIfAbsent(traceLocal, _key -> initialValue.get());
+        Map<TraceLocal<?>, Object> traceLocals =
+                maybeCurrentTrace.getTraceState().getTraceLocals();
+
+        if (initialValue == null) {
+            return (T) traceLocals.get(traceLocal);
+        } else {
+            return (T) traceLocals.computeIfAbsent(traceLocal, initialValue);
+        }
     }
 
     static <T> void setTraceLocalValue(TraceLocal<T> traceLocal, @Nullable T value) {

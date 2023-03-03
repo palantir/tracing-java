@@ -422,7 +422,7 @@ public final class TracerTest {
 
     @Test
     public void testTraceLocals() {
-        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
+        TraceLocal<String> traceLocal = TraceLocal.withInitialValue(() -> "initial");
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.fastStartSpan("outer");
@@ -703,7 +703,7 @@ public final class TracerTest {
     public void testDetachedState_traceLocals() {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
 
-        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
+        TraceLocal<String> traceLocal = TraceLocal.withInitialValue(() -> "initial");
 
         try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
             traceLocal.set("outer");
