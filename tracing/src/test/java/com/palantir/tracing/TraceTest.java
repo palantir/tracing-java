@@ -49,8 +49,9 @@ public final class TraceTest {
     @Test
     public void testToString_doesNotContainTraceLocals() {
         Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty(), Optional.empty()));
+
         TraceLocal<String> traceLocal = TraceLocal.of();
-        trace.getTraceState().getTraceLocals().put(traceLocal, "secret-value");
+        trace.getTraceState().getOrCreateTraceLocals().put(traceLocal, "secret-value");
 
         assertThat(trace.toString()).doesNotContain("secret");
     }

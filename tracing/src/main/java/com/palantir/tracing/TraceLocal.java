@@ -28,7 +28,7 @@ public final class TraceLocal<T> {
     @Nullable
     private final Function<? super TraceLocal<?>, T> initialValue;
 
-    private TraceLocal(Supplier<T> initialValue) {
+    private TraceLocal(@Nullable Supplier<T> initialValue) {
         if (initialValue == null) {
             this.initialValue = null;
         } else {
@@ -39,7 +39,7 @@ public final class TraceLocal<T> {
     }
 
     public static <T> TraceLocal<T> of() {
-        return new TraceLocal(null);
+        return new TraceLocal<>(null);
     }
 
     /**
@@ -52,7 +52,7 @@ public final class TraceLocal<T> {
      * invocations of {@link #remove()} followed by get.
      */
     public static <T> TraceLocal<T> withInitialValue(@Nonnull Supplier<T> initialValue) {
-        return new TraceLocal(initialValue);
+        return new TraceLocal<>(initialValue);
     }
 
     /**
@@ -92,6 +92,7 @@ public final class TraceLocal<T> {
      *
      * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
+    @Nullable
     public T set(@Nonnull T value) {
         if (value == null) {
             throw new SafeIllegalArgumentException("value must not be null");
@@ -111,6 +112,7 @@ public final class TraceLocal<T> {
      *
      * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
+    @Nullable
     public T remove() {
         TraceState traceState = Tracer.getTraceState();
 

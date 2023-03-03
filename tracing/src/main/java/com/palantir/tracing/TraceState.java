@@ -116,5 +116,5 @@ final class TraceState implements Serializable {
                 + "'}";
     }
 
-    private class TraceLocalMap extends ConcurrentHashMap<TraceLocal<?>, Object> {}
+    private static final class TraceLocalMap extends ConcurrentHashMap<TraceLocal<?>, Object> {}
 }
