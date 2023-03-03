@@ -421,6 +421,34 @@ public final class TracerTest {
     }
 
     @Test
+    public void testTraceLocals() {
+        TraceLocal<String> traceLocal = TraceLocal.withInitialValue(() -> "initial");
+
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+        Tracer.fastStartSpan("outer");
+
+        try (CloseableTracer trace = CloseableTracer.startSpan("operation")) {
+            assertThat(traceLocal.get()).isEqualTo("initial");
+
+            traceLocal.set("some-value");
+            assertThat(traceLocal.get()).isEqualTo("some-value");
+        }
+
+        try (CloseableTracer trace = CloseableTracer.startSpan("operation")) {
+            assertThat(traceLocal.get()).isEqualTo("some-value");
+            traceLocal.set("other-value");
+        }
+
+        assertThat(traceLocal.get()).isEqualTo("other-value");
+
+        // outer...
+        Tracer.fastCompleteSpan();
+
+        // outside of a trace, it has no value
+        assertThat(traceLocal.get()).isEqualTo(null);
+    }
+
+    @Test
     public void testSimpleDetachedTrace() {
         assertThat(Tracer.hasTraceId()).isFalse();
         Tracer.subscribe("1", observer1);
@@ -668,6 +696,33 @@ public final class TracerTest {
                     .as("Current thread state should not be modified")
                     .isEqualTo(currentTraceId);
             span.complete();
+        }
+    }
+
+    @Test
+    public void testDetachedState_traceLocals() {
+        Tracer.setSampler(AlwaysSampler.INSTANCE);
+
+        TraceLocal<String> traceLocal = TraceLocal.withInitialValue(() -> "initial");
+
+        try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
+            traceLocal.set("outer");
+
+            DetachedSpan span =
+                    DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+            try (CloseableSpan attached = span.attach()) {
+                assertThat(traceLocal.get()).isEqualTo("initial");
+                traceLocal.set("inner");
+            }
+
+            assertThat(traceLocal.get()).isEqualTo("outer");
+
+            try (CloseableSpan attached = span.attach()) {
+                assertThat(traceLocal.get()).isEqualTo("inner");
+            }
+
+            traceLocal.remove();
+            assertThat(traceLocal.get()).isEqualTo("initial");
         }
     }
 

@@ -21,7 +21,10 @@ import static com.palantir.logsafe.Preconditions.checkNotNull;
 
 import com.google.common.base.Strings;
 import java.io.Serializable;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 /**
@@ -39,6 +42,12 @@ final class TraceState implements Serializable {
     @Nullable
     private final String forUserAgent;
 
+    @Nullable
+    private volatile TraceLocalMap traceLocals;
+
+    private static final AtomicReferenceFieldUpdater<TraceState, TraceLocalMap> traceLocalsUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(TraceState.class, TraceLocalMap.class, "traceLocals");
+
     static TraceState of(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
@@ -50,6 +59,7 @@ final class TraceState implements Serializable {
         this.traceId = traceId;
         this.requestId = requestId;
         this.forUserAgent = forUserAgent;
+        this.traceLocals = null;
     }
 
     /**
@@ -79,6 +89,24 @@ final class TraceState implements Serializable {
         return forUserAgent;
     }
 
+    Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {
+        TraceLocalMap result = traceLocalsUpdater.get(this);
+
+        if (result == null) {
+            result = new TraceLocalMap();
+            if (!traceLocalsUpdater.compareAndSet(this, null, result)) {
+                return traceLocalsUpdater.get(this);
+            }
+        }
+
+        return result;
+    }
+
+    @Nullable
+    Map<TraceLocal<?>, Object> getTraceLocals() {
+        return traceLocals;
+    }
+
     @Override
     public String toString() {
         return "TraceState{"
@@ -87,4 +115,6 @@ final class TraceState implements Serializable {
                 + "forUserAgent='" + forUserAgent
                 + "'}";
     }
+
+    private static final class TraceLocalMap extends ConcurrentHashMap<TraceLocal<?>, Object> {}
 }

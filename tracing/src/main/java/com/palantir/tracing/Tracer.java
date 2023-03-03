@@ -349,6 +349,17 @@ public final class Tracer {
         return Optional.empty();
     }
 
+    @Nullable
+    static TraceState getTraceState() {
+        Trace maybeCurrentTrace = currentTrace.get();
+
+        if (maybeCurrentTrace == null) {
+            return null;
+        }
+
+        return maybeCurrentTrace.getTraceState();
+    }
+
     private static TraceState getTraceState(@Nullable Trace maybeCurrentTrace, SpanType newSpanType) {
         if (maybeCurrentTrace != null) {
             return maybeCurrentTrace.getTraceState();
