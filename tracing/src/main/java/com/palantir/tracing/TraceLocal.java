@@ -16,6 +16,7 @@
 
 package com.palantir.tracing;
 
+import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
 import java.util.Map;
 import java.util.function.Function;
@@ -41,7 +42,8 @@ public final class TraceLocal<T> {
         } else {
             // eagerly transform supplier to avoid allocation per invocation
             // (computeIfAbsent takes a Function)
-            this.initialValue = _ignored -> Preconditions.checkNotNull(initialValue.get(), "TraceLocal initial value must not be null");
+            this.initialValue = _ignored ->
+                    Preconditions.checkNotNull(initialValue.get(), "TraceLocal initial value must not be null");
         }
     }
 
