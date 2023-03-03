@@ -376,16 +376,6 @@ public final class Tracer {
     }
 
     @Nullable
-    static <T> T getTraceLocalValue(TraceLocal<T> traceLocal) {
-        Trace maybeCurrentTrace = currentTrace.get();
-        if (maybeCurrentTrace == null) {
-            return null;
-        }
-
-        return (T) maybeCurrentTrace.getTraceState().getTraceLocals().get(traceLocal);
-    }
-
-    @Nullable
     static <T> T getTraceLocalValue(TraceLocal<T> traceLocal, Supplier<T> initialValue) {
         Trace maybeCurrentTrace = currentTrace.get();
         if (maybeCurrentTrace == null) {
@@ -404,7 +394,8 @@ public final class Tracer {
             return;
         }
 
-        Map<TraceLocal<?>, Object> traceLocals = maybeCurrentTrace.getTraceState().getTraceLocals();
+        Map<TraceLocal<?>, Object> traceLocals =
+                maybeCurrentTrace.getTraceState().getTraceLocals();
         if (value == null) {
             traceLocals.remove(traceLocal);
         } else {
