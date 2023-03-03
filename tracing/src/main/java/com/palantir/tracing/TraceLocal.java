@@ -27,15 +27,6 @@ public final class TraceLocal<T> {
     @Nullable
     private final Function<? super TraceLocal<?>, T> initialValue;
 
-    /**
-     * Creates a trace local variable.
-     *
-     * When not already set, and this variable is accessed in a trace with the {@link #get()} method, the supplier
-     * will be invoked to supply a value (which will then be stored for future accesses).
-     *
-     * The supplier is thus normally invoked once per trace, but may be invoked again in case of subsequent
-     * invocations of {@link #remove()} followed by get.
-     */
     private TraceLocal(Supplier<T> initialValue) {
         if (initialValue == null) {
             this.initialValue = null;
@@ -50,6 +41,15 @@ public final class TraceLocal<T> {
         return new TraceLocal(null);
     }
 
+    /**
+     * Creates a trace local variable, with a way of supplying an initial value.
+     *
+     * When not already set, and this variable is accessed in a trace with the {@link #get()} method, the supplier
+     * will be invoked to supply a value (which will then be stored for future accesses).
+     *
+     * The supplier is thus normally invoked once per trace, but may be invoked again in case of subsequent
+     * invocations of {@link #remove()} followed by get.
+     */
     public static <T> TraceLocal<T> withInitialValue(@Nonnull Supplier<T> initialValue) {
         return new TraceLocal(initialValue);
     }
@@ -69,15 +69,20 @@ public final class TraceLocal<T> {
 
     /**
      * Sets the value of this trace local for the current trace.
+     *
+     * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
-    public void set(@Nonnull T value) {
+    public T set(@Nonnull T value) {
         if (value == null) {
             throw new SafeIllegalArgumentException("value must not be null");
         }
 
-        Tracer.setTraceLocalValue(this, value);
+        return Tracer.setTraceLocalValue(this, value);
     }
 
+    /**
+     * Unsets the value of this trace local.
+     */
     public void remove() {
         Tracer.setTraceLocalValue(this, null);
     }

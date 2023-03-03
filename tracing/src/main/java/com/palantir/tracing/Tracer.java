@@ -393,18 +393,18 @@ public final class Tracer {
         }
     }
 
-    static <T> void setTraceLocalValue(TraceLocal<T> traceLocal, @Nullable T value) {
+    static <T> T setTraceLocalValue(TraceLocal<T> traceLocal, @Nullable T value) {
         Trace maybeCurrentTrace = currentTrace.get();
         if (maybeCurrentTrace == null) {
-            return;
+            return null;
         }
 
         Map<TraceLocal<?>, Object> traceLocals =
                 maybeCurrentTrace.getTraceState().getTraceLocals();
         if (value == null) {
-            traceLocals.remove(traceLocal);
+            return (T) traceLocals.remove(traceLocal);
         } else {
-            traceLocals.put(traceLocal, value);
+            return (T) traceLocals.put(traceLocal, value);
         }
     }
 
