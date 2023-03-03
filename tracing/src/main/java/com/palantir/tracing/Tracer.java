@@ -37,7 +37,6 @@ import com.palantir.tracing.api.SpanType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -281,7 +280,7 @@ public final class Tracer {
         boolean topLevel = maybeCurrentTrace == null || maybeCurrentTrace.isEmpty();
         Optional<String> parentSpan = getParentSpanId(maybeCurrentTrace);
         return sampled
-                ? new SampledDetachedSpan(operation, type, traceState, parentSpan, topLevel)
+                ? new SampledDetachedSpan(operation, type, traceState, parentSpan)
                 : new UnsampledDetachedSpan(traceState, Optional.empty());
     }
 
@@ -317,7 +316,7 @@ public final class Tracer {
         // is not modified.
         TraceState traceState = TraceState.of(traceId, requestId, forUserAgent);
         return shouldObserve(observability)
-                ? new SampledDetachedSpan(operation, type, traceState, parentSpanId, true)
+                ? new SampledDetachedSpan(operation, type, traceState, parentSpanId)
                 : new UnsampledDetachedSpan(traceState, parentSpanId);
     }
 
@@ -456,21 +455,14 @@ public final class Tracer {
                 AtomicIntegerFieldUpdater.newUpdater(SampledDetachedSpan.class, "completed");
 
         private final TraceState traceState;
-        private final boolean topLevel;
         private final OpenSpan openSpan;
 
         private volatile int completed;
 
         @SuppressWarnings("ImmutablesBuilderMissingInitialization")
         // OpenSpan#builder sets these
-        SampledDetachedSpan(
-                String operation,
-                SpanType type,
-                TraceState traceState,
-                Optional<String> parentSpanId,
-                boolean topLevel) {
+        SampledDetachedSpan(String operation, SpanType type, TraceState traceState, Optional<String> parentSpanId) {
             this.traceState = traceState;
-            this.topLevel = topLevel;
             this.openSpan = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         }
 
@@ -497,7 +489,7 @@ public final class Tracer {
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            return new SampledDetachedSpan(operation, type, traceState, Optional.of(openSpan.getSpanId()), false);
+            return new SampledDetachedSpan(operation, type, traceState, Optional.of(openSpan.getSpanId()));
         }
 
         @MustBeClosed
@@ -529,11 +521,6 @@ public final class Tracer {
         public <T> void complete(TagTranslator<? super T> tagTranslator, T data) {
             if (NOT_COMPLETE == completedUpdater.getAndSet(this, COMPLETE)) {
                 Tracer.notifyObservers(toSpan(openSpan, tagTranslator, data, traceState.traceId()));
-
-                if (topLevel) {
-                    // the whole 'trace' is done
-                    Tracer.notifyObservers(traceState);
-                }
             }
         }
 
@@ -568,7 +555,7 @@ public final class Tracer {
 
         @Override
         public DetachedSpan childDetachedSpan(String operation, SpanType type) {
-            return new SampledDetachedSpan(operation, type, traceState, Optional.of(openSpan.getSpanId()), false);
+            return new SampledDetachedSpan(operation, type, traceState, Optional.of(openSpan.getSpanId()));
         }
 
         @Override
@@ -729,22 +716,9 @@ public final class Tracer {
         compositeObserver.accept(span);
     }
 
-    private static void notifyObservers(TraceState traceState) {
-        for (Entry<TraceLocal<?>, Object> entry : traceState.getTraceLocals().entrySet()) {
-            notifyObservers(entry.getKey(), entry.getValue());
-        }
-    }
-
-    private static <T> void notifyObservers(TraceLocal<T> traceLocal, Object value) {
-        traceLocal.onTraceComplete((T) value);
-    }
-
     private static Optional<OpenSpan> popCurrentSpan(Trace trace) {
         Optional<OpenSpan> span = trace.pop();
         if (trace.isEmpty()) {
-            if (trace.isObservable()) {
-                notifyObservers(trace.getTraceState());
-            }
             clearCurrentTrace();
         }
         return span;

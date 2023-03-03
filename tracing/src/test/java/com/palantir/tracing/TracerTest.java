@@ -19,10 +19,8 @@ package com.palantir.tracing;
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -53,9 +51,6 @@ public final class TracerTest {
 
     @Mock
     private SpanObserver observer2;
-
-    @Mock
-    private TraceLocalObserver<String> traceLocalObserver;
 
     @Mock
     private TraceSampler sampler;
@@ -428,7 +423,6 @@ public final class TracerTest {
     @Test
     public void testTraceLocals() {
         TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
-        traceLocal.subscribe("1", traceLocalObserver);
 
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.fastStartSpan("outer");
@@ -445,12 +439,13 @@ public final class TracerTest {
             traceLocal.set("other-value");
         }
 
-        verify(traceLocalObserver, never()).onTraceComplete(any());
+        assertThat(traceLocal.get()).isEqualTo("other-value");
 
         // outer...
         Tracer.fastCompleteSpan();
 
-        verify(traceLocalObserver, times(1)).onTraceComplete("other-value");
+        // outside of a trace, it has no value
+        assertThat(traceLocal.get()).isEqualTo(null);
     }
 
     @Test
@@ -709,7 +704,6 @@ public final class TracerTest {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
 
         TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
-        traceLocal.subscribe("1", traceLocalObserver);
 
         try (CloseableTracer ignored = CloseableTracer.startSpan("test")) {
             traceLocal.set("outer");
@@ -721,59 +715,15 @@ public final class TracerTest {
                 traceLocal.set("inner");
             }
 
-            // nothing called yet, detached spans must be explicitly completed
-            verifyNoInteractions(traceLocalObserver);
+            assertThat(traceLocal.get()).isEqualTo("outer");
 
-            span.complete();
-            verify(traceLocalObserver, times(1)).onTraceComplete("inner");
-            verifyNoMoreInteractions(traceLocalObserver);
-        }
+            try (CloseableSpan attached = span.attach()) {
+                assertThat(traceLocal.get()).isEqualTo("inner");
+            }
 
-        verify(traceLocalObserver, times(1)).onTraceComplete("outer");
-        verifyNoMoreInteractions(traceLocalObserver);
-    }
-
-    @Test
-    public void testTraceLocals_notObservedIfUnset() {
-        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
-        traceLocal.subscribe("1", traceLocalObserver);
-
-        DetachedSpan span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
-        // don't touch the trace local...
-        span.complete();
-        verifyNoInteractions(traceLocalObserver);
-
-        span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
-        try (CloseableSpan attach = span.attach()) {
-            traceLocal.set("some value");
-            // explict unset
             traceLocal.remove();
-        }
-        span.complete();
-        verifyNoInteractions(traceLocalObserver);
-
-        // but getting it is enough
-        span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
-        try (CloseableSpan attach = span.attach()) {
             assertThat(traceLocal.get()).isEqualTo("initial");
         }
-        span.complete();
-        verify(traceLocalObserver, times(1)).onTraceComplete("initial");
-        verifyNoMoreInteractions(traceLocalObserver);
-    }
-
-    @Test
-    public void testTraceLocals_notObservedIfUnsampled() {
-        TraceLocal<String> traceLocal = new TraceLocal<>(() -> "initial");
-        traceLocal.subscribe("1", traceLocalObserver);
-
-        DetachedSpan span =
-                DetachedSpan.start(Observability.DO_NOT_SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
-        try (CloseableSpan attach = span.attach()) {
-            traceLocal.set("some value");
-        }
-        span.complete();
-        verifyNoInteractions(traceLocalObserver);
     }
 
     private static void startAndFastCompleteSpan() {
