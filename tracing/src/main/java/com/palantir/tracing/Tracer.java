@@ -277,7 +277,6 @@ public final class Tracer {
         Trace maybeCurrentTrace = currentTrace.get();
         TraceState traceState = getTraceState(maybeCurrentTrace, type);
         boolean sampled = maybeCurrentTrace != null ? maybeCurrentTrace.isObservable() : sampler.sample();
-        boolean topLevel = maybeCurrentTrace == null || maybeCurrentTrace.isEmpty();
         Optional<String> parentSpan = getParentSpanId(maybeCurrentTrace);
         return sampled
                 ? new SampledDetachedSpan(operation, type, traceState, parentSpan)
