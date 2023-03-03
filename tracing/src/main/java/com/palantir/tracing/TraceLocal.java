@@ -23,6 +23,13 @@ import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/**
+ * Provides trace local variables. Each trace gets its own independent copy of the variable.
+ *
+ * A trace local is either set (has a value) or unset (has no value).
+ *
+ * Outside of a trace (i.e. when {@link Tracer#hasTraceId()} is false) then the trace local is always unset.
+ */
 public final class TraceLocal<T> {
 
     @Nullable
