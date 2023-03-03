@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.slf4j.MDC;
 
@@ -350,6 +349,17 @@ public final class Tracer {
         return Optional.empty();
     }
 
+    @Nullable
+    static TraceState getTraceState() {
+        Trace maybeCurrentTrace = currentTrace.get();
+
+        if (maybeCurrentTrace == null) {
+            return null;
+        }
+
+        return maybeCurrentTrace.getTraceState();
+    }
+
     private static TraceState getTraceState(@Nullable Trace maybeCurrentTrace, SpanType newSpanType) {
         if (maybeCurrentTrace != null) {
             return maybeCurrentTrace.getTraceState();
@@ -373,39 +383,6 @@ public final class Tracer {
             return ((UnsampledDetachedSpan) detachedSpan).traceState.requestId();
         }
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
-    }
-
-    @Nullable
-    static <T> T getTraceLocalValue(
-            TraceLocal<T> traceLocal, @Nullable Function<? super TraceLocal<?>, T> initialValue) {
-        Trace maybeCurrentTrace = currentTrace.get();
-        if (maybeCurrentTrace == null) {
-            return null;
-        }
-
-        Map<TraceLocal<?>, Object> traceLocals =
-                maybeCurrentTrace.getTraceState().getTraceLocals();
-
-        if (initialValue == null) {
-            return (T) traceLocals.get(traceLocal);
-        } else {
-            return (T) traceLocals.computeIfAbsent(traceLocal, initialValue);
-        }
-    }
-
-    static <T> T setTraceLocalValue(TraceLocal<T> traceLocal, @Nullable T value) {
-        Trace maybeCurrentTrace = currentTrace.get();
-        if (maybeCurrentTrace == null) {
-            return null;
-        }
-
-        Map<TraceLocal<?>, Object> traceLocals =
-                maybeCurrentTrace.getTraceState().getTraceLocals();
-        if (value == null) {
-            return (T) traceLocals.remove(traceLocal);
-        } else {
-            return (T) traceLocals.put(traceLocal, value);
-        }
     }
 
     static boolean isSampled(DetachedSpan detachedSpan) {

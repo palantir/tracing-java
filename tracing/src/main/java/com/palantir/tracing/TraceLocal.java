@@ -17,6 +17,7 @@
 package com.palantir.tracing;
 
 import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -31,8 +32,8 @@ public final class TraceLocal<T> {
         if (initialValue == null) {
             this.initialValue = null;
         } else {
-            // eagerly transform supplier to avoid allocation per get invocation
-            // (computeIfAbsent called in Tracer#getTraceLocalvalue takes a Function)
+            // eagerly transform supplier to avoid allocation per invocation
+            // (computeIfAbsent takes a Function)
             this.initialValue = _ignored -> initialValue.get();
         }
     }
@@ -64,7 +65,26 @@ public final class TraceLocal<T> {
      */
     @Nullable
     public T get() {
-        return Tracer.getTraceLocalValue(this, initialValue);
+        TraceState traceState = Tracer.getTraceState();
+
+        if (traceState == null) {
+            return null;
+        }
+
+        if (initialValue == null) {
+            // not potentially setting a value, so just grab any current set value
+
+            Map<TraceLocal<?>, Object> traceLocals = traceState.getTraceLocals();
+
+            if (traceLocals == null) {
+                return null;
+            }
+
+            return (T) traceLocals.get(this);
+        } else {
+            Map<TraceLocal<?>, Object> traceLocals = traceState.getOrCreateTraceLocals();
+            return (T) traceLocals.computeIfAbsent(this, initialValue);
+        }
     }
 
     /**
@@ -77,14 +97,28 @@ public final class TraceLocal<T> {
             throw new SafeIllegalArgumentException("value must not be null");
         }
 
-        return Tracer.setTraceLocalValue(this, value);
+        TraceState traceState = Tracer.getTraceState();
+
+        if (traceState == null) {
+            return null;
+        }
+
+        return (T) traceState.getOrCreateTraceLocals().put(this, value);
     }
 
     /**
      * Unsets the value of this trace local.
+     *
+     * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
-    public void remove() {
-        Tracer.setTraceLocalValue(this, null);
+    public T remove() {
+        TraceState traceState = Tracer.getTraceState();
+
+        if (traceState == null) {
+            return null;
+        }
+
+        return (T) traceState.getOrCreateTraceLocals().remove(this);
     }
 
     @Override

@@ -42,7 +42,9 @@ final class TraceState implements Serializable {
     @Nullable
     private final String forUserAgent;
 
+    @Nullable
     private volatile TraceLocalMap traceLocals;
+
     private static final AtomicReferenceFieldUpdater<TraceState, TraceLocalMap> traceLocalsUpdater =
             AtomicReferenceFieldUpdater.newUpdater(TraceState.class, TraceLocalMap.class, "traceLocals");
 
@@ -87,7 +89,7 @@ final class TraceState implements Serializable {
         return forUserAgent;
     }
 
-    public Map<TraceLocal<?>, Object> getTraceLocals() {
+    public Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {
         TraceLocalMap result = traceLocalsUpdater.get(this);
 
         if (result == null) {
@@ -98,6 +100,11 @@ final class TraceState implements Serializable {
         }
 
         return result;
+    }
+
+    @Nullable
+    public Map<TraceLocal<?>, Object> getTraceLocals() {
+        return traceLocals;
     }
 
     @Override
