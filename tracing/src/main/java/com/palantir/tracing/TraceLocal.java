@@ -61,7 +61,7 @@ public final class TraceLocal<T> {
      * invocations of {@link #remove()} followed by get.
      */
     public static <T> TraceLocal<T> withInitialValue(@Nonnull Supplier<T> initialValue) {
-        return new TraceLocal<>(initialValue);
+        return new TraceLocal<>(Preconditions.checkNotNull(initialValue, "initial value supplier must not be null"));
     }
 
     /**
