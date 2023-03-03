@@ -41,7 +41,7 @@ public final class TraceLocal<T> {
         } else {
             // eagerly transform supplier to avoid allocation per invocation
             // (computeIfAbsent takes a Function)
-            this.initialValue = _ignored -> initialValue.get();
+            this.initialValue = _ignored -> Preconditions.checkNotNull(initialValue.get(), "TraceLocal initial value must not be null");
         }
     }
 
