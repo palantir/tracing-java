@@ -40,8 +40,7 @@ public final class TraceTest {
                 .isEqualTo("Trace{"
                         + "stack=[" + span + "], "
                         + "isObservable=true, "
-                        + "state=TraceState{traceId='traceId', requestId='null', forUserAgent='null'}"
-                        + "}")
+                        + "state=TraceState{traceId='traceId', requestId='null', forUserAgent='null'}}")
                 .contains(span.getOperation())
                 .contains(span.getSpanId());
     }
