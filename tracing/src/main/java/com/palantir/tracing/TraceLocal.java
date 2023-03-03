@@ -127,6 +127,11 @@ public final class TraceLocal<T> {
             return null;
         }
 
+        if (traceState.getTraceLocals() == null) {
+            // no trace locals ever set, short circuit (avoid creating the trace local map)
+            return null;
+        }
+
         return (T) traceState.getOrCreateTraceLocals().remove(this);
     }
 
