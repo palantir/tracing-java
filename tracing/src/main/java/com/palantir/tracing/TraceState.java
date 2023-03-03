@@ -105,9 +105,8 @@ final class TraceState implements Serializable {
         return "TraceState{"
                 + "traceId='" + traceId + "', "
                 + "requestId='" + requestId + "', "
-                + "forUserAgent='" + forUserAgent + "', "
-                + "traceLocals=" + traceLocals
-                + "}";
+                + "forUserAgent='" + forUserAgent
+                + "'}";
     }
 
     private class TraceLocalMap extends ConcurrentHashMap<TraceLocal<?>, Object> {}
