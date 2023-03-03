@@ -89,7 +89,7 @@ final class TraceState implements Serializable {
         return forUserAgent;
     }
 
-    public Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {
+    Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {
         TraceLocalMap result = traceLocalsUpdater.get(this);
 
         if (result == null) {
@@ -103,7 +103,7 @@ final class TraceState implements Serializable {
     }
 
     @Nullable
-    public Map<TraceLocal<?>, Object> getTraceLocals() {
+    Map<TraceLocal<?>, Object> getTraceLocals() {
         return traceLocals;
     }
 
