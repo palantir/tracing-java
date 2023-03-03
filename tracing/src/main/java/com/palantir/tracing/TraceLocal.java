@@ -127,12 +127,13 @@ public final class TraceLocal<T> {
             return null;
         }
 
-        if (traceState.getTraceLocals() == null) {
+        Map<TraceLocal<?>, Object> traceLocals = traceState.getTraceLocals();
+        if (traceLocals == null) {
             // no trace locals ever set, short circuit (avoid creating the trace local map)
             return null;
         }
 
-        return (T) traceState.getOrCreateTraceLocals().remove(this);
+        return (T) traceLocals.remove(this);
     }
 
     @Override
