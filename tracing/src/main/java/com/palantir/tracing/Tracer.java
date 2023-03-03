@@ -404,10 +404,11 @@ public final class Tracer {
             return;
         }
 
-        if (value != null) {
-            maybeCurrentTrace.getTraceState().getTraceLocals().put(traceLocal, value);
+        Map<TraceLocal<?>, Object> traceLocals = maybeCurrentTrace.getTraceState().getTraceLocals();
+        if (value == null) {
+            traceLocals.remove(traceLocal);
         } else {
-            maybeCurrentTrace.getTraceState().getTraceLocals().remove(traceLocal);
+            traceLocals.put(traceLocal, value);
         }
     }
 
