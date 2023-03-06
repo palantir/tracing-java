@@ -29,14 +29,18 @@ import javax.annotation.Nullable;
  *
  * A trace local is either set (has a value) or unset (has no value).
  *
- * Outside of a trace (i.e. when {@link Tracer#hasTraceId()} is false) then the trace local is always unset.
  */
 public final class TraceLocal<T> {
 
     @Nullable
     private final Function<? super TraceLocal<?>, T> initialValue;
 
-    private TraceLocal(@Nullable Supplier<T> initialValue) {
+    @Nullable
+    private final TraceLocalObserver<T> observer;
+
+    private TraceLocal(@Nullable Supplier<T> initialValue, @Nullable TraceLocalObserver<T> observer) {
+        this.observer = observer;
+
         if (initialValue == null) {
             this.initialValue = null;
         } else {
@@ -48,7 +52,7 @@ public final class TraceLocal<T> {
     }
 
     public static <T> TraceLocal<T> of() {
-        return new TraceLocal<>(null);
+        return new TraceLocal<>(null, null);
     }
 
     /**
@@ -61,7 +65,12 @@ public final class TraceLocal<T> {
      * invocations of {@link #remove()} followed by get.
      */
     public static <T> TraceLocal<T> withInitialValue(@Nonnull Supplier<T> initialValue) {
-        return new TraceLocal<>(Preconditions.checkNotNull(initialValue, "initial value supplier must not be null"));
+        return new TraceLocal<>(
+                Preconditions.checkNotNull(initialValue, "initial value supplier must not be null"), null);
+    }
+
+    public static <T> Builder<T> builder() {
+        return new Builder<>();
     }
 
     /**
@@ -138,6 +147,30 @@ public final class TraceLocal<T> {
         return (T) traceLocals.remove(this);
     }
 
+    void onTraceComplete() {
+        if (observer == null) {
+            return;
+        }
+
+        // only trigger if set - don't call the supplier
+        TraceState traceState = Tracer.getTraceState();
+        if (traceState == null) {
+            return;
+        }
+
+        Map<TraceLocal<?>, Object> traceLocals = traceState.getTraceLocals();
+        if (traceLocals == null) {
+            return;
+        }
+
+        T value = (T) traceLocals.get(this);
+        if (value == null) {
+            return;
+        }
+
+        observer.consume(traceState.traceId(), traceState.requestId(), value);
+    }
+
     @Override
     public boolean equals(Object obj) {
         // identity semantics
@@ -148,5 +181,31 @@ public final class TraceLocal<T> {
     public int hashCode() {
         // identity semantics
         return super.hashCode();
+    }
+
+    public static final class Builder<T> {
+        @Nullable
+        private Supplier<T> initialValue;
+
+        @Nullable
+        private TraceLocalObserver<T> observer;
+
+        private Builder() {}
+
+        @SuppressWarnings("checkstyle:HiddenField")
+        public Builder<T> initialValue(@Nonnull Supplier<T> initialValue) {
+            this.initialValue = Preconditions.checkNotNull(initialValue, "initial value supplier must not be null");
+            return this;
+        }
+
+        @SuppressWarnings("checkstyle:HiddenField")
+        public Builder<T> observer(@Nonnull TraceLocalObserver<T> observer) {
+            this.observer = Preconditions.checkNotNull(observer, "trace local observer must not be null");
+            return this;
+        }
+
+        public TraceLocal<T> build() {
+            return new TraceLocal<>(initialValue, observer);
+        }
     }
 }
