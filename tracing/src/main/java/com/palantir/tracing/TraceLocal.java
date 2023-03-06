@@ -147,14 +147,8 @@ public final class TraceLocal<T> {
         return (T) traceLocals.remove(this);
     }
 
-    void onTraceComplete() {
+    void onTraceComplete(TraceState traceState) {
         if (observer == null) {
-            return;
-        }
-
-        // only trigger if set - don't call the supplier
-        TraceState traceState = Tracer.getTraceState();
-        if (traceState == null) {
             return;
         }
 
