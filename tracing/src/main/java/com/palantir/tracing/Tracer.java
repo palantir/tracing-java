@@ -413,7 +413,7 @@ public final class Tracer {
 
         @Override
         public void close() {
-            Tracer.fastCompleteSpan(translator, data);
+            Tracer.fastCompleteSpanNotTopLevel(translator, data);
             Trace originalTrace = original;
             if (originalTrace != null) {
                 Tracer.setTrace(originalTrace);
@@ -621,7 +621,7 @@ public final class Tracer {
     }
 
     // Complete the current span.
-    private static final CloseableSpan DEFAULT_CLOSEABLE_SPAN = Tracer::fastCompleteSpan;
+    private static final CloseableSpan DEFAULT_CLOSEABLE_SPAN = Tracer::fastCompleteSpanNotTopLevel;
     private static final CloseableSpan REMOVE_TRACE = Tracer::clearCurrentTrace;
 
     private static final class TraceRestoringCloseableSpan implements CloseableSpan {
@@ -649,6 +649,10 @@ public final class Tracer {
         fastCompleteSpan(NoTagTranslator.INSTANCE, NoTagTranslator.INSTANCE);
     }
 
+    public static void fastCompleteSpanNotTopLevel() {
+        fastCompleteSpanNotTopLevel(NoTagTranslator.INSTANCE, NoTagTranslator.INSTANCE);
+    }
+
     /**
      * Like {@link #fastCompleteSpan()}, but adds {@code metadata} to the current span being completed.
      */
@@ -663,6 +667,13 @@ public final class Tracer {
             if (trace.isObservable()) {
                 completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
             }
+        }
+    }
+
+    public static <T> void fastCompleteSpanNotTopLevel(TagTranslator<? super T> tag, T state) {
+        Trace trace = currentTrace.get();
+        if (trace != null) {
+            Optional<OpenSpan> span = popCurrentSpan(trace);
         }
     }
 

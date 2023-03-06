@@ -76,6 +76,9 @@ public abstract class OpenSpan {
     @Value.Parameter
     public abstract SpanType type();
 
+    @Value.Parameter
+    public abstract boolean topLevel();
+
     /**
      * Indicates if this trace state was sampled public abstract boolean isSampled();
      *

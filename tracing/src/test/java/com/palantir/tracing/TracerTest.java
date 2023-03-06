@@ -19,8 +19,10 @@ package com.palantir.tracing;
 import static com.palantir.logsafe.testing.Assertions.assertThatLoggableExceptionThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -446,6 +448,49 @@ public final class TracerTest {
 
         // outside of a trace, it has no value
         assertThat(traceLocal.get()).isEqualTo(null);
+    }
+
+    @Test
+    public void testTraceLocals_observers() {
+        TraceLocalObserver<String> traceLocalObserver = mock(TraceLocalObserver.class);
+        TraceLocal<String> traceLocal =
+                TraceLocal.<String>builder().observer(traceLocalObserver).build();
+
+        verifyNoInteractions(traceLocalObserver);
+
+        DetachedSpan span = DetachedSpan.start(Observability.SAMPLE, "12345", Optional.empty(), "op", SpanType.LOCAL);
+        try (CloseableSpan cs = span.attach()) {
+            traceLocal.set("one");
+        }
+
+        verifyNoInteractions(traceLocalObserver);
+
+        try (CloseableSpan child = span.childSpan("child", SpanType.LOCAL)) {
+            traceLocal.set("two");
+
+            verifyNoInteractions(traceLocalObserver);
+
+            DetachedSpan grandchild = DetachedSpan.start("grandchild");
+            verifyNoInteractions(traceLocalObserver);
+
+            try (CloseableSpan cs = grandchild.attach()) {
+                traceLocal.set("three");
+            }
+            verifyNoInteractions(traceLocalObserver);
+        }
+
+        verifyNoInteractions(traceLocalObserver);
+
+        DetachedSpan detached = span.childDetachedSpan("detached");
+        verifyNoInteractions(traceLocalObserver);
+
+        detached.complete();
+
+        verifyNoInteractions(traceLocalObserver);
+
+        span.complete();
+
+        verify(traceLocalObserver, times(1)).consume("12345", null, "three");
     }
 
     @Test
