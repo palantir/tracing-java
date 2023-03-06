@@ -36,9 +36,9 @@ public final class TraceLocal<T> {
     private final Function<? super TraceLocal<?>, T> initialValue;
 
     @Nullable
-    private final TraceLocalObserver<T> observer;
+    private final Observer<T> observer;
 
-    private TraceLocal(@Nullable Supplier<T> initialValue, @Nullable TraceLocalObserver<T> observer) {
+    private TraceLocal(@Nullable Supplier<T> initialValue, @Nullable Observer<T> observer) {
         this.observer = observer;
 
         if (initialValue == null) {
@@ -177,12 +177,16 @@ public final class TraceLocal<T> {
         return super.hashCode();
     }
 
+    public interface Observer<T> {
+        default void onTraceComplete(String _traceId, @Nullable String _requestId, T _value) {}
+    }
+
     public static final class Builder<T> {
         @Nullable
         private Supplier<T> initialValue;
 
         @Nullable
-        private TraceLocalObserver<T> observer;
+        private Observer<T> observer;
 
         private Builder() {}
 
@@ -191,7 +195,7 @@ public final class TraceLocal<T> {
             return this;
         }
 
-        public Builder<T> observer(@Nonnull TraceLocalObserver<T> value) {
+        public Builder<T> observer(@Nonnull Observer<T> value) {
             this.observer = Preconditions.checkNotNull(value, "trace local observer must not be null");
             return this;
         }
