@@ -1,0 +1,6 @@
+type: improvement
+improvement:
+  description: Allow trace locals to be constructed with an observer, which gets called
+    with the value of the trace local (if set) when a trace is complete.
+  links:
+  - https://github.com/palantir/tracing-java/pull/1008
