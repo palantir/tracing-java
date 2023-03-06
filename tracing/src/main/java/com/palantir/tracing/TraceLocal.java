@@ -192,9 +192,8 @@ public final class TraceLocal<T> {
             return this;
         }
 
-        @SuppressWarnings("checkstyle:HiddenField")
-        public Builder<T> observer(@Nonnull TraceLocalObserver<T> observer) {
-            this.observer = Preconditions.checkNotNull(observer, "trace local observer must not be null");
+        public Builder<T> observer(@Nonnull TraceLocalObserver<T> value) {
+            this.observer = Preconditions.checkNotNull(value, "trace local observer must not be null");
             return this;
         }
 
