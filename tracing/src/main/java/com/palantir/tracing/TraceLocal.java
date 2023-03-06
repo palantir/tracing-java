@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
  *
  * A trace local is either set (has a value) or unset (has no value).
  *
+ * Outside of a trace (i.e. when {@link Tracer#hasTraceId()} is false) then the trace local is always unset.
  */
 public final class TraceLocal<T> {
 
