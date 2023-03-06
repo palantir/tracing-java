@@ -178,7 +178,11 @@ public final class TraceLocal<T> {
     }
 
     public interface Observer<T> {
-        default void onTraceComplete(String _traceId, @Nullable String _requestId, T _value) {}
+        /**
+         * Called when a trace completes with the final value of the trace local.
+         * Only called if the trace local is set (has a value) when the trace completes.
+         */
+        default void onTraceComplete(String _traceId, @Nullable String _requestId, @Nonnull T _value) {}
     }
 
     public static final class Builder<T> {
@@ -195,6 +199,12 @@ public final class TraceLocal<T> {
             return this;
         }
 
+        /**
+         * Set an observer for this trace local, which allows defining callbacks to be called with the value of the
+         * trace local.
+         *
+         * See further: {@link TraceLocal.Observer#onTraceComplete(TraceState)}.
+         */
         public Builder<T> observer(@Nonnull Observer<T> value) {
             this.observer = Preconditions.checkNotNull(value, "trace local observer must not be null");
             return this;
