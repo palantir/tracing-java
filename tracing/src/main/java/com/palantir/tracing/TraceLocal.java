@@ -186,9 +186,8 @@ public final class TraceLocal<T> {
 
         private Builder() {}
 
-        @SuppressWarnings("checkstyle:HiddenField")
-        public Builder<T> initialValue(@Nonnull Supplier<T> initialValue) {
-            this.initialValue = Preconditions.checkNotNull(initialValue, "initial value supplier must not be null");
+        public Builder<T> initialValue(@Nonnull Supplier<T> value) {
+            this.initialValue = Preconditions.checkNotNull(value, "initial value supplier must not be null");
             return this;
         }
 
