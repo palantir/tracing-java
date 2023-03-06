@@ -162,7 +162,7 @@ public final class TraceLocal<T> {
             return;
         }
 
-        observer.consume(traceState.traceId(), traceState.requestId(), value);
+        observer.onTraceComplete(traceState.traceId(), traceState.requestId(), value);
     }
 
     @Override

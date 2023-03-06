@@ -19,5 +19,5 @@ package com.palantir.tracing;
 import javax.annotation.Nullable;
 
 public interface TraceLocalObserver<T> {
-    void consume(String traceId, @Nullable String requestId, T value);
+    void onTraceComplete(String traceId, @Nullable String requestId, T value);
 }
