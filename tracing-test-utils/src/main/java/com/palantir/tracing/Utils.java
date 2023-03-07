@@ -29,14 +29,14 @@ final class Utils {
             .put(TimeUnit.NANOSECONDS, TimeUnit.MICROSECONDS)
             .put(TimeUnit.MICROSECONDS, TimeUnit.MILLISECONDS)
             .put(TimeUnit.MILLISECONDS, TimeUnit.SECONDS)
-            .build();
+            .buildOrThrow();
 
     private static final ImmutableMap<TimeUnit, String> ABBREVIATION = ImmutableMap.<TimeUnit, String>builder()
             .put(TimeUnit.NANOSECONDS, "ns")
             .put(TimeUnit.MICROSECONDS, "micros")
             .put(TimeUnit.MILLISECONDS, "ms")
             .put(TimeUnit.SECONDS, "s")
-            .build();
+            .buildOrThrow();
 
     public static float percent(long numerator, long denominator) {
         return 100f * numerator / denominator;

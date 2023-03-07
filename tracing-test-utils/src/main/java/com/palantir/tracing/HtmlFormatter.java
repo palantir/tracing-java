@@ -136,7 +136,7 @@ final class HtmlFormatter {
                                 "{{END_TIME}}",
                                 DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
                                         .format(endTime))
-                        .build()));
+                        .buildOrThrow()));
     }
 
     private void formatSpan(Span span, boolean suspectedCollision, StringBuilder sb) {
@@ -176,7 +176,7 @@ final class HtmlFormatter {
                                 "{{DURATION}}",
                                 Utils.renderDuration((double) span.getDurationNanoSeconds(), TimeUnit.NANOSECONDS))
                         .put("{{COLLISION}}", suspectedCollision ? " (collision)" : "")
-                        .build()));
+                        .buildOrThrow()));
     }
 
     private void rawSpanJson(StringBuilder sb) {
