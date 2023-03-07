@@ -2,7 +2,7 @@
 # We're intentionally not auto-upgrading these dependencies to avoid imposing unnecesary upgrades on all consumers.
 # Please bump these only when you need to use new features.
 com.fasterxml.jackson.*:* = 2.12.3
-com.google.guava:guava = 28.0-jre
+com.google.guava:guava = 31.1-jre
 com.palantir.safe-logging:* = 1.18.0
 com.squareup.okhttp3:okhttp = 3.9.0
 io.undertow:* = 2.2.18.Final
