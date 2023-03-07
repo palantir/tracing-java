@@ -16,8 +16,6 @@
 
 package com.palantir.undertest;
 
-import com.google.errorprone.annotations.CheckReturnValue;
-import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeRuntimeException;
@@ -40,10 +38,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.glassfish.jersey.CommonProperties;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
@@ -144,15 +143,15 @@ public final class UndertowServerExtension implements BeforeAllCallback, AfterAl
         }
     }
 
-    @MustBeClosed
-    @CheckReturnValue
-    public CloseableHttpResponse makeRequest(ClassicHttpRequest request) throws IOException {
-        return httpClient.execute(HttpHost.create(URI.create("http://localhost:" + getLocalPort())), request);
-    }
-
-    public void runRequest(ClassicHttpRequest request, Consumer<CloseableHttpResponse> handler) {
-        try (CloseableHttpResponse response = makeRequest(request)) {
-            handler.accept(response);
+    public void runRequest(ClassicHttpRequest request, Consumer<ClassicHttpResponse> handler) {
+        try {
+            httpClient.execute(
+                    HttpHost.create(URI.create("http://localhost:" + getLocalPort())),
+                    request,
+                    (HttpClientResponseHandler<Void>) response -> {
+                        handler.accept(response);
+                        return null;
+                    });
         } catch (IOException e) {
             throw new SafeRuntimeException("Failed to make http request", e);
         }
