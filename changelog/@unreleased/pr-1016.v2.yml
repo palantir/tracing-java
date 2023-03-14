@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: Log at debug when `completeSpan` methods are used with no active trace
+  links:
+  - https://github.com/palantir/tracing-java/pull/1016
