@@ -640,6 +640,11 @@ public final class Tracer {
             if (trace.isObservable()) {
                 completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
             }
+        } else if (log.isDebugEnabled()) {
+            log.debug(
+                    "Attempted to complete spans when there is no active Trace. This may be the "
+                            + "result of calling completeSpan more times than startSpan",
+                    new SafeRuntimeException("not a real exception"));
         }
     }
 
@@ -671,6 +676,12 @@ public final class Tracer {
     public static Optional<Span> completeSpan(@Safe Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace == null) {
+            if (log.isDebugEnabled()) {
+                log.debug(
+                        "Attempted to complete spans when there is no active Trace. This may be the "
+                                + "result of calling completeSpan more times than startSpan",
+                        new SafeRuntimeException("not a real exception"));
+            }
             return Optional.empty();
         }
         Optional<Span> maybeSpan = popCurrentSpan(trace)
