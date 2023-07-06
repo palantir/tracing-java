@@ -47,8 +47,8 @@ spans to a log file or to Zipkin.  Span observers are static (similar to SLF4J a
 follows:
 
 ```java
-// Emit all completed spans to a default SLF4J logger:
-Tracer.subscribe("SLF4J" /* user-defined name */, AsyncSlf4jSpanObserver.of(executor));
+// Emit all completed spans to the provided span observer:
+Tracer.subscribe("SLF4J" /* user-defined name */, spanObserver);
 
 // No longer emit span events to SLF4J:
 Tracer.unsubscribe("SLF4J");
