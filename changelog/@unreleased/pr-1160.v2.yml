@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: '`DeferredTracer` can now be used in a try-with-resources block.'
+  links:
+  - https://github.com/palantir/tracing-java/pull/1160
