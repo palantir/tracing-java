@@ -28,7 +28,7 @@ import java.util.Map;
 public class CloseableTracer implements AutoCloseable {
     private static final CloseableTracer INSTANCE = new CloseableTracer();
 
-    private CloseableTracer() {}
+    CloseableTracer() {}
 
     /**
      * Opens a new {@link SpanType#LOCAL LOCAL} span for this thread's call trace, labeled with the provided operation.
@@ -81,6 +81,7 @@ public class CloseableTracer implements AutoCloseable {
     }
 
     @Override
+    @SuppressWarnings("DesignForExtension")
     public void close() {
         Tracer.fastCompleteSpan();
     }

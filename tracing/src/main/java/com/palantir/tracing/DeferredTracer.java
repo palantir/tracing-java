@@ -21,7 +21,6 @@ import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
-import java.io.Closeable;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
@@ -115,16 +114,16 @@ public final class DeferredTracer implements Serializable {
 
     /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
-        try (CloseableTrace ignored = withTrace()) {
+        try (CloseableTracer ignored = withTrace()) {
             return inner.call();
         }
     }
 
     @MustBeClosed
     @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
-    CloseableTrace withTrace() {
+    public CloseableTracer withTrace() {
         if (traceState == null) {
-            return NopCloseableTrace.INSTANCE;
+            return NopCloseableTracer.INSTANCE;
         }
 
         Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
@@ -137,21 +136,27 @@ public final class DeferredTracer implements Serializable {
         }
 
         if (isObservable && metadata != null && !metadata.isEmpty()) {
-            return new TaggedCloseableTrace(originalTrace, metadata);
+            return new TaggedCloseableTracer(originalTrace, metadata);
         } else {
-            return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
+            return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTracer.INSTANCE);
         }
     }
 
-    private enum NopCloseableTrace implements CloseableTrace {
-        INSTANCE;
+    private static final class NopCloseableTracer extends CloseableTracer {
+
+        private static final NopCloseableTracer INSTANCE = new NopCloseableTracer();
+
+        private NopCloseableTracer() {}
 
         @Override
         public void close() {}
     }
 
-    private enum DefaultCloseableTrace implements CloseableTrace {
-        INSTANCE;
+    private static final class DefaultCloseableTracer extends CloseableTracer {
+
+        private static final DefaultCloseableTracer INSTANCE = new DefaultCloseableTracer();
+
+        private DefaultCloseableTracer() {}
 
         @Override
         public void close() {
@@ -162,11 +167,11 @@ public final class DeferredTracer implements Serializable {
         }
     }
 
-    private static final class TaggedCloseableTrace implements CloseableTrace {
+    private static final class TaggedCloseableTracer extends CloseableTracer {
         private final Map<String, String> metadata;
         private final Optional<Trace> originalTrace;
 
-        TaggedCloseableTrace(Optional<Trace> originalTrace, Map<String, String> metadata) {
+        TaggedCloseableTracer(Optional<Trace> originalTrace, Map<String, String> metadata) {
             this.metadata = metadata;
             this.originalTrace = originalTrace;
         }
@@ -183,14 +188,12 @@ public final class DeferredTracer implements Serializable {
     }
 
     @SuppressWarnings("UnnecessaryLambda") // this library is allocation sensitive
-    private static final Function<Trace, CloseableTrace> CLOSEABLE_TRACE_FUNCTION = originalTrace -> () -> {
-        DefaultCloseableTrace.INSTANCE.close();
-        Tracer.setTrace(originalTrace);
-    };
-
-    /** Package private mechanism to simplify internal {@link DeferredTracer} use. */
-    interface CloseableTrace extends Closeable {
-        @Override
-        void close();
-    }
+    private static final Function<Trace, CloseableTracer> CLOSEABLE_TRACE_FUNCTION =
+            originalTrace -> new CloseableTracer() {
+                @Override
+                public void close() {
+                    DefaultCloseableTracer.INSTANCE.close();
+                    Tracer.setTrace(originalTrace);
+                }
+            };
 }

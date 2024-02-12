@@ -41,12 +41,19 @@ public class DeferredTracerTest {
 
         Tracer.initTraceWithSpan(Observability.UNDECIDED, "someOtherTraceId", "span", SpanType.LOCAL);
 
+        DeferredTracer deserialized;
+
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         try (ObjectInputStream objectInputStream = new ObjectInputStream(bais)) {
-            DeferredTracer deserialized = (DeferredTracer) objectInputStream.readObject();
-
-            String trace = deserialized.withTrace(Tracer::getTraceId);
-            assertThat(trace).isEqualTo("defaultTraceId");
+            deserialized = (DeferredTracer) objectInputStream.readObject();
         }
+
+        assertThat(Tracer.getTraceId()).isEqualTo("someOtherTraceId");
+
+        try (CloseableTracer tracer = deserialized.withTrace()) {
+            assertThat(Tracer.getTraceId()).isEqualTo("defaultTraceId");
+        }
+
+        assertThat(Tracer.getTraceId()).isEqualTo("someOtherTraceId");
     }
 }
