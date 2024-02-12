@@ -50,7 +50,7 @@ public class DeferredTracerTest {
 
         assertThat(Tracer.getTraceId()).isEqualTo("someOtherTraceId");
 
-        try (CloseableTracer tracer = deserialized.withTrace()) {
+        try (CloseableTracer tracer = deserialized.startSpan()) {
             assertThat(Tracer.getTraceId()).isEqualTo("defaultTraceId");
         }
 

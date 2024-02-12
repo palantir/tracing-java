@@ -25,8 +25,7 @@ import java.util.Map;
  *
  * <p>Usage: try (CloseableTracer trace = CloseableTracer.start("traceName")) { [...] }
  */
-public class CloseableTracer implements AutoCloseable {
-    private static final CloseableTracer INSTANCE = new CloseableTracer();
+public abstract class CloseableTracer implements AutoCloseable {
 
     CloseableTracer() {}
 
@@ -52,7 +51,7 @@ public class CloseableTracer implements AutoCloseable {
      */
     public static CloseableTracer startSpan(@Safe String operation, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
-        return INSTANCE;
+        return DefaultCloseableTracer.INSTANCE;
     }
 
     /**
@@ -75,15 +74,24 @@ public class CloseableTracer implements AutoCloseable {
             @Safe String operation, TagTranslator<? super T> translator, T data, SpanType spanType) {
         Tracer.fastStartSpan(operation, spanType);
         if (!Tracer.isTraceObservable() || translator.isEmpty(data)) {
-            return INSTANCE;
+            return DefaultCloseableTracer.INSTANCE;
         }
         return new TaggedCloseableTracer<>(translator, data);
     }
 
     @Override
-    @SuppressWarnings("DesignForExtension")
-    public void close() {
-        Tracer.fastCompleteSpan();
+    public abstract void close();
+
+    private static final class DefaultCloseableTracer extends CloseableTracer {
+
+        private static final DefaultCloseableTracer INSTANCE = new DefaultCloseableTracer();
+
+        private DefaultCloseableTracer() {}
+
+        @Override
+        public void close() {
+            Tracer.fastCompleteSpan();
+        }
     }
 
     private static final class TaggedCloseableTracer<T> extends CloseableTracer {

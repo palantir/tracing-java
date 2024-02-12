@@ -24,7 +24,6 @@ import com.palantir.tracing.api.SpanType;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 /**
@@ -93,7 +92,7 @@ public final class DeferredTracer implements Serializable {
     public DeferredTracer(@Safe String operation, @Safe Map<String, String> metadata) {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
-            Trace trace = maybeTrace.get();
+            Trace trace = maybeTrace.orElseThrow();
             this.traceState = trace.getTraceState();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
@@ -114,14 +113,14 @@ public final class DeferredTracer implements Serializable {
 
     /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
-        try (CloseableTracer ignored = withTrace()) {
+        try (CloseableTracer tracer = startSpan()) {
             return inner.call();
         }
     }
 
     @MustBeClosed
     @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
-    public CloseableTracer withTrace() {
+    public CloseableTracer startSpan() {
         if (traceState == null) {
             return NopCloseableTracer.INSTANCE;
         }
@@ -135,10 +134,33 @@ public final class DeferredTracer implements Serializable {
             Tracer.fastStartSpan(operation);
         }
 
-        if (isObservable && metadata != null && !metadata.isEmpty()) {
-            return new TaggedCloseableTracer(originalTrace, metadata);
-        } else {
-            return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTracer.INSTANCE);
+        return new DefaultCloseableTracer(originalTrace, metadata);
+    }
+
+    private static final class DefaultCloseableTracer extends CloseableTracer {
+
+        private final Optional<Trace> originalTrace;
+
+        @Nullable
+        private final Map<String, String> metadata;
+
+        DefaultCloseableTracer(Optional<Trace> originalTrace, @Nullable Map<String, String> metadata) {
+            this.metadata = metadata;
+            this.originalTrace = originalTrace;
+        }
+
+        @Override
+        public void close() {
+            if (metadata != null) {
+                Tracer.fastCompleteSpan(metadata);
+            } else {
+                Tracer.fastCompleteSpan();
+            }
+            if (originalTrace.isPresent()) {
+                Tracer.setTrace(originalTrace.orElseThrow());
+            } else if (Tracer.hasTraceId()) {
+                Tracer.getAndClearTrace();
+            }
         }
     }
 
@@ -151,49 +173,4 @@ public final class DeferredTracer implements Serializable {
         @Override
         public void close() {}
     }
-
-    private static final class DefaultCloseableTracer extends CloseableTracer {
-
-        private static final DefaultCloseableTracer INSTANCE = new DefaultCloseableTracer();
-
-        private DefaultCloseableTracer() {}
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan();
-            if (Tracer.hasTraceId()) {
-                Tracer.getAndClearTrace();
-            }
-        }
-    }
-
-    private static final class TaggedCloseableTracer extends CloseableTracer {
-        private final Map<String, String> metadata;
-        private final Optional<Trace> originalTrace;
-
-        TaggedCloseableTracer(Optional<Trace> originalTrace, Map<String, String> metadata) {
-            this.metadata = metadata;
-            this.originalTrace = originalTrace;
-        }
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan(metadata);
-            if (originalTrace.isPresent()) {
-                Tracer.setTrace(originalTrace.get());
-            } else if (Tracer.hasTraceId()) {
-                Tracer.getAndClearTrace();
-            }
-        }
-    }
-
-    @SuppressWarnings("UnnecessaryLambda") // this library is allocation sensitive
-    private static final Function<Trace, CloseableTracer> CLOSEABLE_TRACE_FUNCTION =
-            originalTrace -> new CloseableTracer() {
-                @Override
-                public void close() {
-                    DefaultCloseableTracer.INSTANCE.close();
-                    Tracer.setTrace(originalTrace);
-                }
-            };
 }

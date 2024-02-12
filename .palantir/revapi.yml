@@ -38,6 +38,16 @@ acceptedBreaks:
     - code: "java.method.addedToInterface"
       new: "method com.palantir.tracing.CloseableSpan com.palantir.tracing.DetachedSpan::attach()"
       justification: "DetachedSpan is not meant for external implementations"
+  "6.18.0":
+    com.palantir.tracing:tracing:
+    - code: "java.class.nowAbstract"
+      old: "class com.palantir.tracing.CloseableTracer"
+      new: "class com.palantir.tracing.CloseableTracer"
+      justification: "CloseableTracer should not have external implementations"
+    - code: "java.method.nowAbstract"
+      old: "method void com.palantir.tracing.CloseableTracer::close()"
+      new: "method void com.palantir.tracing.CloseableTracer::close()"
+      justification: "CloseableTracer should not have external implementations"
   "6.3.0":
     com.palantir.tracing:tracing:
     - code: "java.method.removed"
