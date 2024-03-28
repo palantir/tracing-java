@@ -49,15 +49,15 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 @SuppressWarnings("deprecation")
 public final class TracersTest {
 
-    @Before
+    @BeforeEach
     public void before() {
         MDC.clear();
 
@@ -67,7 +67,7 @@ public final class TracersTest {
                 Observability.SAMPLE, "defaultTraceId", Optional.of("forUserAgent"), "rootOperation", SpanType.LOCAL);
     }
 
-    @After
+    @AfterEach
     public void after() {
         // Clear out the old trace from each test
         Tracer.clearCurrentTrace();

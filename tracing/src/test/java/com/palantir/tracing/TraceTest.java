@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.SpanType;
 import java.util.Optional;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public final class TraceTest {
 
