@@ -29,6 +29,7 @@ import com.palantir.logsafe.exceptions.SafeRuntimeException;
 import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -126,6 +128,85 @@ public final class TracersTest {
         Tracer.fastCompleteSpan();
 
         wrappedService.shutdownNow();
+    }
+
+    @Test
+    public void testWrapExecutorServiceExceptionHandler() {
+        SettableFuture<String> traceIdFuture = SettableFuture.create();
+        Thread.UncaughtExceptionHandler handler =
+                (_thread, _throwable) -> traceIdFuture.set(Tracer.hasTraceId() ? Tracer.getTraceId() : null);
+        ThreadFactory tf = runnable -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setUncaughtExceptionHandler(handler);
+            return thread;
+        };
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadExecutor(tf)), wrappedService -> {
+            String traceId = Tracer.getTraceId();
+            wrappedService.execute(() -> {
+                throw new RuntimeException();
+            });
+            assertThat(traceIdFuture).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(traceId);
+        });
+    }
+
+    @Test
+    public void testWrapExecutorServiceExceptionHandler_withSpan() {
+        SettableFuture<String> traceIdFuture = SettableFuture.create();
+        Thread.UncaughtExceptionHandler handler =
+                (_thread, _throwable) -> traceIdFuture.set(Tracer.hasTraceId() ? Tracer.getTraceId() : null);
+        ThreadFactory tf = runnable -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setUncaughtExceptionHandler(handler);
+            return thread;
+        };
+        withExecutor(() -> Tracers.wrap("operation", Executors.newSingleThreadExecutor(tf)), wrappedService -> {
+            String traceId = Tracer.getTraceId();
+            wrappedService.execute(() -> {
+                throw new RuntimeException();
+            });
+            assertThat(traceIdFuture).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(traceId);
+        });
+    }
+
+    @Test
+    public void testWrapScheduledExecutorServiceExceptionHandler() {
+        SettableFuture<String> traceIdFuture = SettableFuture.create();
+        Thread.UncaughtExceptionHandler handler =
+                (_thread, _throwable) -> traceIdFuture.set(Tracer.hasTraceId() ? Tracer.getTraceId() : null);
+        ThreadFactory tf = runnable -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setUncaughtExceptionHandler(handler);
+            return thread;
+        };
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadScheduledExecutor(tf)), wrappedService -> {
+            String traceId = Tracer.getTraceId();
+            wrappedService.execute(() -> {
+                throw new RuntimeException();
+            });
+            assertThat(traceIdFuture).succeedsWithin(Duration.ofSeconds(1)).isEqualTo(traceId);
+        });
+    }
+
+    @Test
+    public void testWrapScheduledExecutorServiceExceptionHandler_withSpan() {
+        SettableFuture<String> traceIdFuture = SettableFuture.create();
+        Thread.UncaughtExceptionHandler handler =
+                (_thread, _throwable) -> traceIdFuture.set(Tracer.hasTraceId() ? Tracer.getTraceId() : null);
+        ThreadFactory tf = runnable -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setUncaughtExceptionHandler(handler);
+            return thread;
+        };
+        withExecutor(
+                () -> Tracers.wrap("operation", Executors.newSingleThreadScheduledExecutor(tf)), wrappedService -> {
+                    String traceId = Tracer.getTraceId();
+                    wrappedService.execute(() -> {
+                        throw new RuntimeException();
+                    });
+                    assertThat(traceIdFuture)
+                            .succeedsWithin(Duration.ofSeconds(1))
+                            .isEqualTo(traceId);
+                });
     }
 
     @Test

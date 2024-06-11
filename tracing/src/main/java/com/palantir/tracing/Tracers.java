@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 /**
  * Utility methods for making {@link ExecutorService} and {@link Runnable} instances tracing-aware.
@@ -102,7 +103,7 @@ public final class Tracers {
 
             @Override
             protected Runnable wrapTask(Runnable command) {
-                return wrap(command);
+                return new AnonymousTracingAwareExecutorRunnable(command);
             }
         };
     }
@@ -120,7 +121,7 @@ public final class Tracers {
 
             @Override
             protected Runnable wrapTask(Runnable command) {
-                return wrap(operation, command);
+                return new TracingAwareExecutorRunnable(operation, command);
             }
         };
     }
@@ -145,7 +146,7 @@ public final class Tracers {
 
             @Override
             protected Runnable wrapTask(Runnable command) {
-                return wrap(command);
+                return new AnonymousTracingAwareExecutorRunnable(command);
             }
         };
     }
@@ -168,7 +169,7 @@ public final class Tracers {
 
             @Override
             protected Runnable wrapTask(Runnable command) {
-                return wrap(operation, command);
+                return new TracingAwareExecutorRunnable(operation, command);
             }
         };
     }
@@ -561,11 +562,34 @@ public final class Tracers {
         }
     }
 
+    @Nullable
+    private static Thread.UncaughtExceptionHandler findUncaughtExceptionHandler() {
+        Thread.UncaughtExceptionHandler handler = Thread.currentThread().getUncaughtExceptionHandler();
+        return handler == null
+                // Fall back to the default uncaught exception handler if the thread does not have one explicitly set.
+                ? Thread.getDefaultUncaughtExceptionHandler()
+                : handler;
+    }
+
+    private static boolean handleUncaughtException(Throwable throwable) {
+        // Invoke the uncaught exception handler while tracing state is still set.
+        Thread.UncaughtExceptionHandler handler = findUncaughtExceptionHandler();
+        if (handler != null) {
+            // Call the handler and do not rethrow, we don't want to call the handler twice for the same
+            // failure.
+            handler.uncaughtException(Thread.currentThread(), throwable);
+            return true;
+        }
+        // If no uncaught exception handler is available, the throwable has not been handled and should be
+        // rethrown.
+        return false;
+    }
+
     /**
      * Wraps a given runnable such that its execution operates with the {@link Trace thread-local Trace} of the thread
      * that constructs the {@link TracingAwareRunnable} instance rather than the thread that executes the runnable.
      */
-    private static class TracingAwareRunnable implements Runnable {
+    private static final class TracingAwareRunnable implements Runnable {
         private final Runnable delegate;
         private final Detached detached;
         private final String operation;
@@ -586,7 +610,36 @@ public final class Tracers {
         }
     }
 
-    private static class AnonymousTracingAwareRunnable implements Runnable {
+    /**
+     * Equivalent to {@link TracingAwareRunnable} except that the uncaught exception handler is invoked on failure.
+     */
+    private static final class TracingAwareExecutorRunnable implements Runnable {
+        private final Runnable delegate;
+        private final Detached detached;
+        private final String operation;
+
+        TracingAwareExecutorRunnable(String operation, Runnable delegate) {
+            this.delegate = delegate;
+            this.detached = DetachedSpan.detach();
+            this.operation = operation;
+        }
+
+        @Override
+        public void run() {
+            try (CloseableSpan ignored = detached.childSpan(operation)) {
+                try {
+                    delegate.run();
+                } catch (Throwable t) {
+                    if (!handleUncaughtException(t)) {
+                        // If the throwable was not handled, it must be rethrown.
+                        throw t;
+                    }
+                }
+            }
+        }
+    }
+
+    private static final class AnonymousTracingAwareRunnable implements Runnable {
         private final Runnable delegate;
         private final Detached detached;
 
@@ -599,6 +652,34 @@ public final class Tracers {
         public void run() {
             try (CloseableSpan ignored = detached.attach()) {
                 delegate.run();
+            }
+        }
+    }
+
+    /**
+     * Equivalent to {@link AnonymousTracingAwareRunnable} except that the uncaught exception handler
+     * is invoked on failure.
+     */
+    private static final class AnonymousTracingAwareExecutorRunnable implements Runnable {
+        private final Runnable delegate;
+        private final Detached detached;
+
+        AnonymousTracingAwareExecutorRunnable(Runnable delegate) {
+            this.delegate = delegate;
+            this.detached = DetachedSpan.detach();
+        }
+
+        @Override
+        public void run() {
+            try (CloseableSpan ignored = detached.attach()) {
+                try {
+                    delegate.run();
+                } catch (Throwable t) {
+                    if (!handleUncaughtException(t)) {
+                        // If the throwable was not handled, it must be rethrown.
+                        throw t;
+                    }
+                }
             }
         }
     }
