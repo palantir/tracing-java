@@ -131,6 +131,23 @@ public final class TracersTest {
     }
 
     @Test
+    public void test() {
+        Thread.UncaughtExceptionHandler handler = (_thread, _throwable) -> {};
+        ThreadFactory tf = runnable -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setUncaughtExceptionHandler(handler);
+            return thread;
+        };
+        withExecutor(() -> Tracers.wrap(Executors.newSingleThreadExecutor(tf)), wrappedService -> {
+            Tracer.getTraceId();
+            Future<?> future = wrappedService.submit((Runnable) () -> {
+                throw new RuntimeException();
+            });
+            assertThat(future).failsWithin(Duration.ofSeconds(1));
+        });
+    }
+
+    @Test
     public void testWrapExecutorServiceExceptionHandler() {
         SettableFuture<String> traceIdFuture = SettableFuture.create();
         Thread.UncaughtExceptionHandler handler =
