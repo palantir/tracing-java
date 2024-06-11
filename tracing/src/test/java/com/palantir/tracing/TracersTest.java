@@ -49,6 +49,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.After;
@@ -145,6 +146,52 @@ public final class TracersTest {
             });
             assertThat(future).failsWithin(Duration.ofSeconds(1));
         });
+    }
+
+    @Test
+    public void test2() {
+        Thread.UncaughtExceptionHandler handler = (_thread, _throwable) -> {};
+        ThreadFactory tf = runnable -> {
+            Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+            thread.setUncaughtExceptionHandler(handler);
+            return thread;
+        };
+        AtomicBoolean failed = new AtomicBoolean(false);
+        withExecutor(
+                () -> Tracers.wrap(wrapWithFuse(Executors.newSingleThreadExecutor(tf), failed)), wrappedService -> {
+                    Tracer.getTraceId();
+                    wrappedService.execute(() -> {
+                        throw new RuntimeException();
+                    });
+                });
+        assertThat(failed).isTrue();
+    }
+
+    private static ExecutorService wrapWithFuse(ExecutorService executorService, AtomicBoolean failed) {
+        return new WrappingExecutorService(executorService) {
+            @Override
+            protected <T> Callable<T> wrapTask(Callable<T> callable) {
+                return () -> {
+                    try {
+                        return callable.call();
+                    } catch (Throwable t) {
+                        failed.set(true);
+                        throw t;
+                    }
+                };
+            }
+
+            @Override
+            protected Runnable wrapTask(Runnable command) {
+                return () -> {
+                    try {
+                        command.run();
+                    } catch (Throwable t) {
+                        failed.set(true);
+                    }
+                };
+            }
+        };
     }
 
     @Test
