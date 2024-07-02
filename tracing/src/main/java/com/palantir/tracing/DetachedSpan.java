@@ -19,10 +19,9 @@ package com.palantir.tracing;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
-
-import javax.annotation.CheckReturnValue;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.CheckReturnValue;
 
 /**
  * Span which is not bound to thread state, and can be completed on any other thread.
