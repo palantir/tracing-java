@@ -1,0 +1,5 @@
+type: feature
+feature:
+  description: Enable creating detached span with specified request id
+  links:
+  - https://github.com/palantir/tracing-java/pull/1248
