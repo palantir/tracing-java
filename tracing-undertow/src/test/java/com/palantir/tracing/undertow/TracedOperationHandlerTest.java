@@ -118,7 +118,7 @@ public class TracedOperationHandlerTest {
 
         handler.handleRequest(exchange);
         // Since we're not running a full request, the completion handler cannot execute normally.
-        exchange.getAttachment(UndertowTracing.REQUEST_SPAN).complete();
+        exchange.getAttachment(TracingAttachments.REQUEST_SPAN).complete();
         verify(observer, times(2)).consume(spanCaptor.capture());
         List<Span> spans = spanCaptor.getAllValues();
         assertThat(spans).hasSize(2);
@@ -134,7 +134,7 @@ public class TracedOperationHandlerTest {
         setUserAgent("userAgent");
         handler.handleRequest(exchange);
 
-        DetachedSpan detachedSpan = exchange.getAttachment(UndertowTracing.REQUEST_SPAN);
+        DetachedSpan detachedSpan = exchange.getAttachment(TracingAttachments.REQUEST_SPAN);
         assertThat(InternalTracers.getForUserAgent(detachedSpan)).contains("userAgent");
     }
 
@@ -145,7 +145,7 @@ public class TracedOperationHandlerTest {
         setFetchUserAgent("fetchUserAgent");
         handler.handleRequest(exchange);
 
-        DetachedSpan detachedSpan = exchange.getAttachment(UndertowTracing.REQUEST_SPAN);
+        DetachedSpan detachedSpan = exchange.getAttachment(TracingAttachments.REQUEST_SPAN);
         assertThat(InternalTracers.getForUserAgent(detachedSpan)).contains("fetchUserAgent");
     }
 
@@ -157,7 +157,7 @@ public class TracedOperationHandlerTest {
         setForUserAgent("forUserAgent");
         handler.handleRequest(exchange);
 
-        DetachedSpan detachedSpan = exchange.getAttachment(UndertowTracing.REQUEST_SPAN);
+        DetachedSpan detachedSpan = exchange.getAttachment(TracingAttachments.REQUEST_SPAN);
         assertThat(InternalTracers.getForUserAgent(detachedSpan)).contains("forUserAgent");
     }
 
@@ -195,6 +195,12 @@ public class TracedOperationHandlerTest {
     public void whenSamplingDecisionHasNotBeenMade_callsSampler() throws Exception {
         handler.handleRequest(exchange);
         verify(traceSampler).sample();
+    }
+
+    @Test
+    public void setsDetachedTrace() throws Exception {
+        handler.handleRequest(exchange);
+        assertThat(TracingAttachments.requestTrace(exchange)).isNotNull();
     }
 
     @Test

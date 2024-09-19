@@ -16,7 +16,11 @@
 
 package com.palantir.tracing.undertow;
 
+import com.palantir.tracing.Detached;
+import com.palantir.tracing.DetachedSpan;
+import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import javax.annotation.Nullable;
 
 /** Provides public tracing {@link AttachmentKey attachment keys}. */
 public final class TracingAttachments {
@@ -26,6 +30,23 @@ public final class TracingAttachments {
 
     /** Attachment providing the request identifier. */
     public static final AttachmentKey<String> REQUEST_ID = AttachmentKey.create(String.class);
+
+    /**
+     * Detached span object representing the entire request including asynchronous components.
+     * This is intentionally not public, we expose only the {@link Detached} component which critically does not
+     * include {@link DetachedSpan#complete()} APIs.
+     */
+    static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
+
+    /**
+     * Gets the {@link Detached} trace state which represents the top-level request being processed. This may
+     * be used to apply thread state to code executing outside traced handlers, exchange completion
+     * listeners, for example.
+     */
+    @Nullable
+    public static Detached requestTrace(HttpServerExchange exchange) {
+        return exchange.getAttachment(REQUEST_SPAN);
+    }
 
     private TracingAttachments() {}
 }
