@@ -38,6 +38,11 @@ public final class TracingAttachments {
      */
     static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
 
+    /**
+     * Gets the {@link Detached} trace state which represents the top-level request being processed. This may
+     * be used to apply thread state to code executing outside traced handlers, exchange completion
+     * listeners, for example.
+     */
     @Nullable
     public static Detached requestTrace(HttpServerExchange exchange) {
         return exchange.getAttachment(REQUEST_SPAN);
