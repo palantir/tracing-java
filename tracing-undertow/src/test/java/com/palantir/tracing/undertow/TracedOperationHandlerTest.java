@@ -198,6 +198,12 @@ public class TracedOperationHandlerTest {
     }
 
     @Test
+    public void setsDetachedTrace() throws Exception {
+        handler.handleRequest(exchange);
+        assertThat(TracingAttachments.requestTrace(exchange)).isNotNull();
+    }
+
+    @Test
     public void completesSpanEvenIfDelegateThrows() throws Exception {
         doThrow(new RuntimeException()).when(delegate).handleRequest(any());
         try {
