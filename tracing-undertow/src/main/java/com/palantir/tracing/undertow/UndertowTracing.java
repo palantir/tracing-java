@@ -22,6 +22,8 @@ import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.logsafe.logger.SafeLogger;
 import com.palantir.logsafe.logger.SafeLoggerFactory;
+import com.palantir.tracing.CloseableSpan;
+import com.palantir.tracing.Detached;
 import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.InternalTracers;
 import com.palantir.tracing.Observability;
@@ -29,13 +31,17 @@ import com.palantir.tracing.TagTranslator;
 import com.palantir.tracing.Tracers;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
+import io.undertow.server.ConduitWrapper;
 import io.undertow.server.ExchangeCompletionListener;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
+import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.Optional;
+import javax.annotation.Nullable;
+import org.xnio.conduits.StreamSinkConduit;
 
 /**
  * Internal utility functionality shared between {@link TracedRequestHandler}, {@link TracedStateHandler}, and
@@ -107,6 +113,7 @@ final class UndertowTracing {
         exchange.putAttachment(REQUEST_SPAN, detachedSpan);
         exchange.putAttachment(TAG_TRANSLATOR_ATTACHMENT_KEY, translator);
         exchange.addExchangeCompleteListener(DetachedTraceCompletionListener.INSTANCE);
+        exchange.addResponseWrapper(ExchangeCompletionListenerRegisteringResponseWrapper.INSTANCE);
     }
 
     private static DetachedSpan detachedSpan(
@@ -174,4 +181,35 @@ final class UndertowTracing {
     }
 
     private UndertowTracing() {}
+
+    /**
+     * A {@link ConduitWrapper<StreamSinkConduit>} which exists to register {@link TracedExchangeCompletionListener}
+     * as late as possible, in order to ensure all other exchange completion listeners have tracing state set.
+     */
+    private enum ExchangeCompletionListenerRegisteringResponseWrapper implements ConduitWrapper<StreamSinkConduit> {
+        INSTANCE;
+
+        @Override
+        public StreamSinkConduit wrap(ConduitFactory<StreamSinkConduit> factory, HttpServerExchange exchange) {
+            exchange.addExchangeCompleteListener(TracedExchangeCompletionListener.INSTANCE);
+            return factory.create();
+        }
+    }
+
+    /**
+     * Applies tracing thread state to exchange completion listeners executed after this one.
+     * Completion listeners are invoked in the inverse order that they were registered, so the last one registered
+     * will be the first to fire.
+     */
+    private enum TracedExchangeCompletionListener implements ExchangeCompletionListener {
+        INSTANCE;
+
+        @Override
+        public void exchangeEvent(HttpServerExchange exchange, NextListener nextListener) {
+            @Nullable Detached detached = exchange.getAttachment(REQUEST_SPAN);
+            try (@Nullable CloseableSpan ignored = detached == null ? null : detached.attach()) {
+                nextListener.proceed();
+            }
+        }
+    }
 }
