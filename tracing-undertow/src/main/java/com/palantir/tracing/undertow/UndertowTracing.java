@@ -56,13 +56,6 @@ final class UndertowTracing {
     @VisibleForTesting
     static final HttpString FETCH_USER_AGENT = HttpString.tryFromString("Fetch-User-Agent");
 
-    // Consider moving this to TracingAttachments and making it public. For now it's well encapsulated
-    // here because we expect the two handler implementations to be sufficient.
-    /**
-     * Detached span object representing the entire request including asynchronous components.
-     */
-    static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
-
     private static final AttachmentKey<TagTranslator<? super HttpServerExchange>> TAG_TRANSLATOR_ATTACHMENT_KEY =
             AttachmentKey.create(TagTranslator.class);
 
@@ -71,7 +64,7 @@ final class UndertowTracing {
      */
     static DetachedSpan getOrInitializeRequestTrace(
             HttpServerExchange exchange, String operationName, TagTranslator<? super HttpServerExchange> translator) {
-        DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
+        DetachedSpan detachedSpan = exchange.getAttachment(TracingAttachments.REQUEST_SPAN);
         if (detachedSpan == null) {
             return initializeRequestTrace(exchange, operationName, translator);
         }
@@ -104,7 +97,7 @@ final class UndertowTracing {
             throw new SafeIllegalStateException("No requestId is set", SafeArg.of("span", detachedSpan));
         }
         exchange.putAttachment(TracingAttachments.REQUEST_ID, requestId.get());
-        exchange.putAttachment(REQUEST_SPAN, detachedSpan);
+        exchange.putAttachment(TracingAttachments.REQUEST_SPAN, detachedSpan);
         exchange.putAttachment(TAG_TRANSLATOR_ATTACHMENT_KEY, translator);
         exchange.addExchangeCompleteListener(DetachedTraceCompletionListener.INSTANCE);
     }
@@ -130,7 +123,7 @@ final class UndertowTracing {
         @Override
         public void exchangeEvent(HttpServerExchange exchange, NextListener nextListener) {
             try {
-                DetachedSpan detachedSpan = exchange.getAttachment(REQUEST_SPAN);
+                DetachedSpan detachedSpan = exchange.getAttachment(TracingAttachments.REQUEST_SPAN);
                 if (detachedSpan != null) {
                     detachedSpan.complete(tagTranslator(exchange), exchange);
                 }
