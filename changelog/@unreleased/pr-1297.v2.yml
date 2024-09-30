@@ -1,0 +1,5 @@
+type: improvement
+improvement:
+  description: broaden the requestTrace attachment accessor
+  links:
+  - https://github.com/palantir/tracing-java/pull/1297
