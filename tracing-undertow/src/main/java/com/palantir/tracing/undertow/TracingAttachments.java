@@ -19,7 +19,6 @@ package com.palantir.tracing.undertow;
 import com.palantir.tracing.Detached;
 import com.palantir.tracing.DetachedSpan;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Attachable;
 import io.undertow.util.AttachmentKey;
 import javax.annotation.Nullable;
 
@@ -40,25 +39,21 @@ public final class TracingAttachments {
     static final AttachmentKey<DetachedSpan> REQUEST_SPAN = AttachmentKey.create(DetachedSpan.class);
 
     /**
+     * The {@link Detached} trace state which represents the top-level request being processed. This may
+     * be used to apply thread state to code executing outside traced handlers, exchange completion
+     * listeners, for example.
+     */
+    @SuppressWarnings("unchecked")
+    public static final AttachmentKey<Detached> REQUEST_DETACHED_TRACE =
+            (AttachmentKey<Detached>) (AttachmentKey<?>) REQUEST_SPAN;
+
+    /**
      * Gets the {@link Detached} trace state which represents the top-level request being processed. This may
      * be used to apply thread state to code executing outside traced handlers, exchange completion
      * listeners, for example.
      */
     @Nullable
     public static Detached requestTrace(HttpServerExchange exchange) {
-        return requestTrace((Attachable) exchange);
-    }
-
-    /**
-     * Gets the {@link Detached} trace state which represents the top-level request being processed. This may
-     * be used to apply thread state to code executing outside traced handlers, exchange completion
-     * listeners, for example.
-     * <p>
-     * Note that this intentionally returns a {@link Detached} rather than {@link DetachedSpan} because
-     * this framework is responsible for closing the root request span.
-     */
-    @Nullable
-    public static Detached requestTrace(Attachable exchange) {
         return exchange.getAttachment(REQUEST_SPAN);
     }
 
