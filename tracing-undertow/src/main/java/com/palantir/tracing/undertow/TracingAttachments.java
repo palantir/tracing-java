@@ -54,7 +54,7 @@ public final class TracingAttachments {
      */
     @Nullable
     public static Detached requestTrace(HttpServerExchange exchange) {
-        return exchange.getAttachment(REQUEST_SPAN);
+        return exchange.getAttachment(REQUEST_DETACHED_TRACE);
     }
 
     private TracingAttachments() {}
