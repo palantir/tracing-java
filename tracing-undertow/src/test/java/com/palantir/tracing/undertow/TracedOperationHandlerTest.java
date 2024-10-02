@@ -201,6 +201,8 @@ public class TracedOperationHandlerTest {
     public void setsDetachedTrace() throws Exception {
         handler.handleRequest(exchange);
         assertThat(TracingAttachments.requestTrace(exchange)).isNotNull();
+        assertThat(exchange.getAttachment(TracingAttachments.REQUEST_DETACHED_TRACE))
+                .isNotNull();
     }
 
     @Test
