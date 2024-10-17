@@ -39,17 +39,20 @@ import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.slf4j.MDC;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class TracedOperationHandlerTest {
 
     @Captor
@@ -69,7 +72,7 @@ public class TracedOperationHandlerTest {
 
     private TracedOperationHandler handler;
 
-    @Before
+    @BeforeEach
     public void before() {
         Tracer.subscribe("TEST_OBSERVER", observer);
         Tracer.setSampler(traceSampler);
@@ -83,7 +86,7 @@ public class TracedOperationHandlerTest {
         handler = new TracedOperationHandler(delegate, "GET /foo");
     }
 
-    @After
+    @AfterEach
     public void after() {
         Tracer.unsubscribe("TEST_OBSERVER");
     }
