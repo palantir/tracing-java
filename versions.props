@@ -5,7 +5,7 @@ com.fasterxml.jackson.*:* = 2.12.3
 com.google.guava:guava = 31.1-jre
 com.palantir.safe-logging:* = 1.18.0
 com.squareup.okhttp3:okhttp = 3.9.0
-io.undertow:* = 2.2.18.Final
+io.undertow:* = 2.2.24.Final
 io.zipkin.java:* = 1.13.1
 org.slf4j:slf4j-api = 1.7.12
 
