@@ -16,7 +16,7 @@
 
 package com.palantir.tracing.api;
 
-/** Zipkin-compatible HTTP header names. */
+/** HTTP header names used by tracing-java. */
 public interface TraceHttpHeaders {
     String TRACE_ID = "X-B3-TraceId";
     /**
@@ -41,12 +41,10 @@ public interface TraceHttpHeaders {
     String ORIGINATING_SPAN_ID = "X-OrigSpanId";
 
     /**
-     * For traces initiated with span type {@link SpanType#SERVER_INCOMING},
-     * this header will be set to the requestId generated for that trace.
-     *
-     * Inclusion of this header on outbound requests allows receivers to potentially observe the operations
-     * for the direct parent of a request received at an endpoint without the need to observe all operations
-     * in the entire trace.
+     * The {@code Parent-Request-Id} header represents the requestId of the caller, if present.
+     * This provides a direct causal connection between requests up a call stack. This can be an advantage
+     * over traceId which provides a broad set of data without information to understand the call
+     * pathing unless spans are sampled.
      */
     String PARENT_REQUEST_ID = "Parent-Request-Id";
 }

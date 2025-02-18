@@ -920,6 +920,11 @@ public final class TracersTest {
                 Optional.of("forUserAgent"),
                 "rootOperation",
                 SpanType.SERVER_INCOMING);
+        Optional<TraceMetadata> traceMetadata = Tracer.maybeGetTraceMetadata();
+        assertThat(traceMetadata).isPresent();
+
+        Optional<String> requestId = traceMetadata.get().getRequestId();
+        assertThat(requestId).isPresent();
 
         Map<String, String> headers = new HashMap<>();
         TracingHeadersEnrichingFunction<Map<String, String>> enrichingFunction =
@@ -927,8 +932,7 @@ public final class TracersTest {
 
         Tracers.addTracingHeaders(headers, enrichingFunction);
 
-        assertThat(headers).containsKey("Parent-Request-Id");
-        assertThat(headers.get("Parent-Request-Id")).isNotBlank();
+        assertThat(headers).containsEntry("Parent-Request-Id", requestId.get());
     }
 
     private static Callable<Void> newTraceExpectingCallable(String expectedOperation) {
