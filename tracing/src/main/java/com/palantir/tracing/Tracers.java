@@ -278,6 +278,10 @@ public final class Tracers {
         if (forUserAgent.isPresent()) {
             tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get(), state);
         }
+        Optional<String> requestId = traceMetadata.getRequestId();
+        if (requestId.isPresent()) {
+            tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.PARENT_REQUEST_ID, requestId.get(), state);
+        }
     }
 
     private static final class ListenableFutureSpanListener implements Runnable {

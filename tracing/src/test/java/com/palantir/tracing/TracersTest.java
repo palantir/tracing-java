@@ -907,6 +907,32 @@ public final class TracersTest {
                         "X-B3-TraceId", "defaultTraceId",
                         "X-B3-Sampled", "1"));
         assertThat(headers).containsKey("X-B3-SpanId");
+        // no requestId set when span type is local
+        assertThat(headers).doesNotContainKey("Parent-Request-Id");
+    }
+
+    @Test
+    public void testAddTracingHeaders_addsParentRequestId() {
+        // need to set span type to SERVER_INCOMING to generate a requestId
+        Tracer.initTraceWithSpan(
+                Observability.SAMPLE,
+                "defaultTraceId",
+                Optional.of("forUserAgent"),
+                "rootOperation",
+                SpanType.SERVER_INCOMING);
+        Optional<TraceMetadata> traceMetadata = Tracer.maybeGetTraceMetadata();
+        assertThat(traceMetadata).isPresent();
+
+        Optional<String> requestId = traceMetadata.get().getRequestId();
+        assertThat(requestId).isPresent();
+
+        Map<String, String> headers = new HashMap<>();
+        TracingHeadersEnrichingFunction<Map<String, String>> enrichingFunction =
+                (headerName, headerValue, state) -> state.put(headerName, headerValue);
+
+        Tracers.addTracingHeaders(headers, enrichingFunction);
+
+        assertThat(headers).containsEntry("Parent-Request-Id", requestId.get());
     }
 
     private static Callable<Void> newTraceExpectingCallable(String expectedOperation) {
