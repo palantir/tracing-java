@@ -39,4 +39,14 @@ public interface TraceHttpHeaders {
      */
     @Deprecated
     String ORIGINATING_SPAN_ID = "X-OrigSpanId";
+
+    /**
+     * For traces initiated with span type {@link SpanType#SERVER_INCOMING},
+     * this header will be set to the requestId generated for that trace.
+     *
+     * Inclusion of this header on outbound requests allows receivers to potentially observe the operations
+     * for the direct parent of a request received at an endpoint without the need to observe all operations
+     * in the entire trace.
+     */
+    String PARENT_REQUEST_ID = "Parent-Request-Id";
 }
