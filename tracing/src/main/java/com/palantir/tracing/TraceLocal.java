@@ -21,8 +21,8 @@ import com.palantir.logsafe.exceptions.SafeIllegalArgumentException;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Provides trace local variables. Each trace gets its own independent copy of the variable.
@@ -60,7 +60,7 @@ public final class TraceLocal<T> {
      * The supplier is thus normally invoked once per trace, but may be invoked again in case of subsequent
      * invocations of {@link #remove()} followed by get.
      */
-    public static <T> TraceLocal<T> withInitialValue(@Nonnull Supplier<T> initialValue) {
+    public static <T> TraceLocal<T> withInitialValue(@NonNull Supplier<T> initialValue) {
         return new TraceLocal<>(Preconditions.checkNotNull(initialValue, "initial value supplier must not be null"));
     }
 
@@ -102,7 +102,7 @@ public final class TraceLocal<T> {
      * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
     @Nullable
-    public T set(@Nonnull T value) {
+    public T set(@NonNull T value) {
         if (value == null) {
             throw new SafeIllegalArgumentException("value must not be null");
         }

@@ -30,7 +30,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is

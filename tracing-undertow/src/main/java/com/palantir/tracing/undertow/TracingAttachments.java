@@ -20,7 +20,7 @@ import com.palantir.tracing.Detached;
 import com.palantir.tracing.DetachedSpan;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.AttachmentKey;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Provides public tracing {@link AttachmentKey attachment keys}. */
 public final class TracingAttachments {
