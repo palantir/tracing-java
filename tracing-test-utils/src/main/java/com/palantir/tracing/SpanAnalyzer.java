@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.graph.EndpointPair;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.ImmutableGraph;
+import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.Collection;
@@ -84,7 +85,7 @@ final class SpanAnalyzer {
         if (parentlessSpans.size() != 1) {
             rootSpan = fakeRootSpan;
         } else {
-            rootSpan = Iterables.getOnlyElement(parentlessSpans);
+            rootSpan = Preconditions.checkNotNull(Iterables.getOnlyElement(parentlessSpans), "rootSpan");
         }
 
         // people do crazy things with traces - they might have a trace already initialized which doesn't
