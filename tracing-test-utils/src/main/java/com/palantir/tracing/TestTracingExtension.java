@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.nio.file.Files;
@@ -39,12 +40,11 @@ import org.slf4j.LoggerFactory;
 final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     private static final Logger log = LoggerFactory.getLogger(TestTracingExtension.class);
-    private final TestTracingSubscriber subscriber = new TestTracingSubscriber();
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe(context.getUniqueId(), subscriber);
+        Tracer.subscribe(context.getUniqueId(), new TestTracingSubscriber());
 
         // TODO(dfox): sample can be modified by other code, we should be try ensure that the trace is always sampled
         // for the lifetime of the test
@@ -55,7 +55,9 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);
-        Tracer.unsubscribe(context.getUniqueId());
+        if (!(Tracer.unsubscribe(context.getUniqueId()) instanceof TestTracingSubscriber subscriber)) {
+            throw new SafeIllegalStateException("Expecting TestTracingSubscriber");
+        }
 
         Path outputPath = getOutputPath(name);
         Path snapshotFile = Paths.get("src/test/resources/tracing").resolve(name + ".log");
