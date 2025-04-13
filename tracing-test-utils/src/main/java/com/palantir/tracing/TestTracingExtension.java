@@ -18,7 +18,6 @@ package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.nio.file.Files;
@@ -33,6 +32,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,11 +40,16 @@ import org.slf4j.LoggerFactory;
 final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     private static final Logger log = LoggerFactory.getLogger(TestTracingExtension.class);
+    private static final Namespace TRACING_EXT_NAMESPACE = Namespace.create(TestTracingExtension.class);
+    private static final String SUBSCRIBER_STORE_KEY = "subscriber";
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        Tracer.subscribe(context.getUniqueId(), new TestTracingSubscriber());
+        TestTracingSubscriber subscriber = context.getStore(TRACING_EXT_NAMESPACE)
+                .getOrComputeIfAbsent(
+                        SUBSCRIBER_STORE_KEY, _k -> new TestTracingSubscriber(), TestTracingSubscriber.class);
+        Tracer.subscribe(context.getUniqueId(), subscriber);
 
         // TODO(dfox): sample can be modified by other code, we should be try ensure that the trace is always sampled
         // for the lifetime of the test
@@ -55,9 +60,9 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);
-        if (!(Tracer.unsubscribe(context.getUniqueId()) instanceof TestTracingSubscriber subscriber)) {
-            throw new SafeIllegalStateException("Expecting TestTracingSubscriber");
-        }
+        Tracer.unsubscribe(context.getUniqueId());
+        TestTracingSubscriber subscriber =
+                context.getStore(TRACING_EXT_NAMESPACE).remove(SUBSCRIBER_STORE_KEY, TestTracingSubscriber.class);
 
         Path outputPath = getOutputPath(name);
         Path snapshotFile = Paths.get("src/test/resources/tracing").resolve(name + ".log");
