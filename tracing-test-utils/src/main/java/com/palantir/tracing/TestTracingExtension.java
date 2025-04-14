@@ -40,20 +40,16 @@ import org.slf4j.LoggerFactory;
 final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
     private static final Logger log = LoggerFactory.getLogger(TestTracingExtension.class);
-    private static final Namespace TRACING_EXT_NAMESPACE = Namespace.create(TestTracingExtension.class);
-    private static final String SUBSCRIBER_STORE_KEY = "subscriber";
+    private static final Namespace NAMESPACE = Namespace.create(TestTracingExtension.class);
+    private static final String SUBSCRIBER_KEY = "subscriber";
 
     @Override
     public void beforeTestExecution(ExtensionContext context) {
+        TestTracingSubscriber subscriber = context.getStore(NAMESPACE)
+                .getOrComputeIfAbsent(SUBSCRIBER_KEY, _k -> new TestTracingSubscriber(), TestTracingSubscriber.class);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
-        TestTracingSubscriber subscriber = context.getStore(TRACING_EXT_NAMESPACE)
-                .getOrComputeIfAbsent(
-                        SUBSCRIBER_STORE_KEY, _k -> new TestTracingSubscriber(), TestTracingSubscriber.class);
         Tracer.subscribe(context.getUniqueId(), subscriber);
 
-        // TODO(dfox): sample can be modified by other code, we should be try ensure that the trace is always sampled
-        // for the lifetime of the test
-        // TODO(dfox): clear existing tracing??
         // TODO(forozco): cleanup stale snapshots from outdated tests cases/classes
     }
 
@@ -62,7 +58,7 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         String name = testName(context);
         Tracer.unsubscribe(context.getUniqueId());
         TestTracingSubscriber subscriber =
-                context.getStore(TRACING_EXT_NAMESPACE).remove(SUBSCRIBER_STORE_KEY, TestTracingSubscriber.class);
+                context.getStore(NAMESPACE).remove(SUBSCRIBER_KEY, TestTracingSubscriber.class);
 
         Path outputPath = getOutputPath(name);
         Path snapshotFile = Paths.get("src/test/resources/tracing").resolve(name + ".log");
