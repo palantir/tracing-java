@@ -2,7 +2,7 @@
  * (c) Copyright 2018 Palantir Technologies Inc. All rights reserved.
  */
 
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 jmh {
     // Use profilers to collect additional data. Supported profilers:
@@ -11,7 +11,7 @@ jmh {
 }
 
 tasks.jmhCompileGeneratedClasses {
-    options.annotationProcessorPath = configurations.errorprone
+    options.annotationProcessorPath = configurations.jmhAnnotationProcessor
     options.errorprone.enabled = false
 }
 
