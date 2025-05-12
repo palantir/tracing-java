@@ -1,13 +1,3 @@
-{"traceId":"fc66359b4cf2cc43","parentSpanId":"65752bf490a47a30","spanId":"55d0ab448795fc97","operation":"nested","startTimeMicroSeconds":1567076544357605,"durationNanoSeconds":93468089,"metadata":{}}
-{"traceId":"fc66359b4cf2cc43","parentSpanId":"07d4220dd5e520fc","spanId":"65752bf490a47a30","operation":"first","startTimeMicroSeconds":1567076544254098,"durationNanoSeconds":207848123,"metadata":{}}
-{"traceId":"fc66359b4cf2cc43","parentSpanId":"07d4220dd5e520fc","spanId":"f302db3ff71079d0","operation":"second","startTimeMicroSeconds":1567076544461999,"durationNanoSeconds":101253285,"metadata":{}}
-{"traceId":"fc66359b4cf2cc43","parentSpanId":"07d4220dd5e520fc","spanId":"bbbc8cbdf2646378","operation":"third","startTimeMicroSeconds":1567076544563361,"durationNanoSeconds":104430058,"metadata":{}}
-{"traceId":"fc66359b4cf2cc43","parentSpanId":null,"spanId":"07d4220dd5e520fc","operation":"root","startTimeMicroSeconds":1567076544254086,"durationNanoSeconds":413762617,"metadata":{}}
-{"traceId":"f93d913ccb274d5e","parentSpanId":"050b8add2c2b87d1","spanId":"7976952441b0ac82","operation":"nested","startTimeMicroSeconds":1567076544793118,"durationNanoSeconds":95104259,"metadata":{}}
-{"traceId":"f93d913ccb274d5e","parentSpanId":"e6ce3b091602c063","spanId":"050b8add2c2b87d1","operation":"first","startTimeMicroSeconds":1567076544691357,"durationNanoSeconds":208954194,"metadata":{}}
-{"traceId":"f93d913ccb274d5e","parentSpanId":"e6ce3b091602c063","spanId":"2e3e970590f1b45e","operation":"second","startTimeMicroSeconds":1567076544900434,"durationNanoSeconds":101589476,"metadata":{}}
-{"traceId":"f93d913ccb274d5e","parentSpanId":"e6ce3b091602c063","spanId":"4d2ff23f6260c140","operation":"third","startTimeMicroSeconds":1567076545002165,"durationNanoSeconds":104911496,"metadata":{}}
-{"traceId":"f93d913ccb274d5e","parentSpanId":null,"spanId":"e6ce3b091602c063","operation":"root","startTimeMicroSeconds":1567076544691343,"durationNanoSeconds":415777286,"metadata":{}}
 {"traceId":"9aada2f1810e006c","parentSpanId":"137b240f0ce29196","spanId":"18bc7803589eda48","operation":"nested","startTimeMicroSeconds":1567076545239097,"durationNanoSeconds":93975475,"metadata":{}}
 {"traceId":"9aada2f1810e006c","parentSpanId":"a634e47d1b808b29","spanId":"137b240f0ce29196","operation":"first","startTimeMicroSeconds":1567076545137630,"durationNanoSeconds":205881393,"metadata":{}}
 {"traceId":"9aada2f1810e006c","parentSpanId":"a634e47d1b808b29","spanId":"79ed99549e2ad7da","operation":"second","startTimeMicroSeconds":1567076545343736,"durationNanoSeconds":103896953,"metadata":{}}

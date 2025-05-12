@@ -22,18 +22,19 @@ buildscript {
 
     dependencies {
         classpath 'com.palantir.jakartapackagealignment:jakarta-package-alignment:0.6.0'
-        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.63.0'
-        classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.17.0'
+        classpath 'com.palantir.gradle.jdks:gradle-jdks:0.66.0'
+        classpath 'com.palantir.gradle.jdkslatest:gradle-jdks-latest:0.18.0'
         classpath 'com.palantir.gradle.externalpublish:gradle-external-publish-plugin:1.19.0'
         classpath 'com.palantir.gradle.failure-reports:gradle-failure-reports:1.13.0'
-        classpath 'com.palantir.javaformat:gradle-palantir-java-format:2.61.0'
-        classpath 'com.palantir.suppressible-error-prone:gradle-suppressible-error-prone:2.7.0'
+        classpath 'com.palantir.javaformat:gradle-palantir-java-format:2.66.0'
+        classpath 'com.palantir.suppressible-error-prone:gradle-suppressible-error-prone:2.9.0'
         classpath 'com.palantir.gradle.revapi:gradle-revapi:1.8.0'
         classpath 'gradle.plugin.com.github.jengelman.gradle.plugins:shadow:7.0.0'
-        classpath 'com.palantir.baseline:gradle-baseline-java:6.23.0'
-        classpath 'com.palantir.gradle.gitversion:gradle-git-version:3.1.0'
+        classpath 'com.palantir.baseline:gradle-baseline-java:6.29.0'
+        classpath 'com.palantir.gradle.gitversion:gradle-git-version:3.2.0'
+        classpath 'com.palantir.gradle.idea-configuration:gradle-idea-configuration:0.2.0'
         classpath 'gradle.plugin.org.inferred:gradle-processors:3.7.0'
-        classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:2.32.0'
+        classpath 'com.palantir.gradle.consistentversions:gradle-consistent-versions:2.34.0'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.5.3'
     }
 }
@@ -104,5 +105,5 @@ javaVersions {
 }
 
 jdks {
-    daemonTarget = 17
+    daemonTarget = 21
 }
