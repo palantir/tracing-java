@@ -75,7 +75,7 @@ subprojects {
 
     plugins.withId('com.palantir.baseline-error-prone', {
         dependencies {
-            compileOnly 'com.google.code.findbugs:jsr305'
+            compileOnly 'org.jspecify:jspecify'
             annotationProcessor 'com.uber.nullaway:nullaway'
         }
 

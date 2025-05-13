@@ -16,11 +16,11 @@
 
 package com.palantir.tracing;
 
+import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
 import java.util.Map;
-import javax.annotation.CheckReturnValue;
 
 /**
  * Detached tracing component which is not bound to thread state, and can be used on any thread.

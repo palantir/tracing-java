@@ -26,7 +26,7 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utility class for capturing the current trace at time of construction, and then running callables at some later time
