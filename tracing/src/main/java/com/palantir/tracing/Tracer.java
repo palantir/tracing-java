@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.errorprone.annotations.CheckReturnValue;
 import com.google.errorprone.annotations.MustBeClosed;
+import com.google.errorprone.annotations.concurrent.GuardedBy;
 import com.palantir.logsafe.Safe;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.UnsafeArg;
@@ -59,6 +60,7 @@ public final class Tracer {
     private static final ThreadLocal<Trace> currentTrace = new ThreadLocal<>();
 
     // Only access in a class-synchronized fashion
+    @GuardedBy("Tracer.class")
     private static final Map<String, SpanObserver> observers = new HashMap<>();
     // we want iterating through tracers to be very fast, and it's faster to pre-define observer execution
     // when our observers are modified.
@@ -389,25 +391,14 @@ public final class Tracer {
         return detachedSpan instanceof SampledDetachedSpan;
     }
 
-    private static final class TraceRestoringCloseableSpanWithMetadata<T> implements CloseableSpan {
-
-        @Nullable
-        private final Trace original;
-
-        private final TagTranslator<? super T> translator;
-        private final T data;
+    private record TraceRestoringCloseableSpanWithMetadata<T>(
+            @Nullable Trace original, TagTranslator<? super T> translator, T data) implements CloseableSpan {
 
         static <T> CloseableSpan of(@Nullable Trace original, TagTranslator<? super T> translator, T data) {
             if (original != null || !translator.isEmpty(data)) {
                 return new TraceRestoringCloseableSpanWithMetadata<>(original, translator, data);
             }
             return DEFAULT_CLOSEABLE_SPAN;
-        }
-
-        TraceRestoringCloseableSpanWithMetadata(@Nullable Trace original, TagTranslator<? super T> translator, T data) {
-            this.original = original;
-            this.translator = translator;
-            this.data = data;
         }
 
         @Override
@@ -509,15 +500,7 @@ public final class Tracer {
         }
     }
 
-    private static final class SampledDetached implements Detached {
-
-        private final TraceState traceState;
-        private final OpenSpan openSpan;
-
-        SampledDetached(TraceState traceState, OpenSpan openSpan) {
-            this.traceState = traceState;
-            this.openSpan = openSpan;
-        }
+    private record SampledDetached(TraceState traceState, OpenSpan openSpan) implements Detached {
 
         @Override
         @MustBeClosed
@@ -543,15 +526,7 @@ public final class Tracer {
         }
     }
 
-    private static final class UnsampledDetachedSpan implements DetachedSpan {
-
-        private final TraceState traceState;
-        private final Optional<String> parentSpanId;
-
-        UnsampledDetachedSpan(TraceState traceState, Optional<String> parentSpanId) {
-            this.traceState = traceState;
-            this.parentSpanId = parentSpanId;
-        }
+    private record UnsampledDetachedSpan(TraceState traceState, Optional<String> parentSpanId) implements DetachedSpan {
 
         @Override
         public <T> CloseableSpan childSpan(
@@ -601,14 +576,7 @@ public final class Tracer {
     private static final CloseableSpan DEFAULT_CLOSEABLE_SPAN = Tracer::fastCompleteSpan;
     private static final CloseableSpan REMOVE_TRACE = Tracer::clearCurrentTrace;
 
-    private static final class TraceRestoringCloseableSpan implements CloseableSpan {
-
-        private final Trace original;
-
-        TraceRestoringCloseableSpan(Trace original) {
-            this.original = original;
-        }
-
+    private record TraceRestoringCloseableSpan(Trace original) implements CloseableSpan {
         @Override
         public void close() {
             Tracer.fastCompleteSpan();
@@ -640,11 +608,8 @@ public final class Tracer {
             if (trace.isObservable()) {
                 completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
             }
-        } else if (log.isDebugEnabled()) {
-            log.debug(
-                    "Attempted to complete spans when there is no active Trace. This may be the "
-                            + "result of calling completeSpan more times than startSpan",
-                    new SafeRuntimeException("not a real exception"));
+        } else {
+            logCompletedWithoutStarted();
         }
     }
 
@@ -676,12 +641,7 @@ public final class Tracer {
     public static Optional<Span> completeSpan(@Safe Map<String, String> metadata) {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            if (log.isDebugEnabled()) {
-                log.debug(
-                        "Attempted to complete spans when there is no active Trace. This may be the "
-                                + "result of calling completeSpan more times than startSpan",
-                        new SafeRuntimeException("not a real exception"));
-            }
+            logCompletedWithoutStarted();
             return Optional.empty();
         }
         Optional<Span> maybeSpan = popCurrentSpan(trace)
@@ -694,6 +654,15 @@ public final class Tracer {
         }
 
         return maybeSpan;
+    }
+
+    private static void logCompletedWithoutStarted() {
+        if (log.isDebugEnabled()) {
+            log.debug(
+                    "Attempted to complete spans when there is no active Trace."
+                            + " This may be the result of calling completeSpan more times than startSpan",
+                    new SafeRuntimeException("not a real exception"));
+        }
     }
 
     private static void notifyObservers(Span span) {
@@ -745,8 +714,10 @@ public final class Tracer {
      * registered for the given name, then it gets overwritten by this call. Returns the observer previously associated
      * with the given name, or null if there is no such observer.
      */
+    @Nullable
     public static synchronized SpanObserver subscribe(String name, SpanObserver observer) {
-        if (observers.containsKey(name)) {
+        SpanObserver currentValue = observers.put(name, observer);
+        if (currentValue != null) {
             log.warn(
                     "Overwriting existing SpanObserver with name {} by new observer: {}",
                     SafeArg.of("name", name),
@@ -755,7 +726,6 @@ public final class Tracer {
         if (observers.size() >= 5) {
             log.warn("Five or more SpanObservers registered: {}", SafeArg.of("observers", observers.keySet()));
         }
-        SpanObserver currentValue = observers.put(name, observer);
         computeObserversList();
         return currentValue;
     }
@@ -770,6 +740,7 @@ public final class Tracer {
         return removedObserver;
     }
 
+    @GuardedBy("Tracer.class")
     private static void computeObserversList() {
         Consumer<Span> newCompositeObserver = _span -> {};
         for (Map.Entry<String, SpanObserver> entry : observers.entrySet()) {
@@ -892,8 +863,6 @@ public final class Tracer {
         MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
         setTraceRequestId(trace.maybeGetRequestId());
-
-        logSettingTrace();
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {
@@ -915,10 +884,6 @@ public final class Tracer {
         }
     }
 
-    private static void logSettingTrace() {
-        log.debug("Setting trace");
-    }
-
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
@@ -930,19 +895,10 @@ public final class Tracer {
 
     @VisibleForTesting
     static void clearCurrentTrace() {
-        logClearingTrace();
+        //noinspection ThreadLocalSetWithNull explicitly not removing thread local to avoid churn, see PR #849
         currentTrace.set(null);
         MDC.remove(Tracers.TRACE_ID_KEY);
         MDC.remove(Tracers.TRACE_SAMPLED_KEY);
         MDC.remove(Tracers.REQUEST_ID_KEY);
-    }
-
-    private static void logClearingTrace() {
-        if (log.isDebugEnabled()) {
-            log.debug("Clearing current trace", SafeArg.of("trace", currentTrace.get()));
-            if (log.isTraceEnabled()) {
-                log.trace("Stacktrace at time of clearing trace", new SafeRuntimeException("not a real exception"));
-            }
-        }
     }
 }
