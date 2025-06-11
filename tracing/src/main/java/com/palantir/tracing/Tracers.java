@@ -111,6 +111,7 @@ public final class Tracers {
      * Like {@link #wrap(ExecutorService)}, but using the given {@link String operation} is used to create a span for
      * submitted tasks.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static ExecutorService wrap(String operation, ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
             @Override
@@ -154,6 +155,7 @@ public final class Tracers {
      * Like {@link #wrap(ScheduledExecutorService)}, but using the given {@link String operation} is used to create a
      * span for submitted tasks.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static ScheduledExecutorService wrap(String operation, ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
             @Override
@@ -185,6 +187,7 @@ public final class Tracers {
      * Like {@link #wrap(Callable)}, but using the given {@link String operation} is used to create a span for the
      * execution.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static <V> Callable<V> wrap(String operation, Callable<V> delegate) {
         return new TracingAwareCallable<>(operation, ImmutableMap.of(), delegate);
     }
@@ -193,6 +196,7 @@ public final class Tracers {
      * Like {@link #wrap(String, Callable)}, but using the given {@link String metadata} is used to create a span for
      * the execution.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static <V> Callable<V> wrap(String operation, Map<String, String> metadata, Callable<V> delegate) {
         return new TracingAwareCallable<>(operation, metadata, delegate);
     }
@@ -209,6 +213,7 @@ public final class Tracers {
      * Like {@link #wrap(Runnable)}, but the given {@link String operation} is used to create a span for the
      * execution.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static Runnable wrap(String operation, Runnable delegate) {
         return wrap(operation, ImmutableMap.of(), delegate);
     }
@@ -218,6 +223,7 @@ public final class Tracers {
      * {@link Map metadata} is used to create a span for the
      * execution.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static Runnable wrap(String operation, Map<String, String> metadata, Runnable delegate) {
         return new TracingAwareRunnable(operation, metadata, delegate);
     }
@@ -241,6 +247,7 @@ public final class Tracers {
         return wrapListenableFuture(operation, ImmutableMap.of(), delegateFactory);
     }
 
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static <T, U extends ListenableFuture<T>> U wrapListenableFuture(
             String operation, Map<String, String> metadata, Supplier<U> delegateFactory) {
         DetachedSpan span = DetachedSpan.start(operation);
@@ -322,6 +329,7 @@ public final class Tracers {
      * trace will be generated for each execution, effectively bypassing the intent of the previous wrapping. The given
      * {@link String operation} is used to create the initial span.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static ExecutorService wrapWithNewTrace(String operation, ExecutorService executorService) {
         return new WrappingExecutorService(executorService) {
             @Override
@@ -353,6 +361,7 @@ public final class Tracers {
      * this is done, a new trace will be generated for each execution, effectively bypassing the intent of the previous
      * wrapping. The given {@link String operation} is used to create the initial span.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static ScheduledExecutorService wrapWithNewTrace(
             String operation, ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
@@ -383,6 +392,7 @@ public final class Tracers {
         return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static <V> Callable<V> wrapWithNewTrace(String operation, Callable<V> delegate) {
         return wrapWithNewTrace(operation, Observability.UNDECIDED, delegate);
     }
@@ -393,6 +403,7 @@ public final class Tracers {
      * any trace already set on the thread used to execute the callable. Each execution of the callable will have a
      * fresh trace. The given {@link String operation} is used to create the initial span.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static <V> Callable<V> wrapWithNewTrace(
             String operation, Observability observability, Callable<V> delegate) {
         return () -> {
@@ -419,6 +430,7 @@ public final class Tracers {
         return wrapWithNewTrace(DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static Runnable wrapWithNewTrace(String operation, Runnable delegate) {
         return wrapWithNewTrace(operation, Observability.UNDECIDED, delegate);
     }
@@ -429,6 +441,7 @@ public final class Tracers {
      * any trace already set on the thread used to execute the runnable. Each execution of the runnable will have a
      * fresh trace. The given {@link String operation} is used to create the initial span.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
         return () -> {
             // clear the existing trace and keep it around for restoration when we're done
@@ -451,6 +464,7 @@ public final class Tracers {
      * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
      * create the initial span.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
         return () -> {
@@ -477,6 +491,7 @@ public final class Tracers {
         return wrapWithAlternateTraceId(traceId, DEFAULT_ROOT_SPAN_OPERATION, delegate);
     }
 
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static Runnable wrapWithAlternateTraceId(String traceId, String operation, Runnable delegate) {
         return wrapWithAlternateTraceId(traceId, operation, Observability.UNDECIDED, delegate);
     }
@@ -488,6 +503,7 @@ public final class Tracers {
      * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
      * create the initial span.
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static Runnable wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Runnable delegate) {
         return () -> {

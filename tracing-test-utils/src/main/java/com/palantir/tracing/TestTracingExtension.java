@@ -53,6 +53,7 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         // TODO(forozco): cleanup stale snapshots from outdated tests cases/classes
     }
 
+    @SuppressWarnings("for-rollout:StringConcatToTextBlock")
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);
@@ -100,6 +101,7 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedSpans);
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
+        @SuppressWarnings("for-rollout:PreferredInterfaceType")
         Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(
                         expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
@@ -147,6 +149,7 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         }
     }
 
+    @SuppressWarnings("for-rollout:StringFormatWithLiteral")
     private static String renderFailure(ComparisonFailure failure) {
         return failure.map(
                 (ComparisonFailure.unequalOperation t) -> String.format(

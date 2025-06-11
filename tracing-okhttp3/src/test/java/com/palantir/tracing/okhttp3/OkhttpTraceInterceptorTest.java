@@ -44,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "for-rollout:SuppressWarningsWithoutExplanation"})
 public final class OkhttpTraceInterceptorTest {
 
     @Mock

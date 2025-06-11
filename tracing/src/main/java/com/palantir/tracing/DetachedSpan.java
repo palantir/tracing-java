@@ -60,6 +60,7 @@ public interface DetachedSpan extends Detached {
      *
      * @see DetachedSpan#start(String)
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     @CheckReturnValue
     static DetachedSpan start(
             Observability observability,
@@ -75,6 +76,7 @@ public interface DetachedSpan extends Detached {
      *
      * @see DetachedSpan#start(String)
      */
+    @SuppressWarnings("for-rollout:InconsistentOverloads")
     @CheckReturnValue
     static DetachedSpan start(
             Observability observability,

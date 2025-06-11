@@ -52,6 +52,7 @@ public final class TracingAttachments {
      * be used to apply thread state to code executing outside traced handlers, exchange completion
      * listeners, for example.
      */
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     public static Detached requestTrace(HttpServerExchange exchange) {
         return exchange.getAttachment(REQUEST_DETACHED_TRACE);

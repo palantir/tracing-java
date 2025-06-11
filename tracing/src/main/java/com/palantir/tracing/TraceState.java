@@ -36,12 +36,15 @@ final class TraceState implements Serializable {
 
     private final String traceId;
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final String requestId;
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final String forUserAgent;
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private volatile TraceLocalMap traceLocals;
 

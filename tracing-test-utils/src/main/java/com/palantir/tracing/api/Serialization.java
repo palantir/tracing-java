@@ -34,6 +34,7 @@ public final class Serialization {
 
     private Serialization() {}
 
+    @SuppressWarnings({"for-rollout:PreferredInterfaceType", "for-rollout:ThrowSpecificExceptions"})
     public static List<Span> deserialize(Path file) throws IOException {
         try (Stream<String> lines = Files.lines(file)) {
             return lines.map(line -> {
@@ -48,6 +49,7 @@ public final class Serialization {
         }
     }
 
+    @SuppressWarnings("for-rollout:ThrowSpecificExceptions")
     public static void serialize(Path file, Collection<Span> allSpans) throws IOException {
         Files.createDirectories(file.getParent());
         try (OutputStream outputStream = Files.newOutputStream(file)) {
@@ -63,6 +65,7 @@ public final class Serialization {
         }
     }
 
+    @SuppressWarnings("for-rollout:ThrowSpecificExceptions")
     public static String toString(Span span) {
         try {
             return mapper.writeValueAsString(span);

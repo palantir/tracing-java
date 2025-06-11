@@ -65,6 +65,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     private ExtendedUriInfo uriInfo;
 
     // Handles incoming request
+    @SuppressWarnings("for-rollout:CheckedExceptionNotThrown")
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = getPathTemplate();
@@ -111,6 +112,7 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     }
 
     // Handles outgoing response
+    @SuppressWarnings("for-rollout:CheckedExceptionNotThrown")
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
             throws IOException {
@@ -122,8 +124,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
                 sink.accept(TraceTags.HTTP_URL_PATH_TEMPLATE, getPathTemplate());
                 sink.accept(TraceTags.HTTP_METHOD, requestContext.getMethod());
                 Object requestId = requestContext.getProperty(REQUEST_ID_PROPERTY_NAME);
-                if (requestId instanceof String) {
-                    sink.accept(TraceTags.HTTP_REQUEST_ID, (String) requestId);
+                if (requestId instanceof String string) {
+                    sink.accept(TraceTags.HTTP_REQUEST_ID, string);
                 }
             });
             headers.putSingle(TraceHttpHeaders.TRACE_ID, traceId);
