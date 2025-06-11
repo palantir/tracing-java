@@ -54,7 +54,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.MDC;
 
-@SuppressWarnings("deprecation")
+@SuppressWarnings({"deprecation", "for-rollout:SuppressWarningsWithoutExplanation"})
 public final class TracersTest {
 
     @Before
@@ -936,6 +936,7 @@ public final class TracersTest {
     }
 
     private static Callable<Void> newTraceExpectingCallable(String expectedOperation) {
+        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final Set<String> seenTraceIds = new HashSet<>();
         seenTraceIds.add(Tracer.getTraceId());
 
@@ -954,6 +955,7 @@ public final class TracersTest {
     }
 
     private static Runnable newTraceExpectingRunnable(String expectedOperation) {
+        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final Set<String> seenTraceIds = new HashSet<>();
         seenTraceIds.add(Tracer.getTraceId());
 
@@ -976,6 +978,7 @@ public final class TracersTest {
 
     private static Callable<Void> traceExpectingCallableWithSingleSpan(
             String operation, Optional<String> expectedRequestId) {
+        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final String outsideTraceId = Tracer.getTraceId();
 
         return () -> {
@@ -997,6 +1000,7 @@ public final class TracersTest {
     }
 
     private static Runnable traceExpectingRunnableWithSingleSpan(String operation, Optional<String> expectedRequestId) {
+        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final String outsideTraceId = Tracer.getTraceId();
 
         return () -> {

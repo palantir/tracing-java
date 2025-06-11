@@ -76,6 +76,7 @@ final class SpanAnalyzer {
                         },
                         LinkedHashMap::new));
 
+        @SuppressWarnings("for-rollout:PreferredInterfaceType")
         Set<Span> parentlessSpans = spansBySpanId.values().stream()
                 .filter(span -> span.getParentSpanId().isPresent())
                 .collect(ImmutableSet.toImmutableSet());
@@ -227,6 +228,7 @@ final class SpanAnalyzer {
         }
     }
 
+    @SuppressWarnings("for-rollout:PreferredInterfaceType")
     private static List<Span> sortedChildren(ImmutableGraph<Span> graph, Span node) {
         return children(graph, node)
                 .sorted(Comparator.comparingLong(Span::getStartTimeMicroSeconds))

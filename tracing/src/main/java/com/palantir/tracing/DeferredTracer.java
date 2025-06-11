@@ -57,17 +57,21 @@ public final class DeferredTracer implements Serializable {
 
     private static final String DEFAULT_OPERATION = "DeferredTracer(unnamed operation)";
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final TraceState traceState;
 
     private final boolean isObservable;
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final String operation;
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final Map<String, String> metadata;
 
+    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final String parentSpanId;
 

@@ -32,6 +32,7 @@ enum StatusCodeTagTranslator implements TagTranslator<HttpServerExchange> {
         adapter.tag(target, TraceTags.HTTP_STATUS_CODE, statusString(exchange.getStatusCode()));
     }
 
+    @SuppressWarnings({"for-rollout:MissingDefault", "for-rollout:StatementSwitchToExpressionSwitch"})
     static String statusString(int statusCode) {
         // handle common cases quickly
         switch (statusCode) {

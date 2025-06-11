@@ -60,7 +60,9 @@ abstract class WrappingExecutorService implements ExecutorService {
      * Wraps a {@code Runnable} for submission to the underlying executor. The default implementation delegates to
      * {@link #wrapTask(Callable)}.
      */
+    @SuppressWarnings("for-rollout:ThrowSpecificExceptions")
     protected Runnable wrapTask(Runnable command) {
+        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final Callable<Object> wrapped = wrapTask(Executors.callable(command, null));
         return () -> {
             try {

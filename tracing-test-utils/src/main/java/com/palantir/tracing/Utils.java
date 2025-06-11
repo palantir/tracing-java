@@ -42,6 +42,7 @@ final class Utils {
         return 100f * numerator / denominator;
     }
 
+    @SuppressWarnings("for-rollout:DefaultLocale")
     public static String renderDuration(double amount, TimeUnit timeUnit) {
         TimeUnit bigger = LARGER_UNIT.get(timeUnit);
         if (amount >= 1000 && bigger != null) {
@@ -53,6 +54,7 @@ final class Utils {
 
     private Utils() {}
 
+    @SuppressWarnings("for-rollout:ThrowSpecificExceptions")
     public static Path createOutputFile(Class<?> clazz, String methodName) {
         Path base =
                 Paths.get(Optional.ofNullable(System.getenv("CIRCLE_ARTIFACTS")).orElse("build"));

@@ -80,8 +80,8 @@ public final class LeakedTraceFilter implements Filter {
     }
 
     private static String getPath(ServletRequest request) {
-        if (request instanceof HttpServletRequest) {
-            return ((HttpServletRequest) request).getRequestURI();
+        if (request instanceof HttpServletRequest httpServletRequest) {
+            return httpServletRequest.getRequestURI();
         }
         return "Unknown";
     }
