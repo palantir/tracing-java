@@ -256,7 +256,6 @@ public final class TracerTest {
     @Test
     @SuppressWarnings({"deprecation", "for-rollout:SuppressWarningsWithoutExplanation"})
     public void testCompleteSpanWithMetadataIncludesMetadata() {
-        @SuppressWarnings("for-rollout:PreferredInterfaceType")
         Map<String, String> metadata = ImmutableMap.of(
                 "key1", "value1",
                 "key2", "value2");
@@ -310,7 +309,6 @@ public final class TracerTest {
     @SuppressWarnings({"deprecation", "for-rollout:SuppressWarningsWithoutExplanation"})
     public void testFastCompleteSpanWithMetadata() {
         Tracer.subscribe("1", observer1);
-        @SuppressWarnings("for-rollout:PreferredInterfaceType")
         Map<String, String> metadata = ImmutableMap.of("key", "value");
         String operation = "operation";
         Tracer.fastStartSpan("operation");

@@ -36,7 +36,6 @@ class SpanAnalyzerTest {
         SpanAnalyzer.Result result1 = SpanAnalyzer.analyze(spans1);
         SpanAnalyzer.Result result2 = SpanAnalyzer.analyze(spans2);
 
-        @SuppressWarnings("for-rollout:PreferredInterfaceType")
         Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(
                         result1, result2, result1.root(), result2.root())
                 .collect(ImmutableSet.toImmutableSet());

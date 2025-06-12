@@ -101,7 +101,6 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         SpanAnalyzer.Result expected = SpanAnalyzer.analyze(expectedSpans);
         SpanAnalyzer.Result actual = SpanAnalyzer.analyze(actualSpans);
 
-        @SuppressWarnings("for-rollout:PreferredInterfaceType")
         Set<ComparisonFailure> failures = SpanAnalyzer.compareSpansRecursively(
                         expected, actual, expected.root(), actual.root())
                 .collect(ImmutableSet.toImmutableSet());
