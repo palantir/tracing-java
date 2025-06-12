@@ -74,7 +74,6 @@ public abstract class Trace {
     @CheckReturnValue
     final OpenSpan startSpan(String operation, SpanType type) {
         Optional<OpenSpan> prevState = top();
-        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final OpenSpan span;
         //noinspection OptionalIsPresent - Avoid lambda allocation in hot paths
         if (prevState.isPresent()) {

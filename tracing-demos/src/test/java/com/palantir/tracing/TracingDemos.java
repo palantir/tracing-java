@@ -69,7 +69,6 @@ class TracingDemos {
         int numThreads = 2;
         int numCallbacks = 10;
         ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
-        @SuppressWarnings("for-rollout:UnnecessaryFinal")
         final SettableFuture<Object> future = SettableFuture.create();
         CountDownLatch latch = new CountDownLatch(numCallbacks);
 
