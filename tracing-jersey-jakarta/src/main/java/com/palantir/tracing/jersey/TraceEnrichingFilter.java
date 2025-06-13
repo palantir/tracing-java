@@ -65,7 +65,6 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     private ExtendedUriInfo uriInfo;
 
     // Handles incoming request
-    @SuppressWarnings("for-rollout:CheckedExceptionNotThrown")
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = getPathTemplate();
@@ -112,7 +111,6 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     }
 
     // Handles outgoing response
-    @SuppressWarnings("for-rollout:CheckedExceptionNotThrown")
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
             throws IOException {

@@ -118,7 +118,6 @@ final class HtmlFormatter {
         sb.append("</div>\n");
     }
 
-    @SuppressWarnings({"for-rollout:CheckedExceptionNotThrown", "for-rollout:DefaultLocale"})
     private void header(StringBuilder sb) throws IOException {
         OffsetDateTime startTime = Instant.ofEpochMilli(TimeUnit.MILLISECONDS.convert(
                         Duration.of(config.bounds().startMicros(), ChronoUnit.MICROS)))

@@ -57,7 +57,6 @@ public abstract class Trace {
      * when the current trace is empty. If the return value is not used, prefer {@link #fastStartSpan(String, String,
      * SpanType)}}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     @CheckReturnValue
     final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
         checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
@@ -91,7 +90,6 @@ public abstract class Trace {
     }
 
     /** Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}. */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     abstract void fastStartSpan(String operation, String parentSpanId, SpanType type);
 
     /** Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}. */
@@ -128,7 +126,6 @@ public abstract class Trace {
      * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
      * distinguish between requests with the same traceId.
      */
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     final String maybeGetRequestId() {
         return traceState.requestId();
@@ -157,7 +154,6 @@ public abstract class Trace {
 
         private final Deque<OpenSpan> stack;
 
-        @SuppressWarnings("for-rollout:InconsistentOverloads")
         private Sampled(ArrayDeque<OpenSpan> stack, TraceState traceState) {
             super(traceState);
             this.stack = stack;
@@ -222,7 +218,6 @@ public abstract class Trace {
          */
         private int numberOfSpans;
 
-        @SuppressWarnings("for-rollout:InconsistentOverloads")
         private Unsampled(int numberOfSpans, TraceState traceState) {
             super(traceState);
             this.numberOfSpans = numberOfSpans;

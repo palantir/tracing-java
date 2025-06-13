@@ -148,7 +148,6 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         }
     }
 
-    @SuppressWarnings("for-rollout:StringFormatWithLiteral")
     private static String renderFailure(ComparisonFailure failure) {
         return failure.map(
                 (ComparisonFailure.unequalOperation t) -> String.format(

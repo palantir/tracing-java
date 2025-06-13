@@ -161,7 +161,6 @@ public final class Tracer {
      *
      * @deprecated Use {@link #initTraceWithSpan(Observability, String, Optional, String, String, SpanType)}
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     @Deprecated
     public static void initTraceWithSpan(
             Observability observability, String traceId, @Safe String operation, String parentSpanId, SpanType type) {
@@ -189,7 +188,6 @@ public final class Tracer {
      * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static void initTraceWithSpan(
             Observability observability,
             String traceId,
@@ -209,7 +207,6 @@ public final class Tracer {
      * Initializes the current thread's trace with a root span, erasing any previously accrued open spans.
      * The root span must eventually be completed using {@link #fastCompleteSpan()} or {@link #completeSpan()}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static void initTraceWithSpan(
             Observability observability,
             String traceId,
@@ -229,7 +226,6 @@ public final class Tracer {
      * when the current trace is empty. If the return value is not used, prefer {@link Tracer#fastStartSpan(String,
      * String, SpanType)}}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     @CheckReturnValue
     public static OpenSpan startSpan(@Safe String operation, String parentSpanId, SpanType type) {
         return getOrCreateCurrentTrace().startSpan(operation, parentSpanId, type);
@@ -256,7 +252,6 @@ public final class Tracer {
     /**
      * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public static void fastStartSpan(@Safe String operation, String parentSpanId, SpanType type) {
         getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
     }
@@ -293,7 +288,6 @@ public final class Tracer {
      * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state. This is an internal
      * utility that should not be called directly outside of {@link DetachedSpan}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     static DetachedSpan detachInternal(
             Observability observability,
             String traceId,
@@ -310,7 +304,6 @@ public final class Tracer {
      * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state. This is an internal
      * utility that should not be called directly outside of {@link DetachedSpan}.
      */
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     static DetachedSpan detachInternal(
             Observability observability,
             String traceId,
@@ -358,7 +351,6 @@ public final class Tracer {
         return Optional.empty();
     }
 
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     static TraceState getTraceState() {
         Trace maybeCurrentTrace = currentTrace.get();
@@ -384,7 +376,6 @@ public final class Tracer {
         return Optional.empty();
     }
 
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     static String getRequestId(DetachedSpan detachedSpan) {
         if (detachedSpan instanceof SampledDetachedSpan sampledDetachedSpan) {
@@ -439,7 +430,6 @@ public final class Tracer {
             this.openSpan = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         }
 
-        @SuppressWarnings("for-rollout:InconsistentOverloads")
         @MustBeClosed
         private static <T> CloseableSpan childSpan(
                 TraceState traceState,
@@ -724,7 +714,6 @@ public final class Tracer {
      * registered for the given name, then it gets overwritten by this call. Returns the observer previously associated
      * with the given name, or null if there is no such observer.
      */
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     public static synchronized SpanObserver subscribe(String name, SpanObserver observer) {
         SpanObserver currentValue = observers.put(name, observer);
@@ -805,7 +794,6 @@ public final class Tracer {
     /**
      * Returns the forUserAgent propagated inside the trace.
      */
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     static String getForUserAgent(DetachedSpan detachedSpan) {
         if (detachedSpan instanceof SampledDetachedSpan sampledDetachedSpan) {

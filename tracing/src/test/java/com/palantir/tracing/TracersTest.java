@@ -54,7 +54,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.MDC;
 
-@SuppressWarnings({"deprecation", "for-rollout:SuppressWarningsWithoutExplanation"})
+@SuppressWarnings("deprecation")
 public final class TracersTest {
 
     @Before
