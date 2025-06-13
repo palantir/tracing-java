@@ -17,7 +17,6 @@
 package com.palantir.tracing.api;
 
 /** HTTP header names used by tracing-java. */
-@SuppressWarnings("for-rollout:InterfaceWithOnlyStatics")
 public interface TraceHttpHeaders {
     String TRACE_ID = "X-B3-TraceId";
     /**

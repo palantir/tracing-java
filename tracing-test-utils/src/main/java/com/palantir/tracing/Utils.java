@@ -42,7 +42,6 @@ final class Utils {
         return 100f * numerator / denominator;
     }
 
-    @SuppressWarnings("for-rollout:DefaultLocale")
     public static String renderDuration(double amount, TimeUnit timeUnit) {
         TimeUnit bigger = LARGER_UNIT.get(timeUnit);
         if (amount >= 1000 && bigger != null) {

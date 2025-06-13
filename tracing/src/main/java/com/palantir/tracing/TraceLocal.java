@@ -33,7 +33,6 @@ import org.jspecify.annotations.Nullable;
  */
 public final class TraceLocal<T> {
 
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     private final Function<? super TraceLocal<?>, T> initialValue;
 
@@ -73,7 +72,6 @@ public final class TraceLocal<T> {
      * If the value of this trace local has not been set for the current trace, then the supplier passed in the
      * constructor will be called to supply a value.
      */
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     public T get() {
         TraceState traceState = Tracer.getTraceState();
@@ -103,7 +101,6 @@ public final class TraceLocal<T> {
      *
      * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     public T set(@NonNull T value) {
         if (value == null) {
@@ -124,7 +121,6 @@ public final class TraceLocal<T> {
      *
      * Returns the previous value of this trace local if set, or null if the value was previously unset.
      */
-    @SuppressWarnings("for-rollout:AnnotationPosition")
     @Nullable
     public T remove() {
         TraceState traceState = Tracer.getTraceState();

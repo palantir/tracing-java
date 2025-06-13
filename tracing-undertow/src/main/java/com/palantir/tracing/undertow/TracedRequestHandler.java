@@ -39,7 +39,6 @@ public final class TracedRequestHandler implements HttpHandler {
     private final String operationName;
     private final TagTranslator<? super HttpServerExchange> translator;
 
-    @SuppressWarnings("for-rollout:InconsistentOverloads")
     public TracedRequestHandler(
             HttpHandler delegate, String operationName, TagTranslator<? super HttpServerExchange> translator) {
         this.delegate = Preconditions.checkNotNull(delegate, "HttpHandler is required");
