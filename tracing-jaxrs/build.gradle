@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-apply plugin: 'org.inferred.processors'
 
 apply plugin: 'com.palantir.external-publish-jar'
 
