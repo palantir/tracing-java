@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,7 +54,6 @@ final class Utils {
 
     private Utils() {}
 
-    @SuppressWarnings("for-rollout:PreferUncheckedIoException")
     public static Path createOutputFile(Class<?> clazz, String methodName) {
         Path base =
                 Paths.get(Optional.ofNullable(System.getenv("CIRCLE_ARTIFACTS")).orElse("build"));
@@ -62,7 +62,7 @@ final class Utils {
             Files.createDirectories(dir);
             return dir.resolve(methodName + ".html");
         } catch (IOException e) {
-            throw new RuntimeException("Unable to create directory " + dir, e);
+            throw new UncheckedIOException("Unable to create directory " + dir, e);
         }
     }
 }
