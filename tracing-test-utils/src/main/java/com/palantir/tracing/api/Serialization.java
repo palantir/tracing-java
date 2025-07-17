@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.palantir.conjure.java.serialization.ObjectMappers;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -34,7 +35,6 @@ public final class Serialization {
 
     private Serialization() {}
 
-    @SuppressWarnings("for-rollout:PreferUncheckedIoException")
     public static List<Span> deserialize(Path file) throws IOException {
         try (Stream<String> lines = Files.lines(file)) {
             return lines.map(line -> {
@@ -42,14 +42,13 @@ public final class Serialization {
                             return mapper.readValue(line, SerializableSpan.class)
                                     .asSpan();
                         } catch (IOException e) {
-                            throw new RuntimeException(e);
+                            throw new UncheckedIOException(e);
                         }
                     })
                     .collect(ImmutableList.toImmutableList());
         }
     }
 
-    @SuppressWarnings("for-rollout:PreferUncheckedIoException")
     public static void serialize(Path file, Collection<Span> allSpans) throws IOException {
         Files.createDirectories(file.getParent());
         try (OutputStream outputStream = Files.newOutputStream(file)) {
@@ -59,18 +58,17 @@ public final class Serialization {
                     outputStream.write(bytes);
                     outputStream.write('\n');
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedIOException(e);
                 }
             });
         }
     }
 
-    @SuppressWarnings("for-rollout:PreferUncheckedIoException")
     public static String toString(Span span) {
         try {
             return mapper.writeValueAsString(span);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Unable to JSON serialize span " + span, e);
+            throw new UncheckedIOException("Unable to JSON serialize span " + span, e);
         }
     }
 }
