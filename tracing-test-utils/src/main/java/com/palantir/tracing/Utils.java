@@ -53,6 +53,7 @@ final class Utils {
 
     private Utils() {}
 
+    @SuppressWarnings("for-rollout:PreferUncheckedIoException")
     public static Path createOutputFile(Class<?> clazz, String methodName) {
         Path base =
                 Paths.get(Optional.ofNullable(System.getenv("CIRCLE_ARTIFACTS")).orElse("build"));

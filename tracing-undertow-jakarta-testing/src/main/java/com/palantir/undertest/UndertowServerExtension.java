@@ -143,6 +143,7 @@ public final class UndertowServerExtension implements BeforeAllCallback, AfterAl
         }
     }
 
+    @SuppressWarnings("for-rollout:PreferUncheckedIoException")
     public void runRequest(ClassicHttpRequest request, Consumer<ClassicHttpResponse> handler) {
         try {
             httpClient.execute(
