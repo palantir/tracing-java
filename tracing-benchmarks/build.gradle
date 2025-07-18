@@ -22,5 +22,5 @@ dependencies {
     api 'org.openjdk.jmh:jmh-core'
     jmh project(':tracing')
     jmh 'com.google.guava:guava'
-    jmh 'org.apache.logging.log4j:log4j-slf4j-impl'
+    jmh 'org.apache.logging.log4j:log4j-slf4j2-impl'
 }
