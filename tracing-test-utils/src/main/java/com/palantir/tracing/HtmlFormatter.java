@@ -70,7 +70,6 @@ final class HtmlFormatter {
         }
     }
 
-    @SuppressWarnings("for-rollout:StatementSwitchToExpressionSwitch")
     public static void render(RenderConfig config) throws IOException {
         HtmlFormatter formatter = new HtmlFormatter(config);
 
@@ -78,12 +77,8 @@ final class HtmlFormatter {
         formatter.header(sb);
 
         switch (config.layoutStrategy()) {
-            case CHRONOLOGICAL:
-                formatter.renderChronological(sb);
-                break;
-            case SPLIT_BY_TRACE:
-                formatter.renderSplitByTraceId(sb);
-                break;
+            case CHRONOLOGICAL -> formatter.renderChronological(sb);
+            case SPLIT_BY_TRACE -> formatter.renderSplitByTraceId(sb);
         }
 
         formatter.rawSpanJson(sb);
