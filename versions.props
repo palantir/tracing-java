@@ -37,6 +37,6 @@ org.junit.jupiter:* = 5.13.4
 org.junit.vintage:* = 5.13.4
 com.uber.nullaway:nullaway = 0.12.7
 com.spotify.dataenum:* = 1.4.1
-com.palantir.conjure.java.runtime:* = 8.21.0
+com.palantir.conjure.java.runtime:* = 8.22.0
 com.palantir.tritium:* = 0.102.0
 org.apache.httpcomponents.client5:* = 5.3.1
