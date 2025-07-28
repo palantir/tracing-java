@@ -2,16 +2,21 @@
  * (c) Copyright 2018 Palantir Technologies Inc. All rights reserved.
  */
 
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 jmh {
     // Use profilers to collect additional data. Supported profilers:
     // [cl, comp, gc, stack, perf, perfnorm, perfasm, xperf, xperfasm, hs_cl, hs_comp, hs_gc, hs_rt, hs_thr]
-    profilers = ['gc']
+    // profilers = ['gc']
+    warmupIterations = 10
+    warmup = '500ms'
+    iterations = 10
+    timeOnIteration = '750ms'
+    threads = 4
 }
 
 tasks.jmhCompileGeneratedClasses {
-    options.annotationProcessorPath = configurations.errorprone
+    options.annotationProcessorPath = configurations.jmhAnnotationProcessor
     options.errorprone.enabled = false
 }
 
