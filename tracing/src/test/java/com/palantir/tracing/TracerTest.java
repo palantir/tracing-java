@@ -33,17 +33,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.util.Sets;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.slf4j.MDC;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public final class TracerTest {
 
     @Mock
@@ -58,13 +61,13 @@ public final class TracerTest {
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
-    @After
+    @AfterEach
     public void before() {
         Tracer.getAndClearTraceIfPresent();
         Tracer.setSampler(AlwaysSampler.INSTANCE);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Tracer.initTraceWithSpan(Observability.SAMPLE, Tracers.randomId(), "op", SpanType.LOCAL);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
