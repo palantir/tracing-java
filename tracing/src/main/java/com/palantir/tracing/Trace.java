@@ -25,7 +25,6 @@ import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.OpenSpan;
-import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -102,12 +101,6 @@ public abstract class Trace {
 
     abstract boolean isEmpty();
 
-    /**
-     * True iff the spans of this trace are to be observed by {@link SpanObserver span obververs} upon
-     * {@link Tracer#completeSpan span completion}.
-     */
-    abstract boolean isObservable();
-
     /** The state of the trace which is stored for each created trace. */
     final TraceState traceState() {
         return traceState;
@@ -116,13 +109,8 @@ public abstract class Trace {
     /** Returns a copy of this Trace which can be independently mutated. */
     abstract Trace deepCopy();
 
-    @Deprecated
-    static Trace of(boolean isObservable, String traceId, Optional<String> requestId) {
-        return of(isObservable, TraceState.of(traceId, requestId, Optional.empty()));
-    }
-
-    static Trace of(boolean isObservable, TraceState traceState) {
-        return isObservable ? new Sampled(traceState) : new Unsampled(traceState);
+    static Trace of(TraceState traceState) {
+        return traceState.isObservable() ? new Sampled(traceState) : new Unsampled(traceState);
     }
 
     private static final class Sampled extends Trace {
@@ -168,11 +156,6 @@ public abstract class Trace {
         @Override
         boolean isEmpty() {
             return stack.isEmpty();
-        }
-
-        @Override
-        boolean isObservable() {
-            return true;
         }
 
         @Override
@@ -236,11 +219,6 @@ public abstract class Trace {
         boolean isEmpty() {
             validateNumberOfSpans();
             return numberOfSpans <= 0;
-        }
-
-        @Override
-        boolean isObservable() {
-            return false;
         }
 
         @Override
