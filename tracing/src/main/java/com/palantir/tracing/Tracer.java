@@ -113,7 +113,7 @@ public final class Tracer {
             return Optional.empty();
         }
 
-        OpenSpan span = trace.top().orElse(null);
+        OpenSpan span = trace.top();
 
         return Optional.of(TraceMetadata.builder()
                 .traceId(trace.traceState().traceId())
@@ -271,8 +271,10 @@ public final class Tracer {
         TraceState traceState;
         Optional<String> parentSpanId;
         if (trace != null) {
+            OpenSpan span = trace.top();
+
             traceState = trace.traceState();
-            parentSpanId = trace.top().map(OpenSpan::getSpanId);
+            parentSpanId = span != null ? Optional.of(span.getSpanId()) : Optional.empty();
         } else {
             traceState = TraceState.of(
                     Tracers.randomId(),
@@ -300,21 +302,6 @@ public final class Tracer {
             SpanType type) {
         Optional<String> requestId =
                 type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
-        return detachInternal(observability, traceId, requestId, forUserAgent, parentSpanId, operation, type);
-    }
-
-    /**
-     * Like {@link #startSpan(String, SpanType)}, but does not set or modify tracing thread state. This is an internal
-     * utility that should not be called directly outside of {@link DetachedSpan}.
-     */
-    static DetachedSpan detachInternal(
-            Observability observability,
-            String traceId,
-            Optional<String> requestId,
-            Optional<String> forUserAgent,
-            Optional<String> parentSpanId,
-            @Safe String operation,
-            SpanType type) {
         // The current trace has no impact on this function, a new trace is spawned and existing thread state
         // is not modified.
         TraceState traceState = TraceState.of(traceId, requestId, forUserAgent, shouldObserve(observability));
@@ -334,7 +321,7 @@ public final class Tracer {
         }
 
         if (trace.traceState().isObservable()) {
-            OpenSpan openSpan = trace.top().orElse(null);
+            OpenSpan openSpan = trace.top();
             if (openSpan == null) {
                 return NopDetached.INSTANCE;
             }
@@ -583,7 +570,7 @@ public final class Tracer {
             return;
         }
 
-        OpenSpan span = popCurrentSpan(trace).orElse(null);
+        OpenSpan span = popCurrentSpan(trace);
         if (span == null) {
             return;
         }
@@ -617,7 +604,7 @@ public final class Tracer {
             return Optional.empty();
         }
 
-        OpenSpan openSpan = popCurrentSpan(trace).orElse(null);
+        OpenSpan openSpan = popCurrentSpan(trace);
         if (openSpan == null) {
             return Optional.empty();
         }
@@ -648,8 +635,9 @@ public final class Tracer {
         compositeObserver.accept(span);
     }
 
-    private static Optional<OpenSpan> popCurrentSpan(Trace trace) {
-        Optional<OpenSpan> span = trace.pop();
+    @Nullable
+    private static OpenSpan popCurrentSpan(Trace trace) {
+        OpenSpan span = trace.pop();
         if (trace.isEmpty()) {
             clearCurrentTrace();
         }

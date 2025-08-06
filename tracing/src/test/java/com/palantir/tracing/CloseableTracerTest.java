@@ -42,21 +42,21 @@ public final class CloseableTracerTest {
     @Test
     public void startsAndClosesSpan() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo")) {
-            OpenSpan openSpan = Tracer.getTrace().top().get();
+            OpenSpan openSpan = Tracer.getTrace().top();
             assertThat(openSpan.getOperation()).isEqualTo("foo");
             assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
         }
-        assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+        assertThat(Tracer.getAndClearTrace().top()).isNull();
     }
 
     @Test
     public void startsAndClosesSpanWithType() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo", SpanType.CLIENT_OUTGOING)) {
-            OpenSpan openSpan = Tracer.getTrace().top().get();
+            OpenSpan openSpan = Tracer.getTrace().top();
             assertThat(openSpan.getOperation()).isEqualTo("foo");
             assertThat(openSpan.type()).isEqualTo(SpanType.CLIENT_OUTGOING);
         }
-        assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+        assertThat(Tracer.getAndClearTrace().top()).isNull();
     }
 
     @Test
@@ -66,11 +66,11 @@ public final class CloseableTracerTest {
         Tracer.subscribe(name, observer);
         try {
             try (CloseableTracer tracer = CloseableTracer.startSpan("foo", ImmutableMap.of("key", "value"))) {
-                OpenSpan openSpan = Tracer.getTrace().top().get();
+                OpenSpan openSpan = Tracer.getTrace().top();
                 assertThat(openSpan.getOperation()).isEqualTo("foo");
                 assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
             }
-            assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+            assertThat(Tracer.getAndClearTrace().top()).isNull();
             ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);
             Mockito.verify(observer).consume(captor.capture());
             Span emitted = captor.getValue();
@@ -96,11 +96,11 @@ public final class CloseableTracerTest {
                         }
                     },
                     "value")) {
-                OpenSpan openSpan = Tracer.getTrace().top().get();
+                OpenSpan openSpan = Tracer.getTrace().top();
                 assertThat(openSpan.getOperation()).isEqualTo("foo");
                 assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
             }
-            assertThat(Tracer.getAndClearTrace().top()).isEmpty();
+            assertThat(Tracer.getAndClearTrace().top()).isNull();
             ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);
             Mockito.verify(observer).consume(captor.capture());
             Span emitted = captor.getValue();
