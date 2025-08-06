@@ -29,6 +29,7 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -59,9 +60,8 @@ public abstract class Trace {
     final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
         checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
         checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
-        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
-        push(span);
-        return span;
+
+        return startSpan(operation, Optional.of(parentSpanId), type);
     }
 
     /**
@@ -70,19 +70,13 @@ public abstract class Trace {
      */
     @CheckReturnValue
     final OpenSpan startSpan(String operation, SpanType type) {
-        Optional<OpenSpan> prevState = top();
-        final OpenSpan span;
-        //noinspection OptionalIsPresent - Avoid lambda allocation in hot paths
-        if (prevState.isPresent()) {
-            span = OpenSpan.of(
-                    operation,
-                    Tracers.randomId(),
-                    type,
-                    Optional.of(prevState.get().getSpanId()));
-        } else {
-            span = OpenSpan.of(operation, Tracers.randomId(), type, Optional.empty());
-        }
+        OpenSpan span = top();
 
+        return startSpan(operation, span != null ? Optional.of(span.getSpanId()) : Optional.empty(), type);
+    }
+
+    private OpenSpan startSpan(String operation, Optional<String> parentSpanId, SpanType type) {
+        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
         push(span);
         return span;
     }
@@ -93,11 +87,13 @@ public abstract class Trace {
     /** Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}. */
     abstract void fastStartSpan(String operation, SpanType type);
 
-    protected abstract void push(OpenSpan span);
+    abstract void push(OpenSpan span);
 
-    abstract Optional<OpenSpan> top();
+    @Nullable
+    abstract OpenSpan top();
 
-    abstract Optional<OpenSpan> pop();
+    @Nullable
+    abstract OpenSpan pop();
 
     abstract boolean isEmpty();
 
@@ -141,13 +137,15 @@ public abstract class Trace {
         }
 
         @Override
-        Optional<OpenSpan> top() {
-            return stack.isEmpty() ? Optional.empty() : Optional.of(stack.peekFirst());
+        @Nullable
+        OpenSpan top() {
+            return stack.peekFirst();
         }
 
         @Override
-        Optional<OpenSpan> pop() {
-            return stack.isEmpty() ? Optional.empty() : Optional.of(stack.pop());
+        @Nullable
+        OpenSpan pop() {
+            return stack.pollFirst();
         }
 
         @Override
@@ -194,17 +192,19 @@ public abstract class Trace {
         }
 
         @Override
-        Optional<OpenSpan> top() {
-            return Optional.empty();
+        @Nullable
+        OpenSpan top() {
+            return null;
         }
 
         @Override
-        Optional<OpenSpan> pop() {
+        @Nullable
+        OpenSpan pop() {
             validateNumberOfSpans();
             if (numberOfSpans > 0) {
                 numberOfSpans--;
             }
-            return Optional.empty();
+            return null;
         }
 
         @Override
