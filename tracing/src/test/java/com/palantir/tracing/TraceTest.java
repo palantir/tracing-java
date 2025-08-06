@@ -28,26 +28,30 @@ public final class TraceTest {
 
     @Test
     public void constructTrace_emptyTraceId() {
-        assertThatThrownBy(() -> Trace.of(false, TraceState.of("", Optional.empty(), Optional.empty())))
+        assertThatThrownBy(() -> Trace.of(TraceState.of("", Optional.empty(), Optional.empty(), false)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     public void testToString() {
-        Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty(), Optional.empty()));
+        Trace trace = Trace.of(TraceState.of("traceId", Optional.empty(), Optional.empty(), true));
         OpenSpan span = trace.startSpan("operation", SpanType.LOCAL);
         assertThat(trace.toString())
                 .isEqualTo("Trace{"
                         + "stack=[" + span + "], "
                         + "isObservable=true, "
-                        + "state=TraceState{traceId='traceId', requestId='null', forUserAgent='null'}}")
+                        + "state=TraceState{"
+                        + "traceId='traceId', "
+                        + "requestId='null', "
+                        + "forUserAgent='null', "
+                        + "isObservable='true'}}")
                 .contains(span.getOperation())
                 .contains(span.getSpanId());
     }
 
     @Test
     public void testToString_doesNotContainTraceLocals() {
-        Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty(), Optional.empty()));
+        Trace trace = Trace.of(TraceState.of("traceId", Optional.empty(), Optional.empty(), true));
 
         TraceLocal<String> traceLocal = TraceLocal.of();
         trace.traceState().getOrCreateTraceLocals().put(traceLocal, "secret-value");

@@ -42,24 +42,28 @@ final class TraceState implements Serializable {
     @Nullable
     private final String forUserAgent;
 
+    private final boolean isObservable;
+
     @Nullable
     private volatile TraceLocalMap traceLocals;
 
     private static final AtomicReferenceFieldUpdater<TraceState, TraceLocalMap> traceLocalsUpdater =
             AtomicReferenceFieldUpdater.newUpdater(TraceState.class, TraceLocalMap.class, "traceLocals");
 
-    static TraceState of(String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
+    static TraceState of(
+            String traceId, Optional<String> requestId, Optional<String> forUserAgent, boolean isObservable) {
         checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
         checkNotNull(requestId, "requestId should be not-null");
         checkNotNull(forUserAgent, "forUserAgent should be not-null");
-        return new TraceState(traceId, requestId.orElse(null), forUserAgent.orElse(null));
+        return new TraceState(traceId, requestId.orElse(null), forUserAgent.orElse(null), isObservable);
     }
 
-    private TraceState(String traceId, @Nullable String requestId, @Nullable String forUserAgent) {
+    private TraceState(
+            String traceId, @Nullable String requestId, @Nullable String forUserAgent, boolean isObservable) {
         this.traceId = traceId;
         this.requestId = requestId;
         this.forUserAgent = forUserAgent;
-        this.traceLocals = null;
+        this.isObservable = isObservable;
     }
 
     /**
@@ -89,6 +93,10 @@ final class TraceState implements Serializable {
         return forUserAgent;
     }
 
+    boolean isObservable() {
+        return isObservable;
+    }
+
     Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {
         TraceLocalMap result = traceLocalsUpdater.get(this);
 
@@ -112,7 +120,8 @@ final class TraceState implements Serializable {
         return "TraceState{"
                 + "traceId='" + traceId + "', "
                 + "requestId='" + requestId + "', "
-                + "forUserAgent='" + forUserAgent
+                + "forUserAgent='" + forUserAgent + "', "
+                + "isObservable='" + isObservable
                 + "'}";
     }
 
