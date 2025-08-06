@@ -30,7 +30,6 @@ import com.palantir.tracing.api.SpanType;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -110,32 +109,8 @@ public abstract class Trace {
     abstract boolean isObservable();
 
     /** The state of the trace which is stored for each created trace. */
-    final TraceState getTraceState() {
-        return this.traceState;
-    }
-
-    /** The globally unique non-empty identifier for this call trace. */
-    final String getTraceId() {
-        return traceState.traceId();
-    }
-
-    /**
-     * The request identifier of this trace, or null if undefined.
-     * <p>
-     * The request identifier is an implementation detail of this tracing library. A new identifier is generated
-     * each time a new trace is created with a SERVER_INCOMING root span. This is a convenience in order to
-     * distinguish between requests with the same traceId.
-     */
-    @Nullable
-    final String maybeGetRequestId() {
-        return traceState.requestId();
-    }
-
-    /**
-     * The user agent propagated across this trace.
-     */
-    final Optional<String> getForUserAgent() {
-        return Optional.ofNullable(traceState.forUserAgent());
+    final TraceState traceState() {
+        return traceState;
     }
 
     /** Returns a copy of this Trace which can be independently mutated. */
@@ -202,12 +177,12 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), getTraceState());
+            return new Sampled(new ArrayDeque<>(stack), traceState());
         }
 
         @Override
         public String toString() {
-            return "Trace{stack=" + stack + ", isObservable=true, state=" + getTraceState() + "}";
+            return "Trace{stack=" + stack + ", isObservable=true, state=" + traceState() + "}";
         }
     }
 
@@ -270,7 +245,7 @@ public abstract class Trace {
 
         @Override
         Trace deepCopy() {
-            return new Unsampled(numberOfSpans, getTraceState());
+            return new Unsampled(numberOfSpans, traceState());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
@@ -283,7 +258,7 @@ public abstract class Trace {
 
         @Override
         public String toString() {
-            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceState=" + getTraceState() + "}";
+            return "Trace{numberOfSpans=" + numberOfSpans + ", isObservable=false, traceState=" + traceState() + "}";
         }
     }
 }
