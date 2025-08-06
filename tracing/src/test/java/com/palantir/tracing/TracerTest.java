@@ -355,7 +355,7 @@ public final class TracerTest {
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
 
             Trace oldTrace = Tracer.getAndClearTrace();
-            assertThat(oldTrace.getTraceId()).isEqualTo(startTrace);
+            assertThat(oldTrace.traceState().traceId()).isEqualTo(startTrace);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull(); // after clearing, it's empty
         } finally {
             Tracer.fastCompleteSpan();

@@ -50,7 +50,7 @@ public final class TraceTest {
         Trace trace = Trace.of(true, TraceState.of("traceId", Optional.empty(), Optional.empty()));
 
         TraceLocal<String> traceLocal = TraceLocal.of();
-        trace.getTraceState().getOrCreateTraceLocals().put(traceLocal, "secret-value");
+        trace.traceState().getOrCreateTraceLocals().put(traceLocal, "secret-value");
 
         assertThat(trace.toString()).doesNotContain("secret");
     }

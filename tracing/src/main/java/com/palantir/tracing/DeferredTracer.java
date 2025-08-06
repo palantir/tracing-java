@@ -95,7 +95,7 @@ public final class DeferredTracer implements Serializable {
         Optional<Trace> maybeTrace = Tracer.copyTrace();
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
-            this.traceState = trace.getTraceState();
+            this.traceState = trace.traceState();
             this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
