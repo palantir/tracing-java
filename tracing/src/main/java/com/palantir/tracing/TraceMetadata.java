@@ -36,7 +36,12 @@ public interface TraceMetadata {
     /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID} on outgoing requests. */
     String getSpanId();
 
-    /** Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#SPAN_ID} on incoming requests. */
+    /**
+     * Corresponds to {@link com.palantir.tracing.api.TraceHttpHeaders#PARENT_SPAN_ID} which is no longer used.
+     *
+     * @deprecated No longer used
+     */
+    @Deprecated
     Optional<String> getParentSpanId();
 
     /**
