@@ -30,7 +30,6 @@ import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +48,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -537,7 +537,7 @@ public final class TracersTest {
     @Test
     public void testWrapCallableWithNewTrace_canSpecifyObservability() throws Exception {
         Callable<Boolean> rawCallable = () -> {
-            return Tracer.copyTrace().get().traceState().isObservable();
+            return Tracer.getTrace().traceState().isObservable();
         };
 
         Callable<Boolean> sampledCallable = Tracers.wrapWithNewTrace("someTraceId", Observability.SAMPLE, rawCallable);
@@ -610,15 +610,15 @@ public final class TracersTest {
 
     @Test
     public void testWrapCallableWithAlternateTraceId_canSpecifyObservability() throws Exception {
-        Callable<?> sampledCallable = () ->
-                assertThat(Tracer.copyTrace().get().traceState().isObservable()).isTrue();
+        Callable<?> sampledCallable =
+                () -> assertThat(Tracer.getTrace().traceState().isObservable()).isTrue();
         Callable<?> wrappedSampledCallable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledCallable);
 
         wrappedSampledCallable.call();
 
-        Callable<?> unSampledCallable = () ->
-                assertThat(Tracer.copyTrace().get().traceState().isObservable()).isFalse();
+        Callable<?> unSampledCallable =
+                () -> assertThat(Tracer.getTrace().traceState().isObservable()).isFalse();
         Callable<?> wrappedUnSampledCallable = Tracers.wrapWithAlternateTraceId(
                 "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledCallable);
 
@@ -717,7 +717,7 @@ public final class TracersTest {
     @Test
     public void testWrapRunnableWithNewTrace_canSpecifyObservability() {
         Runnable rawSampledRunnable = () -> {
-            assertThat(Tracer.copyTrace().get().traceState().isObservable()).isTrue();
+            assertThat(Tracer.getTrace().traceState().isObservable()).isTrue();
         };
 
         Runnable sampledRunnable = Tracers.wrapWithNewTrace("someTraceId", Observability.SAMPLE, rawSampledRunnable);
@@ -725,7 +725,7 @@ public final class TracersTest {
         sampledRunnable.run();
 
         Runnable rawUnSampledRunnable = () -> {
-            assertThat(Tracer.copyTrace().get().traceState().isObservable()).isFalse();
+            assertThat(Tracer.getTrace().traceState().isObservable()).isFalse();
         };
 
         Runnable unSampledRunnable =
@@ -818,15 +818,15 @@ public final class TracersTest {
 
     @Test
     public void testWrapRunnableWithAlternateTraceId_canSpecifyObservability() {
-        Runnable sampledRunnable = () ->
-                assertThat(Tracer.copyTrace().get().traceState().isObservable()).isTrue();
+        Runnable sampledRunnable =
+                () -> assertThat(Tracer.getTrace().traceState().isObservable()).isTrue();
         Runnable wrappedSampledRunnable =
                 Tracers.wrapWithAlternateTraceId("someTraceId", "operation", Observability.SAMPLE, sampledRunnable);
 
         wrappedSampledRunnable.run();
 
-        Runnable unSampledRunnable = () ->
-                assertThat(Tracer.copyTrace().get().traceState().isObservable()).isFalse();
+        Runnable unSampledRunnable =
+                () -> assertThat(Tracer.getTrace().traceState().isObservable()).isFalse();
         Runnable wrappedUnSampledRunnable = Tracers.wrapWithAlternateTraceId(
                 "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledRunnable);
 
@@ -981,9 +981,9 @@ public final class TracersTest {
         return () -> {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
-            OpenSpan span = trace.remove(trace.size() - 1);
-            assertThat(trace).isEmpty();
+            assertThat(trace).hasSize(1);
 
+            OpenSpan span = trace.get(0);
             assertThat(traceId).isEqualTo(outsideTraceId);
             assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
@@ -1002,9 +1002,9 @@ public final class TracersTest {
         return () -> {
             String traceId = Tracer.getTraceId();
             List<OpenSpan> trace = getCurrentTrace();
-            OpenSpan span = trace.remove(trace.size() - 1);
-            assertThat(trace).isEmpty();
+            assertThat(trace).hasSize(1);
 
+            OpenSpan span = trace.get(0);
             assertThat(traceId).isEqualTo(outsideTraceId);
             assertThat(span.getOperation()).isEqualTo(operation);
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(outsideTraceId);
@@ -1013,15 +1013,16 @@ public final class TracersTest {
     }
 
     private static List<OpenSpan> getCurrentTrace() {
-        return Tracer.copyTrace()
-                .map(trace -> {
-                    List<OpenSpan> spans = new ArrayList<>();
-                    while (!trace.isEmpty()) {
-                        spans.add(trace.pop().get());
-                    }
-                    return Lists.reverse(spans);
-                })
-                .orElseGet(Collections::emptyList);
+        Trace trace = Tracer.getTrace();
+        if (trace == null) {
+            return List.of();
+        }
+
+        List<OpenSpan> spans = Stream.generate(trace::pop)
+                .takeWhile(Optional::isPresent)
+                .map(Optional::orElseThrow)
+                .toList();
+        return Lists.reverse(spans);
     }
 
     private static <T extends ExecutorService> void withExecutor(Supplier<T> factory, ThrowingConsumer<T> test) {

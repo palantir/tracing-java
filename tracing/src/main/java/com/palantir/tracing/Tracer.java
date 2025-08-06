@@ -835,15 +835,9 @@ public final class Tracer {
         return !trace.traceState().isObservable();
     }
 
-    /**
-     * Returns an independent copy of this thread's {@link Trace}.
-     */
-    static Optional<Trace> copyTrace() {
-        Trace trace = currentTrace.get();
-        if (trace != null) {
-            return Optional.of(trace.deepCopy());
-        }
-        return Optional.empty();
+    @Nullable
+    static Trace getTrace() {
+        return currentTrace.get();
     }
 
     /**

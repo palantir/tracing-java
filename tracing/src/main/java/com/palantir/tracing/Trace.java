@@ -106,9 +106,6 @@ public abstract class Trace {
         return traceState;
     }
 
-    /** Returns a copy of this Trace which can be independently mutated. */
-    abstract Trace deepCopy();
-
     static Trace of(TraceState traceState) {
         return traceState.isObservable() ? new Sampled(traceState) : new Unsampled(traceState);
     }
@@ -156,11 +153,6 @@ public abstract class Trace {
         @Override
         boolean isEmpty() {
             return stack.isEmpty();
-        }
-
-        @Override
-        Trace deepCopy() {
-            return new Sampled(new ArrayDeque<>(stack), traceState());
         }
 
         @Override
@@ -219,11 +211,6 @@ public abstract class Trace {
         boolean isEmpty() {
             validateNumberOfSpans();
             return numberOfSpans <= 0;
-        }
-
-        @Override
-        Trace deepCopy() {
-            return new Unsampled(numberOfSpans, traceState());
         }
 
         /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */

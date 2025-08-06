@@ -205,18 +205,6 @@ public final class TracerTest {
     }
 
     @Test
-    public void testTraceCopyIsIndependent() throws Exception {
-        Tracer.fastStartSpan("span");
-        try {
-            Trace trace = Tracer.copyTrace().get();
-            trace.fastStartSpan("fop", SpanType.LOCAL);
-        } finally {
-            Tracer.fastCompleteSpan();
-        }
-        assertThat(Tracer.completeSpan()).isNotPresent();
-    }
-
-    @Test
     public void testSetTraceSetsCurrentTraceAndMdcTraceIdKey() throws Exception {
         Tracer.fastStartSpan("operation");
         Tracer.setTrace(Trace.of(TraceState.of("newTraceId", Optional.empty(), Optional.empty(), true)));
