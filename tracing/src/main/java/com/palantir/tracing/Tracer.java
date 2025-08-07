@@ -64,41 +64,18 @@ public final class Tracer {
     private static final Map<String, SpanObserver> observers = new HashMap<>();
     // we want iterating through tracers to be very fast, and it's faster to pre-define observer execution
     // when our observers are modified.
-    private static volatile Consumer<Span> compositeObserver = _span -> {};
+    private static volatile Consumer<Span> spanObserver = _span -> {};
 
     // Thread-safe since stateless
     private static volatile TraceSampler sampler = RandomSampler.create(0.0005f);
-
-    /**
-     * Creates a new trace, but does not set it as the current trace.
-     */
-    private static Trace createTrace(Observability observability, String traceId, Optional<String> requestId) {
-        return createTrace(observability, traceId, requestId, Optional.empty());
-    }
-
-    /**
-     * Creates a new trace, but does not set it as the current trace.
-     */
-    private static Trace createTrace(
-            Observability observability, String traceId, Optional<String> requestId, Optional<String> forUserAgent) {
-        checkArgument(!Strings.isNullOrEmpty(traceId), "traceId must be non-empty");
-        return Trace.of(TraceState.of(traceId, requestId, forUserAgent, shouldObserve(observability)));
-    }
 
     private static boolean shouldObserve(Observability observability) {
         // Simplified implementation of 'switch(observability) {' for fast inlining (30 bytes)
         return observability == Observability.SAMPLE || (observability == Observability.UNDECIDED && sampler.sample());
     }
 
-    /**
-     * Deprecated. This exists to avoid ABI breaks due to a cross-jar package private call that existed in <=4.1.0.
-     *
-     * @deprecated Use {@link Tracer#maybeGetTraceMetadata()} instead.
-     */
-    @SuppressWarnings("InlineMeSuggester")
-    @Deprecated
-    static TraceMetadata getTraceMetadata() {
-        return maybeGetTraceMetadata().orElseThrow(() -> new SafeRuntimeException("Trace with no spans in progress"));
+    private static Optional<String> toRequestId(SpanType type) {
+        return type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty();
     }
 
     /**
@@ -113,7 +90,7 @@ public final class Tracer {
             return Optional.empty();
         }
 
-        OpenSpan span = trace.top();
+        OpenSpan span = trace.current();
 
         return Optional.of(TraceMetadata.builder()
                 .traceId(trace.traceState().traceId())
@@ -133,7 +110,9 @@ public final class Tracer {
                 .map(observable -> observable ? Observability.SAMPLE : Observability.DO_NOT_SAMPLE)
                 .orElse(Observability.UNDECIDED);
 
-        setTrace(createTrace(observability, traceId, Optional.empty()));
+        TraceState traceState =
+                TraceState.of(traceId, Optional.empty(), Optional.empty(), shouldObserve(observability));
+        setTrace(Trace.of(traceState));
     }
 
     /**
@@ -143,7 +122,9 @@ public final class Tracer {
      */
     @Deprecated
     public static void initTrace(Observability observability, String traceId) {
-        setTrace(createTrace(observability, traceId, Optional.empty()));
+        TraceState traceState =
+                TraceState.of(traceId, Optional.empty(), Optional.empty(), shouldObserve(observability));
+        setTrace(Trace.of(traceState));
     }
 
     /**
@@ -155,10 +136,9 @@ public final class Tracer {
     @Deprecated
     public static void initTraceWithSpan(
             Observability observability, String traceId, @Safe String operation, String parentSpanId, SpanType type) {
-        setTrace(createTrace(
-                observability,
-                traceId,
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty()));
+        TraceState traceState =
+                TraceState.of(traceId, toRequestId(type), Optional.empty(), shouldObserve(observability));
+        setTrace(Trace.of(traceState));
         fastStartSpan(operation, parentSpanId, type);
     }
 
@@ -168,10 +148,9 @@ public final class Tracer {
      */
     public static void initTraceWithSpan(
             Observability observability, String traceId, @Safe String operation, SpanType type) {
-        setTrace(createTrace(
-                observability,
-                traceId,
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty()));
+        TraceState traceState =
+                TraceState.of(traceId, toRequestId(type), Optional.empty(), shouldObserve(observability));
+        setTrace(Trace.of(traceState));
         fastStartSpan(operation, type);
     }
 
@@ -186,11 +165,8 @@ public final class Tracer {
             @Safe String operation,
             String parentSpanId,
             SpanType type) {
-        setTrace(createTrace(
-                observability,
-                traceId,
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
-                forUserAgent));
+        TraceState traceState = TraceState.of(traceId, toRequestId(type), forUserAgent, shouldObserve(observability));
+        setTrace(Trace.of(traceState));
         fastStartSpan(operation, parentSpanId, type);
     }
 
@@ -204,11 +180,8 @@ public final class Tracer {
             Optional<String> forUserAgent,
             @Safe String operation,
             SpanType type) {
-        setTrace(createTrace(
-                observability,
-                traceId,
-                type == SpanType.SERVER_INCOMING ? Optional.of(Tracers.randomId()) : Optional.empty(),
-                forUserAgent));
+        TraceState traceState = TraceState.of(traceId, toRequestId(type), forUserAgent, shouldObserve(observability));
+        setTrace(Trace.of(traceState));
         fastStartSpan(operation, type);
     }
 
@@ -219,7 +192,14 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static OpenSpan startSpan(@Safe String operation, String parentSpanId, SpanType type) {
-        return getOrCreateCurrentTrace().startSpan(operation, parentSpanId, type);
+        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
+
+        Trace trace = getOrCreateCurrentTrace();
+
+        OpenSpan openSpan = OpenSpan.of(operation, Tracers.randomId(), type, Optional.of(parentSpanId));
+        trace.push(openSpan);
+
+        return openSpan;
     }
 
     /**
@@ -228,7 +208,17 @@ public final class Tracer {
      */
     @CheckReturnValue
     public static OpenSpan startSpan(@Safe String operation, SpanType type) {
-        return getOrCreateCurrentTrace().startSpan(operation, type);
+        Trace trace = getOrCreateCurrentTrace();
+        OpenSpan currentSpan = trace.current();
+
+        OpenSpan openSpan = OpenSpan.of(
+                operation,
+                Tracers.randomId(),
+                type,
+                currentSpan != null ? Optional.of(currentSpan.getSpanId()) : Optional.empty());
+        trace.push(openSpan);
+
+        return openSpan;
     }
 
     /**
@@ -244,14 +234,21 @@ public final class Tracer {
      * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(@Safe String operation, String parentSpanId, SpanType type) {
-        getOrCreateCurrentTrace().fastStartSpan(operation, parentSpanId, type);
+        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
+
+        Trace trace = getOrCreateCurrentTrace();
+
+        trace.fastStartSpan(operation, Optional.of(parentSpanId), type);
     }
 
     /**
      * Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(@Safe String operation, SpanType type) {
-        getOrCreateCurrentTrace().fastStartSpan(operation, type);
+        Trace trace = getOrCreateCurrentTrace();
+        OpenSpan span = trace.current();
+
+        trace.fastStartSpan(operation, span != null ? Optional.of(span.getSpanId()) : Optional.empty(), type);
     }
 
     /**
@@ -271,7 +268,7 @@ public final class Tracer {
         TraceState traceState;
         Optional<String> parentSpanId;
         if (trace != null) {
-            OpenSpan span = trace.top();
+            OpenSpan span = trace.current();
 
             traceState = trace.traceState();
             parentSpanId = span != null ? Optional.of(span.getSpanId()) : Optional.empty();
@@ -321,11 +318,11 @@ public final class Tracer {
         }
 
         if (trace.traceState().isObservable()) {
-            OpenSpan openSpan = trace.top();
-            if (openSpan == null) {
+            OpenSpan span = trace.current();
+            if (span == null) {
                 return NopDetached.INSTANCE;
             }
-            return new SampledDetached(trace.traceState(), openSpan);
+            return new SampledDetached(trace.traceState(), span);
         } else {
             return new UnsampledDetachedSpan(trace.traceState(), Optional.empty());
         }
@@ -448,7 +445,8 @@ public final class Tracer {
         @Override
         public <T> void complete(TagTranslator<? super T> tagTranslator, T data) {
             if (NOT_COMPLETE == completedUpdater.getAndSet(this, COMPLETE)) {
-                Tracer.notifyObservers(toSpan(openSpan, tagTranslator, data, traceState.traceId()));
+                Span span = toSpan(openSpan, tagTranslator, data, traceState.traceId());
+                spanObserver.accept(span);
             }
         }
 
@@ -570,13 +568,19 @@ public final class Tracer {
             return;
         }
 
-        OpenSpan span = popCurrentSpan(trace);
-        if (span == null) {
+        OpenSpan openSpan = trace.fastCompleteSpan();
+
+        if (trace.isEmpty()) {
+            clearCurrentTrace();
+        }
+
+        if (openSpan == null) {
             return;
         }
 
         if (trace.traceState().isObservable()) {
-            Tracer.notifyObservers(toSpan(span, tag, state, trace.traceState().traceId()));
+            Span span = toSpan(openSpan, tag, state, trace.traceState().traceId());
+            spanObserver.accept(span);
         }
     }
 
@@ -604,7 +608,12 @@ public final class Tracer {
             return Optional.empty();
         }
 
-        OpenSpan openSpan = popCurrentSpan(trace);
+        OpenSpan openSpan = trace.fastCompleteSpan();
+
+        if (trace.isEmpty()) {
+            clearCurrentTrace();
+        }
+
         if (openSpan == null) {
             return Optional.empty();
         }
@@ -616,7 +625,7 @@ public final class Tracer {
                 trace.traceState().traceId());
 
         if (trace.traceState().isObservable()) {
-            notifyObservers(span);
+            spanObserver.accept(span);
         }
 
         return Optional.of(span);
@@ -629,19 +638,6 @@ public final class Tracer {
                             + " This may be the result of calling completeSpan more times than startSpan",
                     new SafeRuntimeException("not a real exception"));
         }
-    }
-
-    private static void notifyObservers(Span span) {
-        compositeObserver.accept(span);
-    }
-
-    @Nullable
-    private static OpenSpan popCurrentSpan(Trace trace) {
-        OpenSpan span = trace.pop();
-        if (trace.isEmpty()) {
-            clearCurrentTrace();
-        }
-        return span;
     }
 
     private static <T> Span toSpan(OpenSpan openSpan, TagTranslator<? super T> translator, T state, String traceId) {
@@ -709,24 +705,24 @@ public final class Tracer {
 
     @GuardedBy("Tracer.class")
     private static void computeObserversList() {
-        Consumer<Span> newCompositeObserver = _span -> {};
+        Consumer<Span> newSpanObserver = _span -> {};
         for (Map.Entry<String, SpanObserver> entry : observers.entrySet()) {
             String observerName = entry.getKey();
-            SpanObserver spanObserver = entry.getValue();
-            newCompositeObserver = newCompositeObserver.andThen(span -> {
+            SpanObserver observer = entry.getValue();
+            newSpanObserver = newSpanObserver.andThen(span -> {
                 try {
-                    spanObserver.consume(span);
+                    observer.consume(span);
                 } catch (RuntimeException e) {
                     log.error(
                             "Failed to invoke observer {} registered as {}",
-                            SafeArg.of("observer", spanObserver),
+                            SafeArg.of("observer", observer),
                             SafeArg.of("name", observerName),
                             e);
                 }
             });
         }
         // Single volatile write, updating observers should not disrupt tracing
-        compositeObserver = newCompositeObserver;
+        spanObserver = newSpanObserver;
     }
 
     /**
@@ -862,7 +858,9 @@ public final class Tracer {
     private static Trace getOrCreateCurrentTrace() {
         Trace trace = currentTrace.get();
         if (trace == null) {
-            trace = createTrace(Observability.UNDECIDED, Tracers.randomId(), Optional.empty());
+            TraceState traceState = TraceState.of(
+                    Tracers.randomId(), Optional.empty(), Optional.empty(), shouldObserve(Observability.UNDECIDED));
+            trace = Trace.of(traceState);
             setTrace(trace);
         }
         return trace;

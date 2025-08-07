@@ -16,11 +16,8 @@
 
 package com.palantir.tracing;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.palantir.tracing.api.OpenSpan;
-import com.palantir.tracing.api.SpanType;
 import java.util.Optional;
 import org.junit.Test;
 
@@ -30,32 +27,5 @@ public final class TraceTest {
     public void constructTrace_emptyTraceId() {
         assertThatThrownBy(() -> Trace.of(TraceState.of("", Optional.empty(), Optional.empty(), false)))
                 .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    public void testToString() {
-        Trace trace = Trace.of(TraceState.of("traceId", Optional.empty(), Optional.empty(), true));
-        OpenSpan span = trace.startSpan("operation", SpanType.LOCAL);
-        assertThat(trace.toString())
-                .isEqualTo("Trace{"
-                        + "stack=[" + span + "], "
-                        + "isObservable=true, "
-                        + "state=TraceState{"
-                        + "traceId='traceId', "
-                        + "requestId='null', "
-                        + "forUserAgent='null', "
-                        + "isObservable='true'}}")
-                .contains(span.getOperation())
-                .contains(span.getSpanId());
-    }
-
-    @Test
-    public void testToString_doesNotContainTraceLocals() {
-        Trace trace = Trace.of(TraceState.of("traceId", Optional.empty(), Optional.empty(), true));
-
-        TraceLocal<String> traceLocal = TraceLocal.of();
-        trace.traceState().getOrCreateTraceLocals().put(traceLocal, "secret-value");
-
-        assertThat(trace.toString()).doesNotContain("secret");
     }
 }

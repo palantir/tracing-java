@@ -16,7 +16,6 @@
 
 package com.palantir.tracing.api;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -28,7 +27,6 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutablesStyle
 public abstract class OpenSpan {
-    private static final Clock CLOCK = Clock.systemUTC();
 
     /** Returns a description of the operation for this event. */
     @Value.Parameter
@@ -109,7 +107,7 @@ public abstract class OpenSpan {
     }
 
     private static long getNowInMicroSeconds() {
-        Instant now = CLOCK.instant();
+        Instant now = Instant.now();
         return (1000000 * now.getEpochSecond()) + (now.getNano() / 1000);
     }
 
