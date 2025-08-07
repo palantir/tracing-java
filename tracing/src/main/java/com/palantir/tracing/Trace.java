@@ -16,12 +16,8 @@
 
 package com.palantir.tracing;
 
-import static com.palantir.logsafe.Preconditions.checkArgument;
 import static com.palantir.logsafe.Preconditions.checkNotNull;
-import static com.palantir.logsafe.Preconditions.checkState;
 
-import com.google.common.base.Strings;
-import com.google.errorprone.annotations.CheckReturnValue;
 import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.OpenSpan;
@@ -51,49 +47,15 @@ public abstract class Trace {
         this.traceState = traceState;
     }
 
-    /**
-     * Opens a new span for this thread's call trace, labeled with the provided operation and parent span. Only allowed
-     * when the current trace is empty. If the return value is not used, prefer {@link #fastStartSpan(String, String,
-     * SpanType)}}.
-     */
-    @CheckReturnValue
-    final OpenSpan startSpan(String operation, String parentSpanId, SpanType type) {
-        checkState(isEmpty(), "Cannot start a span with explicit parent if the current thread's trace is non-empty");
-        checkArgument(!Strings.isNullOrEmpty(parentSpanId), "parentSpanId must be non-empty");
+    abstract void fastStartSpan(String operation, Optional<String> parentSpanId, SpanType type);
 
-        return startSpan(operation, Optional.of(parentSpanId), type);
-    }
-
-    /**
-     * Opens a new span for this thread's call trace, labeled with the provided operation. If the return value is not
-     * used, prefer {@link #fastStartSpan(String, SpanType)}}.
-     */
-    @CheckReturnValue
-    final OpenSpan startSpan(String operation, SpanType type) {
-        OpenSpan span = top();
-
-        return startSpan(operation, span != null ? Optional.of(span.getSpanId()) : Optional.empty(), type);
-    }
-
-    private OpenSpan startSpan(String operation, Optional<String> parentSpanId, SpanType type) {
-        OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
-        push(span);
-        return span;
-    }
-
-    /** Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}. */
-    abstract void fastStartSpan(String operation, String parentSpanId, SpanType type);
-
-    /** Like {@link #startSpan(String, SpanType)}, but does not return an {@link OpenSpan}. */
-    abstract void fastStartSpan(String operation, SpanType type);
+    @Nullable
+    abstract OpenSpan fastCompleteSpan();
 
     abstract void push(OpenSpan span);
 
     @Nullable
-    abstract OpenSpan top();
-
-    @Nullable
-    abstract OpenSpan pop();
+    abstract OpenSpan current();
 
     abstract boolean isEmpty();
 
@@ -120,15 +82,15 @@ public abstract class Trace {
         }
 
         @Override
-        @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
-        void fastStartSpan(String operation, String parentSpanId, SpanType type) {
-            startSpan(operation, parentSpanId, type);
+        void fastStartSpan(String operation, Optional<String> parentSpanId, SpanType type) {
+            OpenSpan span = OpenSpan.of(operation, Tracers.randomId(), type, parentSpanId);
+            push(span);
         }
 
         @Override
-        @SuppressWarnings("ResultOfMethodCallIgnored") // Sampled traces cannot optimize this path
-        void fastStartSpan(String operation, SpanType type) {
-            startSpan(operation, type);
+        @Nullable
+        OpenSpan fastCompleteSpan() {
+            return stack.pollFirst();
         }
 
         @Override
@@ -138,14 +100,8 @@ public abstract class Trace {
 
         @Override
         @Nullable
-        OpenSpan top() {
+        OpenSpan current() {
             return stack.peekFirst();
-        }
-
-        @Override
-        @Nullable
-        OpenSpan pop() {
-            return stack.pollFirst();
         }
 
         @Override
@@ -177,13 +133,18 @@ public abstract class Trace {
         }
 
         @Override
-        void fastStartSpan(String _operation, String _parentSpanId, SpanType _type) {
+        void fastStartSpan(String _operation, Optional<String> _parentSpanId, SpanType _type) {
             numberOfSpans++;
         }
 
         @Override
-        void fastStartSpan(String _operation, SpanType _type) {
-            numberOfSpans++;
+        @Nullable
+        OpenSpan fastCompleteSpan() {
+            validateNumberOfSpans();
+            if (numberOfSpans > 0) {
+                numberOfSpans--;
+            }
+            return null;
         }
 
         @Override
@@ -193,17 +154,7 @@ public abstract class Trace {
 
         @Override
         @Nullable
-        OpenSpan top() {
-            return null;
-        }
-
-        @Override
-        @Nullable
-        OpenSpan pop() {
-            validateNumberOfSpans();
-            if (numberOfSpans > 0) {
-                numberOfSpans--;
-            }
+        OpenSpan current() {
             return null;
         }
 
@@ -213,7 +164,7 @@ public abstract class Trace {
             return numberOfSpans <= 0;
         }
 
-        /** Internal validation, this should never fail because {@link #pop()} only decrements positive values. */
+        /** Internal validation, this should never fail because {@link #fastCompleteSpan()} only decrements positive values. */
         private void validateNumberOfSpans() {
             if (numberOfSpans < 0) {
                 throw new SafeIllegalStateException(
