@@ -19,7 +19,6 @@ package com.palantir.tracing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.ImmutableMap;
-import com.palantir.tracing.api.OpenSpan;
 import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanObserver;
 import com.palantir.tracing.api.SpanType;
@@ -42,9 +41,9 @@ public final class CloseableTracerTest {
     @Test
     public void startsAndClosesSpan() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo")) {
-            OpenSpan openSpan = Tracer.getTrace().current();
-            assertThat(openSpan.getOperation()).isEqualTo("foo");
-            assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
+            EnabledSpan currentSpan = Tracer.getTrace().current();
+            assertThat(currentSpan.operation()).isEqualTo("foo");
+            assertThat(currentSpan.type()).isEqualTo(SpanType.LOCAL);
         }
         assertThat(Tracer.getAndClearTrace().current()).isNull();
     }
@@ -52,9 +51,9 @@ public final class CloseableTracerTest {
     @Test
     public void startsAndClosesSpanWithType() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo", SpanType.CLIENT_OUTGOING)) {
-            OpenSpan openSpan = Tracer.getTrace().current();
-            assertThat(openSpan.getOperation()).isEqualTo("foo");
-            assertThat(openSpan.type()).isEqualTo(SpanType.CLIENT_OUTGOING);
+            EnabledSpan currentSpan = Tracer.getTrace().current();
+            assertThat(currentSpan.operation()).isEqualTo("foo");
+            assertThat(currentSpan.type()).isEqualTo(SpanType.CLIENT_OUTGOING);
         }
         assertThat(Tracer.getAndClearTrace().current()).isNull();
     }
@@ -66,9 +65,9 @@ public final class CloseableTracerTest {
         Tracer.subscribe(name, observer);
         try {
             try (CloseableTracer tracer = CloseableTracer.startSpan("foo", ImmutableMap.of("key", "value"))) {
-                OpenSpan openSpan = Tracer.getTrace().current();
-                assertThat(openSpan.getOperation()).isEqualTo("foo");
-                assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
+                EnabledSpan currentSpan = Tracer.getTrace().current();
+                assertThat(currentSpan.operation()).isEqualTo("foo");
+                assertThat(currentSpan.type()).isEqualTo(SpanType.LOCAL);
             }
             assertThat(Tracer.getAndClearTrace().current()).isNull();
             ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);
@@ -96,9 +95,9 @@ public final class CloseableTracerTest {
                         }
                     },
                     "value")) {
-                OpenSpan openSpan = Tracer.getTrace().current();
-                assertThat(openSpan.getOperation()).isEqualTo("foo");
-                assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
+                EnabledSpan currentSpan = Tracer.getTrace().current();
+                assertThat(currentSpan.operation()).isEqualTo("foo");
+                assertThat(currentSpan.type()).isEqualTo(SpanType.LOCAL);
             }
             assertThat(Tracer.getAndClearTrace().current()).isNull();
             ArgumentCaptor<Span> captor = ArgumentCaptor.forClass(Span.class);

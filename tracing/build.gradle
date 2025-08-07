@@ -19,15 +19,22 @@ apply plugin: 'com.palantir.revapi'
 
 dependencies {
     api project(":tracing-api")
+    api project(":tracing-logger")
+    api project(":tracing-logger-api")
     api "com.google.guava:guava"
     api "com.palantir.safe-logging:preconditions"
     api "com.palantir.safe-logging:safe-logging"
 
+    implementation project(':tracing-logger-spi')
     implementation "org.slf4j:slf4j-api"
     implementation 'com.palantir.safe-logging:logger'
+    implementation 'com.palantir.safe-logging:preconditions'
+    implementation 'com.palantir.safe-logging:safe-logging'
     implementation 'com.google.errorprone:error_prone_annotations'
 
     compileOnly 'org.jspecify:jspecify'
+    api project(':tracing-api')
+    api project(':tracing-logger-api')
 
     testImplementation "ch.qos.logback:logback-classic"
     testImplementation "com.palantir.safe-logging:preconditions-assertj"
@@ -37,7 +44,9 @@ dependencies {
     testImplementation "org.mockito:mockito-core"
     testImplementation "io.zipkin.java:zipkin"
 
+    annotationProcessor 'com.google.auto.service:auto-service'
     annotationProcessor "org.immutables:value"
+    compileOnly 'com.google.auto.service:auto-service-annotations'
     compileOnly "org.immutables:value::annotations"
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine', {

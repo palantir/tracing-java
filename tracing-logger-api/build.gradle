@@ -1,0 +1,7 @@
+apply plugin: 'com.palantir.external-publish-jar'
+apply plugin: 'com.palantir.revapi'
+
+dependencies {
+    implementation 'com.google.errorprone:error_prone_annotations'
+    implementation 'com.palantir.safe-logging:safe-logging'
+}

@@ -1,0 +1,8 @@
+apply plugin: 'com.palantir.external-publish-jar'
+apply plugin: 'com.palantir.revapi'
+
+dependencies {
+    api project(':tracing-logger-api')
+
+    implementation 'com.palantir.safe-logging:safe-logging'
+}

@@ -1,0 +1,15 @@
+apply plugin: 'com.palantir.external-publish-jar'
+apply plugin: 'com.palantir.revapi'
+
+dependencies {
+    annotationProcessor 'com.google.auto.service:auto-service'
+
+    compileOnly 'com.google.auto.service:auto-service-annotations'
+
+    api project(':tracing-api')
+    api project(':tracing-logger-api')
+
+    implementation project(':tracing-logger-spi')
+    implementation 'com.palantir.safe-logging:preconditions'
+    implementation 'com.palantir.safe-logging:safe-logging'
+}
