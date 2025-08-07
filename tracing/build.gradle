@@ -31,7 +31,6 @@ dependencies {
 
     testImplementation "ch.qos.logback:logback-classic"
     testImplementation "com.palantir.safe-logging:preconditions-assertj"
-    testImplementation "junit:junit"
     testImplementation "org.assertj:assertj-core"
     testImplementation "org.jmock:jmock"
     testImplementation "org.mockito:mockito-core"
@@ -40,8 +39,5 @@ dependencies {
     annotationProcessor "org.immutables:value"
     compileOnly "org.immutables:value::annotations"
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine', {
-        because 'allows JUnit 3 and JUnit 4 tests to run'
-    }
     testImplementation 'org.mockito:mockito-junit-jupiter'
 }

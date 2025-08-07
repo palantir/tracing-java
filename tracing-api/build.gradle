@@ -2,7 +2,6 @@ apply plugin: 'com.palantir.external-publish-jar'
 apply plugin: 'com.palantir.revapi'
 
 dependencies {
-    testImplementation "junit:junit"
     testImplementation "org.assertj:assertj-core"
     testImplementation "org.mockito:mockito-core"
     testImplementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"

@@ -29,7 +29,6 @@ dependencies {
     testImplementation 'org.glassfish.jersey.inject:jersey-hk2'
     testImplementation "org.junit.jupiter:junit-jupiter"
     testImplementation "org.assertj:assertj-core"
-    testImplementation "org.hamcrest:hamcrest-all"
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.mockito:mockito-junit-jupiter"
 
