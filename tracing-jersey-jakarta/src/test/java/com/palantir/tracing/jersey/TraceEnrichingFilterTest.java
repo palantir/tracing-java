@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -57,12 +58,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.slf4j.MDC;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 public final class TraceEnrichingFilterTest {
 
     @Captor
@@ -84,8 +82,8 @@ public final class TraceEnrichingFilterTest {
 
         MDC.clear();
 
-        when(request.getMethod()).thenReturn("GET");
-        when(traceSampler.sample()).thenReturn(true);
+        lenient().when(request.getMethod()).thenReturn("GET");
+        lenient().when(traceSampler.sample()).thenReturn(true);
     }
 
     @AfterEach
@@ -242,17 +240,20 @@ public final class TraceEnrichingFilterTest {
     }
 
     @Test
-    public void testFilter_setsUserAgentAsForUserAgent() throws Exception {
+    public void testFilter_propagatesProvidedForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
-        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
+        when(request.getHeaderString(TraceHttpHeaders.SPAN_ID)).thenReturn("spanId");
+        when(request.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT)).thenReturn("forUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
-        assertThat(InternalTracers.getForUserAgent()).contains("userAgent");
+        assertThat(InternalTracers.getForUserAgent()).contains("forUserAgent");
     }
 
     @Test
     public void testFilter_setsFetchUserAgentAsForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
+        when(request.getHeaderString(TraceHttpHeaders.SPAN_ID)).thenReturn("spanId");
+        when(request.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT)).thenReturn(null);
         when(request.getHeaderString(TraceEnrichingFilter.FETCH_USER_AGENT_HEADER))
                 .thenReturn("fetchUserAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
@@ -261,12 +262,16 @@ public final class TraceEnrichingFilterTest {
     }
 
     @Test
-    public void testFilter_propagatesProvidedForUserAgent() throws Exception {
+    public void testFilter_setsUserAgentAsForUserAgent() throws Exception {
         when(request.getHeaderString(TraceHttpHeaders.TRACE_ID)).thenReturn("traceId");
-        when(request.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT)).thenReturn("forUserAgent");
+        when(request.getHeaderString(TraceHttpHeaders.SPAN_ID)).thenReturn("spanId");
+        when(request.getHeaderString(TraceHttpHeaders.FOR_USER_AGENT)).thenReturn(null);
+        when(request.getHeaderString(TraceEnrichingFilter.FETCH_USER_AGENT_HEADER))
+                .thenReturn(null);
+        when(request.getHeaderString(HttpHeaders.USER_AGENT)).thenReturn("userAgent");
         TraceEnrichingFilter.INSTANCE.filter(request);
 
-        assertThat(InternalTracers.getForUserAgent()).contains("forUserAgent");
+        assertThat(InternalTracers.getForUserAgent()).contains("userAgent");
     }
 
     @Test

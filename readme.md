@@ -83,23 +83,6 @@ When you run this test for the first time, it will capture all spans and write t
 
 If your production code changes and starts producing different spans, the test will fail and render two HTML visualizations: `expected.html` and `actual.html`.
 
-Snapshot-testing is not available in JUnit4, but you can still see a HTML visualization of your traces using the `RenderTracingRule`:
-
-```diff
- import org.junit.Test;
- import com.palantir.tracing.RenderTracingRule;
-
- public class MyTest {
-
-+    @Rule
-+    public final RenderTracingRule rule = new RenderTracingRule();
-
-     @Test
-     public void foo() {
-     }
- }
-```
-
 ## License
 
 This repository is made available under the [Apache 2.0 License](http://www.apache.org/licenses/LICENSE-2.0).

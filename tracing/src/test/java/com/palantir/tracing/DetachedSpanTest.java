@@ -22,20 +22,20 @@ import com.palantir.tracing.api.Span;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 
 public final class DetachedSpanTest {
 
-    @Before
+    @BeforeEach
     public void before() {
         MDC.clear();
         Tracer.clearCurrentTrace();
     }
 
-    @After
+    @AfterEach
     public void after() {
         // Clear out the old trace from each test
         Tracer.clearCurrentTrace();

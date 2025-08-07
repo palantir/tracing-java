@@ -19,9 +19,9 @@ package com.palantir.tracing.undertow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.palantir.tracing.TraceSampler;
 import com.palantir.tracing.Tracer;
@@ -33,15 +33,15 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.util.HeaderMap;
 import io.undertow.util.HttpString;
 import java.util.concurrent.atomic.AtomicReference;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class TracedStateHandlerTest {
 
     @Mock
@@ -58,7 +58,7 @@ public class TracedStateHandlerTest {
 
     private HttpHandler handler;
 
-    @Before
+    @BeforeEach
     public void before() {
         Tracer.subscribe("TEST_OBSERVER", observer);
         Tracer.setSampler(traceSampler);
@@ -66,13 +66,13 @@ public class TracedStateHandlerTest {
         MDC.clear();
 
         exchange.setRequestMethod(HttpString.tryFromString("GET"));
-        when(traceSampler.sample()).thenReturn(true);
+        lenient().when(traceSampler.sample()).thenReturn(true);
 
         traceId = Tracers.randomId();
         handler = new TracedStateHandler(delegate);
     }
 
-    @After
+    @AfterEach
     public void after() {
         Tracer.unsubscribe("TEST_OBSERVER");
     }
