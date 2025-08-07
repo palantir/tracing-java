@@ -19,10 +19,10 @@ package com.palantir.tracing.undertow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.palantir.tracing.DetachedSpan;
 import com.palantir.tracing.InternalTracers;
@@ -47,12 +47,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 import org.slf4j.MDC;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT)
 public class TracedOperationHandlerTest {
 
     @Captor
@@ -80,7 +77,7 @@ public class TracedOperationHandlerTest {
         MDC.clear();
 
         exchange.setRequestMethod(HttpString.tryFromString("GET"));
-        when(traceSampler.sample()).thenReturn(true);
+        lenient().when(traceSampler.sample()).thenReturn(true);
 
         traceId = Tracers.randomId();
         handler = new TracedOperationHandler(delegate, "GET /foo");
