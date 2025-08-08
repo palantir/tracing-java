@@ -75,7 +75,6 @@ public final class TraceLocal<T> {
     @Nullable
     public T get() {
         TraceState traceState = Tracer.getTraceState();
-
         if (traceState == null) {
             return null;
         }
@@ -108,7 +107,6 @@ public final class TraceLocal<T> {
         }
 
         TraceState traceState = Tracer.getTraceState();
-
         if (traceState == null) {
             return null;
         }
@@ -124,7 +122,6 @@ public final class TraceLocal<T> {
     @Nullable
     public T remove() {
         TraceState traceState = Tracer.getTraceState();
-
         if (traceState == null) {
             return null;
         }

@@ -16,11 +16,10 @@
 
 package com.palantir.tracing;
 
-import static com.palantir.logsafe.Preconditions.checkNotNull;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.MDC;
 
 /**
  * Represents a trace as an ordered list of non-completed spans. Supports adding and removing of spans. This class is
@@ -28,27 +27,19 @@ import org.jspecify.annotations.Nullable;
  */
 public final class Trace {
 
-    private final TraceState traceState;
-    private final List<EnabledSpan> stack = new ArrayList<>();
-    private int disabledCount = 0;
+    @Nullable
+    private TraceState defaultTraceState;
 
-    private Trace(TraceState traceState) {
-        checkNotNull(traceState, "Trace state must not be null");
-        this.traceState = traceState;
-    }
+    private final List<SpanStackEntry> stack = new ArrayList<>();
 
-    void pushDisabled() {
-        disabledCount++;
-    }
+    Trace() {}
 
-    void popDisabled() {
-        if (disabledCount > 0) {
-            disabledCount--;
-        }
-    }
+    void push(SpanStackEntry span) {
+        TraceState oldTraceState = traceState();
 
-    void push(EnabledSpan span) {
         stack.add(span);
+
+        updateMdc(oldTraceState);
     }
 
     @Nullable
@@ -57,37 +48,125 @@ public final class Trace {
             return null;
         }
 
-        return stack.remove(stack.size() - 1);
+        TraceState oldTraceState = traceState();
+
+        SpanStackEntry entry = stack.remove(stack.size() - 1);
+
+        resetIfEmpty();
+        updateMdc(oldTraceState);
+
+        if (entry instanceof EnabledSpan span) {
+            return span;
+        }
+
+        return null;
     }
 
     @Nullable
     EnabledSpan remove(String spanId) {
         for (int i = stack.size() - 1; i >= 0; i--) {
-            if (stack.get(i).spanId().endsWith(spanId)) {
-                return stack.remove(i);
+            SpanStackEntry entry = stack.get(i);
+            if (entry instanceof EnabledSpan span && span.spanId().equals(spanId)) {
+                TraceState oldTraceState = traceState();
+
+                stack.remove(i);
+
+                resetIfEmpty();
+                updateMdc(oldTraceState);
+
+                return span;
             }
         }
+
         return null;
     }
 
-    @Nullable
-    EnabledSpan current() {
-        if (stack.isEmpty()) {
-            return null;
+    boolean remove(SpanStackEntry entry) {
+        for (int i = stack.size() - 1; i >= 0; i--) {
+            if (stack.get(i) == entry) {
+                TraceState oldTraceState = traceState();
+
+                stack.remove(i);
+
+                resetIfEmpty();
+                updateMdc(oldTraceState);
+
+                return true;
+            }
         }
 
-        return stack.get(stack.size() - 1);
+        return false;
+    }
+
+    void reset(@Nullable TraceState traceState) {
+        TraceState oldTraceState = traceState();
+
+        defaultTraceState = traceState;
+        stack.clear();
+
+        updateMdc(oldTraceState);
+    }
+
+    // TODO(pkoenig): Do we memoize this?
+    @Nullable
+    EnabledSpan current() {
+        for (int i = stack.size() - 1; i >= 0; i--) {
+            SpanStackEntry entry = stack.get(i);
+            if (entry instanceof EnabledSpan span) {
+                return span;
+            }
+        }
+
+        return null;
     }
 
     boolean isEmpty() {
-        return stack.isEmpty() && disabledCount == 0;
+        return stack.isEmpty();
     }
 
+    @Nullable
     TraceState traceState() {
-        return traceState;
+        if (stack.isEmpty()) {
+            return defaultTraceState;
+        } else {
+            return stack.get(stack.size() - 1).traceState();
+        }
     }
 
-    static Trace of(TraceState traceState) {
-        return new Trace(traceState);
+    private void resetIfEmpty() {
+        if (stack.isEmpty()) {
+            defaultTraceState = null;
+        }
+    }
+
+    private void updateMdc(@Nullable TraceState oldTraceState) {
+        TraceState newTraceState = traceState();
+        if (oldTraceState != newTraceState) {
+            if (newTraceState != null) {
+                MDC.put(Tracers.TRACE_ID_KEY, newTraceState.traceId());
+
+                if (newTraceState.isObservable()) {
+                    MDC.put(Tracers.TRACE_SAMPLED_KEY, "1");
+                } else {
+                    MDC.remove(Tracers.TRACE_SAMPLED_KEY);
+                }
+
+                String requestId = newTraceState.requestId();
+                if (requestId == null) {
+                    MDC.remove(Tracers.REQUEST_ID_KEY);
+                } else {
+                    MDC.put(Tracers.REQUEST_ID_KEY, requestId);
+                }
+            } else {
+                MDC.remove(Tracers.TRACE_ID_KEY);
+                MDC.remove(Tracers.TRACE_SAMPLED_KEY);
+                MDC.remove(Tracers.REQUEST_ID_KEY);
+            }
+        }
+    }
+
+    // TODO(pkoenig): Remove
+    static Trace of(TraceState _traceState) {
+        return new Trace();
     }
 }

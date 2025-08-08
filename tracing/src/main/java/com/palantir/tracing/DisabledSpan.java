@@ -17,11 +17,10 @@
 package com.palantir.tracing;
 
 import com.palantir.tracing.logger.api.OpenSpan;
-import com.palantir.tracing.logger.api.Span;
 import com.palantir.tracing.logger.api.SpanMetadata;
 import java.util.Optional;
 
-enum DisabledSpan implements Span, OpenSpan {
+enum DisabledSpan implements InternalSpan {
     INSTANCE;
 
     @Override
@@ -34,9 +33,21 @@ enum DisabledSpan implements Span, OpenSpan {
 
     @Override
     public OpenSpan open() {
-        return this;
+        return DisabledOpenSpan.INSTANCE;
     }
 
     @Override
     public void close() {}
+
+    @Override
+    public void start() {}
+
+    @Override
+    public void attach() {}
+
+    @Override
+    public void detach() {}
+
+    @Override
+    public void complete() {}
 }

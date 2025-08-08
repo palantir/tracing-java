@@ -14,29 +14,9 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.logger.api;
+package com.palantir.tracing;
 
-import com.google.errorprone.annotations.MustBeClosed;
-import com.palantir.logsafe.Safe;
-import java.util.Optional;
+sealed interface SpanStackEntry permits EnabledTrace, EnabledSpan, TraceState {
 
-public interface Span {
-
-    // TODO(pkoenig): isEnabled
-
-    Optional<SpanMetadata> metadata();
-
-    void tag(@Safe String name, @Safe String value);
-
-    @MustBeClosed
-    OpenSpan open();
-
-    void start();
-
-    @MustBeClosed
-    OpenSpan attach();
-
-    void detach();
-
-    void complete();
+    TraceState traceState();
 }

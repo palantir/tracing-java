@@ -20,7 +20,6 @@ import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.logger.api.OpenSpan;
-import com.palantir.tracing.logger.api.Span;
 import com.palantir.tracing.logger.api.SpanMetadata;
 import java.time.Clock;
 import java.time.Instant;
@@ -30,15 +29,17 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
+final class EnabledSpan implements InternalSpan, SpanMetadata, SpanStackEntry {
 
     private static final int NEW = 0;
-    private static final int OPEN = 1;
-    private static final int CLOSED = 2;
+    private static final int DETACHED = 1;
+    private static final int ATTACHED = 2;
+    private static final int COMPLETED = 3;
 
     private static final AtomicIntegerFieldUpdater<EnabledSpan> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(EnabledSpan.class, "state");
 
+    private final TraceState traceState;
     private final String spanId;
     private final Optional<String> parentSpanId;
     private final String operation;
@@ -46,16 +47,22 @@ final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
 
     private final Map<String, String> tags = new ConcurrentHashMap<>();
 
-    private volatile long startEpochMicrosecond;
-    private volatile long startNanoTime;
+    private volatile long startTimeMicroSeconds;
+    private volatile long startClockNanoSeconds;
 
     private volatile int state = NEW;
 
-    EnabledSpan(String spanId, Optional<String> parentSpanId, String operation, SpanType type) {
+    EnabledSpan(TraceState traceState, String spanId, Optional<String> parentSpanId, String operation, SpanType type) {
+        this.traceState = traceState;
         this.spanId = spanId;
         this.parentSpanId = parentSpanId;
         this.operation = operation;
         this.type = type;
+    }
+
+    @Override
+    public TraceState traceState() {
+        return traceState;
     }
 
     @Override
@@ -82,12 +89,12 @@ final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
         return type;
     }
 
-    long startEpochMicrosecond() {
-        return startEpochMicrosecond;
+    long startTimeMicroSeconds() {
+        return startTimeMicroSeconds;
     }
 
-    long startNanoTime() {
-        return startNanoTime;
+    long startClockNanoSeconds() {
+        return startClockNanoSeconds;
     }
 
     Map<String, String> tags() {
@@ -101,31 +108,54 @@ final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
 
     @Override
     public OpenSpan open() {
-        start();
+        if (!STATE_UPDATER.compareAndSet(this, NEW, ATTACHED)) {
+            throw new SafeIllegalStateException("Span cannot be opened", SafeArg.of("state", state));
+        }
 
-        Tracer.pushSpan(this);
+        startTimeMicroSeconds = toEpochMicrosecond(Clock.systemUTC().instant());
+        startClockNanoSeconds = System.nanoTime();
 
         return this;
     }
 
+    @Override
+    public void close() {
+        detach();
+
+        int previousState = STATE_UPDATER.getAndSet(this, COMPLETED)
+        if (previousState == DETACHED || previousState == ATTACHED)) {
+            Tracer.notifyObservers(this);
+        }
+    }
+
+    // TODO(pkoenig): We probably need some sort of validation for these state transitions
+    @Override
     public void start() {
-        if (!STATE_UPDATER.compareAndSet(this, NEW, OPEN)) {
-            throw new SafeIllegalStateException("Span cannot be opened", SafeArg.of("state", state));
+        if (STATE_UPDATER.compareAndSet(this, NEW, DETACHED)) {
+            throw new SafeIllegalStateException("Span cannot be started", SafeArg.of("state", state));
         }
 
-        startEpochMicrosecond = toEpochMicrosecond(Clock.systemUTC().instant());
-        startNanoTime = System.nanoTime();
+        startTimeMicroSeconds = toEpochMicrosecond(Clock.systemUTC().instant());
+        startClockNanoSeconds = System.nanoTime();
     }
 
     @Override
-    public void close() {
-        if (complete()) {
-            Tracer.completeSpan(spanId);
+    public void attach() {
+        if (STATE_UPDATER.compareAndSet(this, DETACHED, ATTACHED)) {
+            Tracer.pushEntry(this);
         }
     }
 
-    public boolean complete() {
-        return STATE_UPDATER.getAndSet(this, CLOSED) == OPEN;
+    @Override
+    public void detach() {
+        if (STATE_UPDATER.compareAndSet(this, ATTACHED, DETACHED)) {
+            Tracer.removeEntry(this);
+        }
+    }
+
+    @Override
+    public void complete() {
+        STATE_UPDATER.getAndSet(this, COMPLETED);
     }
 
     private static long toEpochMicrosecond(Instant instant) {

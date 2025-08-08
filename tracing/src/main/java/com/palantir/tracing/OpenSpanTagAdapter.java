@@ -14,29 +14,23 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.logger.api;
+package com.palantir.tracing;
 
-import com.google.errorprone.annotations.MustBeClosed;
-import com.palantir.logsafe.Safe;
-import java.util.Optional;
+import com.palantir.tracing.logger.api.OpenSpan;
+import java.util.Map;
 
-public interface Span {
+enum OpenSpanTagAdapter implements TagTranslator.TagAdapter<OpenSpan> {
+    INSTANCE;
 
-    // TODO(pkoenig): isEnabled
+    @Override
+    public void tag(OpenSpan target, String key, String value) {
+        if (key != null && value != null) {
+            target.tag(key, value);
+        }
+    }
 
-    Optional<SpanMetadata> metadata();
-
-    void tag(@Safe String name, @Safe String value);
-
-    @MustBeClosed
-    OpenSpan open();
-
-    void start();
-
-    @MustBeClosed
-    OpenSpan attach();
-
-    void detach();
-
-    void complete();
+    @Override
+    public void tag(OpenSpan target, Map<String, String> tags) {
+        tags.forEach(target::tag);
+    }
 }

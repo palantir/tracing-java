@@ -16,14 +16,7 @@
 
 package com.palantir.tracing.logger.api;
 
-import com.palantir.logsafe.Safe;
-import java.util.Optional;
-
 public interface OpenSpan extends AutoCloseable {
-
-    Optional<SpanMetadata> metadata();
-
-    void tag(@Safe String name, @Safe String value);
 
     @Override
     void close();

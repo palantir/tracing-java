@@ -16,27 +16,7 @@
 
 package com.palantir.tracing.logger.api;
 
-import com.google.errorprone.annotations.MustBeClosed;
-import com.palantir.logsafe.Safe;
-import java.util.Optional;
+public interface TraceMetadata {
 
-public interface Span {
-
-    // TODO(pkoenig): isEnabled
-
-    Optional<SpanMetadata> metadata();
-
-    void tag(@Safe String name, @Safe String value);
-
-    @MustBeClosed
-    OpenSpan open();
-
-    void start();
-
-    @MustBeClosed
-    OpenSpan attach();
-
-    void detach();
-
-    void complete();
+    String traceId();
 }

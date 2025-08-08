@@ -31,7 +31,7 @@ import org.jspecify.annotations.Nullable;
  * Class representing the state which is created for each {@link Trace}. Contains the globally non-unique identifier of
  * a trace and a request identifier used to identify different requests sent from the same trace.
  */
-final class TraceState implements Serializable {
+final class TraceState implements Serializable, SpanStackEntry {
     private static final long serialVersionUID = 1L;
 
     private final String traceId;
@@ -95,6 +95,11 @@ final class TraceState implements Serializable {
 
     boolean isObservable() {
         return isObservable;
+    }
+
+    @Override
+    public TraceState traceState() {
+        return this;
     }
 
     Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {

@@ -22,6 +22,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.SpanType;
 import com.palantir.tracing.api.TraceHttpHeaders;
+import com.palantir.tracing.logger.api.OpenSpan;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -53,6 +54,8 @@ public final class Tracers {
     private static final char[] HEX_DIGITS = {
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'
     };
+
+    static final String ZERO_ID = longToPaddedHex(0);
 
     private Tracers() {}
 
@@ -396,15 +399,9 @@ public final class Tracers {
     public static <V> Callable<V> wrapWithNewTrace(
             String operation, Observability observability, Callable<V> delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
+            try (EnabledTrace trace = Tracer.newTrace(observability, randomId());
+                    OpenSpan span = Tracer.newSpan(operation, SpanType.LOCAL).open()) {
                 return delegate.call();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
             }
         };
     }
@@ -431,15 +428,9 @@ public final class Tracers {
      */
     public static Runnable wrapWithNewTrace(String operation, Observability observability, Runnable delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, Tracers.randomId(), operation, SpanType.LOCAL);
+            try (EnabledTrace trace = Tracer.newTrace(observability, randomId());
+                    OpenSpan span = Tracer.newSpan(operation, SpanType.LOCAL).open()) {
                 delegate.run();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
             }
         };
     }
@@ -454,15 +445,9 @@ public final class Tracers {
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
+            try (EnabledTrace trace = Tracer.newTrace(observability, traceId);
+                    OpenSpan span = Tracer.newSpan(operation, SpanType.LOCAL).open()) {
                 return delegate.call();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
             }
         };
     }
@@ -491,30 +476,11 @@ public final class Tracers {
     public static Runnable wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Runnable delegate) {
         return () -> {
-            // clear the existing trace and keep it around for restoration when we're done
-            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-            try {
-                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
+            try (EnabledTrace trace = Tracer.newTrace(observability, traceId);
+                    OpenSpan span = Tracer.newSpan(operation, SpanType.LOCAL).open()) {
                 delegate.run();
-            } finally {
-                Tracer.fastCompleteSpan();
-                restoreTrace(originalTrace);
             }
         };
-    }
-
-    /**
-     * Restores or clears trace state based on provided {@link Trace}. Used to cleanup trace state for
-     * {@link #wrapWithNewTrace} calls.
-     */
-    private static void restoreTrace(Optional<Trace> trace) {
-        if (trace.isPresent()) {
-            Tracer.setTrace(trace.get());
-        } else {
-            // Ignoring returned value, used to clear trace only
-            Tracer.getAndClearTraceIfPresent();
-        }
     }
 
     /**
