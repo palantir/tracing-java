@@ -1,5 +1,5 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file
-com.google.errorprone:error_prone_annotations:2.38.0 (9 constraints: 46969811)
+com.google.errorprone:error_prone_annotations:2.40.0 (9 constraints: 3f968411)
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 com.google.guava:guava:33.4.8-jre (5 constraints: 255e6b47)
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
@@ -59,8 +59,8 @@ com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.22.0 (1 c
 com.palantir.ri:resource-identifier:2.8.0 (1 constraints: f20f8299)
 com.palantir.safe-logging:preconditions-assertj:3.9.0 (1 constraints: 3c05413b)
 com.palantir.tokens:auth-tokens:3.18.0 (1 constraints: 2410a8a9)
-com.palantir.tritium:tritium-ids:0.102.0 (1 constraints: f50f7da6)
-com.palantir.tritium:tritium-registry:0.102.0 (1 constraints: a81c30c1)
+com.palantir.tritium:tritium-ids:0.103.0 (1 constraints: f50f7da6)
+com.palantir.tritium:tritium-registry:0.103.0 (1 constraints: a81c30c1)
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 com.sun.activation:jakarta.activation:2.0.1 (1 constraints: 8c0f4591)
 io.dropwizard.metrics:metrics-core:4.2.33 (2 constraints: 472d0397)
