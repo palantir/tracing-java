@@ -42,7 +42,7 @@ public final class CloseableTracerTest {
     @Test
     public void startsAndClosesSpan() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo")) {
-            OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+            OpenSpan openSpan = Tracer.getTrace().top().get();
             assertThat(openSpan.getOperation()).isEqualTo("foo");
             assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
         }
@@ -52,7 +52,7 @@ public final class CloseableTracerTest {
     @Test
     public void startsAndClosesSpanWithType() {
         try (CloseableTracer tracer = CloseableTracer.startSpan("foo", SpanType.CLIENT_OUTGOING)) {
-            OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+            OpenSpan openSpan = Tracer.getTrace().top().get();
             assertThat(openSpan.getOperation()).isEqualTo("foo");
             assertThat(openSpan.type()).isEqualTo(SpanType.CLIENT_OUTGOING);
         }
@@ -66,7 +66,7 @@ public final class CloseableTracerTest {
         Tracer.subscribe(name, observer);
         try {
             try (CloseableTracer tracer = CloseableTracer.startSpan("foo", ImmutableMap.of("key", "value"))) {
-                OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+                OpenSpan openSpan = Tracer.getTrace().top().get();
                 assertThat(openSpan.getOperation()).isEqualTo("foo");
                 assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
             }
@@ -96,7 +96,7 @@ public final class CloseableTracerTest {
                         }
                     },
                     "value")) {
-                OpenSpan openSpan = Tracer.copyTrace().get().top().get();
+                OpenSpan openSpan = Tracer.getTrace().top().get();
                 assertThat(openSpan.getOperation()).isEqualTo("foo");
                 assertThat(openSpan.type()).isEqualTo(SpanType.LOCAL);
             }
