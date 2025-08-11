@@ -92,8 +92,9 @@ public final class DeferredTracer implements Serializable {
     public DeferredTracer(@Safe String operation, @Safe Map<String, String> metadata) {
         Trace trace = Tracer.getTrace();
         if (trace != null) {
+            OpenSpan span = trace.top();
             this.traceState = trace.traceState();
-            this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
+            this.parentSpanId = span != null ? span.getSpanId() : null;
             this.operation = operation;
             this.metadata = metadata;
         } else {

@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -1018,10 +1019,8 @@ public final class TracersTest {
             return List.of();
         }
 
-        List<OpenSpan> spans = Stream.generate(trace::pop)
-                .takeWhile(Optional::isPresent)
-                .map(Optional::orElseThrow)
-                .toList();
+        List<OpenSpan> spans =
+                Stream.generate(trace::pop).takeWhile(Objects::nonNull).toList();
         return Lists.reverse(spans);
     }
 
