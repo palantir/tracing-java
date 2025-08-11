@@ -117,9 +117,9 @@ public final class Tracer {
         OpenSpan span = trace.top().orElse(null);
 
         return Optional.of(TraceMetadata.builder()
-                .traceId(trace.getTraceState().traceId())
+                .traceId(trace.traceState().traceId())
                 .spanId(span != null ? span.getSpanId() : Tracers.randomId())
-                .requestId(Optional.ofNullable(trace.maybeGetRequestId()))
+                .requestId(Optional.ofNullable(trace.traceState().requestId()))
                 .build());
     }
 
@@ -327,9 +327,9 @@ public final class Tracer {
             if (maybeOpenSpan == null) {
                 return NopDetached.INSTANCE;
             }
-            return new SampledDetached(trace.getTraceState(), maybeOpenSpan);
+            return new SampledDetached(trace.traceState(), maybeOpenSpan);
         } else {
-            return new UnsampledDetachedSpan(trace.getTraceState(), Optional.empty());
+            return new UnsampledDetachedSpan(trace.traceState(), Optional.empty());
         }
     }
 
@@ -351,12 +351,12 @@ public final class Tracer {
             return null;
         }
 
-        return maybeCurrentTrace.getTraceState();
+        return maybeCurrentTrace.traceState();
     }
 
     private static TraceState getTraceState(@Nullable Trace maybeCurrentTrace, SpanType newSpanType) {
         if (maybeCurrentTrace != null) {
-            return maybeCurrentTrace.getTraceState();
+            return maybeCurrentTrace.traceState();
         }
         return TraceState.of(Tracers.randomId(), getRequestIdForSpan(newSpanType), Optional.empty());
     }
@@ -368,13 +368,12 @@ public final class Tracer {
         return Optional.empty();
     }
 
-    @Nullable
-    static String getRequestId(DetachedSpan detachedSpan) {
+    static Optional<String> getRequestId(DetachedSpan detachedSpan) {
         if (detachedSpan instanceof SampledDetachedSpan sampledDetachedSpan) {
-            return sampledDetachedSpan.traceState.requestId();
+            return Optional.ofNullable(sampledDetachedSpan.traceState.requestId());
         }
         if (detachedSpan instanceof UnsampledDetachedSpan unsampledDetachedSpan) {
-            return unsampledDetachedSpan.traceState.requestId();
+            return Optional.ofNullable(unsampledDetachedSpan.traceState.requestId());
         }
         throw new SafeIllegalStateException("Unknown span type", SafeArg.of("detachedSpan", detachedSpan));
     }
@@ -598,7 +597,8 @@ public final class Tracer {
         if (trace != null) {
             Optional<OpenSpan> span = popCurrentSpan(trace);
             if (trace.isObservable()) {
-                completeSpanAndNotifyObservers(span, tag, state, trace.getTraceId());
+                completeSpanAndNotifyObservers(
+                        span, tag, state, trace.traceState().traceId());
             }
         } else {
             logCompletedWithoutStarted();
@@ -637,7 +637,11 @@ public final class Tracer {
             return Optional.empty();
         }
         Optional<Span> maybeSpan = popCurrentSpan(trace)
-                .map(openSpan -> toSpan(openSpan, MapTagTranslator.INSTANCE, metadata, trace.getTraceId()));
+                .map(openSpan -> toSpan(
+                        openSpan,
+                        MapTagTranslator.INSTANCE,
+                        metadata,
+                        trace.traceState().traceId()));
 
         // Notify subscribers iff trace is observable
         if (maybeSpan.isPresent() && trace.isObservable()) {
@@ -772,7 +776,9 @@ public final class Tracer {
      * Returns the globally unique identifier for this thread's trace.
      */
     public static String getTraceId() {
-        return checkNotNull(currentTrace.get(), "There is no trace").getTraceId();
+        return checkNotNull(currentTrace.get(), "There is no trace")
+                .traceState()
+                .traceId();
     }
 
     /**
@@ -780,7 +786,11 @@ public final class Tracer {
      */
     static Optional<String> getForUserAgent() {
         Trace trace = currentTrace.get();
-        return trace == null ? Optional.empty() : trace.getForUserAgent();
+        if (trace == null) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(trace.traceState().forUserAgent());
     }
 
     /**
@@ -852,9 +862,9 @@ public final class Tracer {
         currentTrace.set(trace);
 
         // Give log appenders access to the trace id and whether the trace is being sampled
-        MDC.put(Tracers.TRACE_ID_KEY, trace.getTraceId());
+        MDC.put(Tracers.TRACE_ID_KEY, trace.traceState().traceId());
         setTraceSampledMdcIfObservable(trace.isObservable());
-        setTraceRequestId(trace.maybeGetRequestId());
+        setTraceRequestId(trace.traceState().requestId());
     }
 
     private static void setTraceSampledMdcIfObservable(boolean observable) {

@@ -33,7 +33,7 @@ public final class InternalTracers {
 
     /** Returns requestId of the provided detachedSpan. */
     public static Optional<String> getRequestId(DetachedSpan detachedSpan) {
-        return Optional.ofNullable(Tracer.getRequestId(detachedSpan));
+        return Tracer.getRequestId(detachedSpan);
     }
 
     /**
