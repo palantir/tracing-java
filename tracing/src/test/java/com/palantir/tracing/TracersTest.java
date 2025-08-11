@@ -1019,8 +1019,9 @@ public final class TracersTest {
             return List.of();
         }
 
-        List<OpenSpan> spans =
-                Stream.generate(trace::pop).takeWhile(Objects::nonNull).toList();
+        List<OpenSpan> spans = Stream.generate(trace::fastCompleteSpan)
+                .takeWhile(Objects::nonNull)
+                .toList();
         return Lists.reverse(spans);
     }
 
