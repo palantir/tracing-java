@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.util.Sets;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -58,7 +59,7 @@ public final class TracerTest {
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
-    @After
+    @Before
     public void before() {
         Tracer.getAndClearTraceIfPresent();
         Tracer.setSampler(AlwaysSampler.INSTANCE);
@@ -342,8 +343,7 @@ public final class TracerTest {
             String startTrace = Tracer.getTraceId();
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isEqualTo(startTrace);
 
-            Trace oldTrace = Tracer.getAndClearTrace();
-            assertThat(oldTrace.traceState().traceId()).isEqualTo(startTrace);
+            Tracer.getAndClearTrace();
             assertThat(MDC.get(Tracers.TRACE_ID_KEY)).isNull(); // after clearing, it's empty
         } finally {
             Tracer.fastCompleteSpan();

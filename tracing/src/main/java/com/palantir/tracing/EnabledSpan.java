@@ -16,11 +16,9 @@
 
 package com.palantir.tracing;
 
-import com.palantir.logsafe.SafeArg;
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
+import com.palantir.tracing.api.Span;
 import com.palantir.tracing.api.SpanType;
-import com.palantir.tracing.logger.api.OpenSpan;
-import com.palantir.tracing.logger.api.Span;
 import com.palantir.tracing.logger.api.SpanMetadata;
 import java.time.Clock;
 import java.time.Instant;
@@ -30,32 +28,39 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
+final class EnabledSpan implements InternalSpan, InternalOpenSpan, SpanMetadata, SpanStackEntry {
 
-    private static final int NEW = 0;
-    private static final int OPEN = 1;
-    private static final int CLOSED = 2;
+    private static final int NOT_COMPLETE = 0;
+    private static final int COMPLETE = 1;
 
     private static final AtomicIntegerFieldUpdater<EnabledSpan> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(EnabledSpan.class, "state");
 
+    private final TraceState traceState;
     private final String spanId;
     private final Optional<String> parentSpanId;
     private final String operation;
     private final SpanType type;
+    private final long startTimeMicroSeconds;
+    private final long startClockNanoSeconds;
 
     private final Map<String, String> tags = new ConcurrentHashMap<>();
 
-    private volatile long startEpochMicrosecond;
-    private volatile long startNanoTime;
+    private volatile int state = NOT_COMPLETE;
 
-    private volatile int state = NEW;
-
-    EnabledSpan(String spanId, Optional<String> parentSpanId, String operation, SpanType type) {
+    EnabledSpan(TraceState traceState, String spanId, Optional<String> parentSpanId, String operation, SpanType type) {
+        this.traceState = traceState;
         this.spanId = spanId;
         this.parentSpanId = parentSpanId;
         this.operation = operation;
         this.type = type;
+        startTimeMicroSeconds = toEpochMicrosecond(Clock.systemUTC().instant());
+        startClockNanoSeconds = System.nanoTime();
+    }
+
+    @Override
+    public TraceState traceState() {
+        return traceState;
     }
 
     @Override
@@ -82,12 +87,12 @@ final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
         return type;
     }
 
-    long startEpochMicrosecond() {
-        return startEpochMicrosecond;
+    long startTimeMicroSeconds() {
+        return startTimeMicroSeconds;
     }
 
-    long startNanoTime() {
-        return startNanoTime;
+    long startClockNanoSeconds() {
+        return startClockNanoSeconds;
     }
 
     Map<String, String> tags() {
@@ -100,32 +105,48 @@ final class EnabledSpan implements Span, OpenSpan, SpanMetadata {
     }
 
     @Override
-    public OpenSpan open() {
-        start();
+    public InternalOpenSpan open() {
+        if (state == COMPLETE) {
+            throw new SafeIllegalStateException("Span is already complete");
+        }
 
-        Tracer.pushSpan(this);
+        Tracer.pushEntry(this);
 
         return this;
     }
 
-    public void start() {
-        if (!STATE_UPDATER.compareAndSet(this, NEW, OPEN)) {
-            throw new SafeIllegalStateException("Span cannot be opened", SafeArg.of("state", state));
-        }
-
-        startEpochMicrosecond = toEpochMicrosecond(Clock.systemUTC().instant());
-        startNanoTime = System.nanoTime();
+    @Override
+    public void close() {
+        Tracer.removeEntry(this);
+        complete();
     }
 
     @Override
-    public void close() {
-        if (complete()) {
-            Tracer.completeSpan(spanId);
+    public InternalOpenSpan attach() {
+        if (state == COMPLETE) {
+            throw new SafeIllegalStateException("Span is already complete");
+        }
+
+        Tracer.pushEntry(this);
+
+        return () -> Tracer.removeEntry(this);
+    }
+
+    @Override
+    public void complete() {
+        if (STATE_UPDATER.compareAndSet(this, NOT_COMPLETE, COMPLETE)) {
+            Tracer.notifyObservers(this);
         }
     }
 
-    public boolean complete() {
-        return STATE_UPDATER.getAndSet(this, CLOSED) == OPEN;
+    @Override
+    public <T> Optional<Span> complete(TagTranslator<? super T> tagTranslator, T data) {
+        if (STATE_UPDATER.compareAndSet(this, NOT_COMPLETE, COMPLETE)) {
+            Span completedSpan = Tracer.notifyObservers(this, tagTranslator, data);
+            return Optional.of(completedSpan);
+        }
+
+        return Optional.empty();
     }
 
     private static long toEpochMicrosecond(Instant instant) {

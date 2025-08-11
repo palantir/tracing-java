@@ -16,7 +16,11 @@
 
 package com.palantir.tracing.logger.api;
 
-public interface OpenSpan extends AutoCloseable {
+import java.util.Optional;
+
+public interface OpenTrace extends AutoCloseable {
+
+    Optional<TraceMetadata> metadata();
 
     @Override
     void close();

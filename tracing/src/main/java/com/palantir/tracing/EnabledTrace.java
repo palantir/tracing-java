@@ -17,34 +17,37 @@
 package com.palantir.tracing;
 
 import com.palantir.logsafe.exceptions.SafeIllegalStateException;
-import com.palantir.tracing.api.Span;
-import com.palantir.tracing.logger.api.SpanMetadata;
+import com.palantir.tracing.logger.api.OpenTrace;
+import com.palantir.tracing.logger.api.Trace;
+import com.palantir.tracing.logger.api.TraceMetadata;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-final class DisabledSpan implements InternalSpan, InternalOpenSpan, SpanStackEntry {
+final class EnabledTrace implements Trace, OpenTrace, TraceMetadata, SpanStackEntry {
 
     private static final int NOT_COMPLETE = 0;
     private static final int COMPLETE = 1;
 
-    private static final AtomicIntegerFieldUpdater<DisabledSpan> STATE_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(DisabledSpan.class, "state");
+    private static final AtomicIntegerFieldUpdater<EnabledTrace> STATE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(EnabledTrace.class, "state");
 
     private final TraceState traceState;
 
     private volatile int state = NOT_COMPLETE;
 
-    DisabledSpan(TraceState traceState) {
+    EnabledTrace(TraceState traceState) {
         this.traceState = traceState;
     }
 
     @Override
-    public Optional<SpanMetadata> metadata() {
-        return Optional.empty();
+    public Optional<TraceMetadata> metadata() {
+        return Optional.of(this);
     }
 
     @Override
-    public void tag(String _name, String _value) {}
+    public String traceId() {
+        return traceState.traceId();
+    }
 
     @Override
     public TraceState traceState() {
@@ -52,7 +55,7 @@ final class DisabledSpan implements InternalSpan, InternalOpenSpan, SpanStackEnt
     }
 
     @Override
-    public InternalOpenSpan open() {
+    public OpenTrace open() {
         if (state == COMPLETE) {
             throw new SafeIllegalStateException("Span is already complete");
         }
@@ -64,29 +67,6 @@ final class DisabledSpan implements InternalSpan, InternalOpenSpan, SpanStackEnt
 
     @Override
     public void close() {
-        Tracer.removeEntry(this);
-        complete();
-    }
-
-    @Override
-    public InternalOpenSpan attach() {
-        if (state == COMPLETE) {
-            throw new SafeIllegalStateException("Span is already complete");
-        }
-
-        Tracer.pushEntry(this);
-
-        return () -> Tracer.removeEntry(this);
-    }
-
-    @Override
-    public void complete() {
         STATE_UPDATER.set(this, COMPLETE);
-    }
-
-    @Override
-    public <T> Optional<Span> complete(TagTranslator<? super T> _tagTranslator, T _data) {
-        STATE_UPDATER.set(this, COMPLETE);
-        return Optional.empty();
     }
 }

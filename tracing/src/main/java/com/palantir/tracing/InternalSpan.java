@@ -14,10 +14,21 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.logger.api;
+package com.palantir.tracing;
 
-public interface OpenSpan extends AutoCloseable {
+import com.google.errorprone.annotations.MustBeClosed;
+import com.palantir.tracing.logger.api.Span;
+import java.util.Optional;
+
+public interface InternalSpan extends Span {
 
     @Override
-    void close();
+    @MustBeClosed
+    InternalOpenSpan open();
+
+    @Override
+    @MustBeClosed
+    InternalOpenSpan attach();
+
+    <T> Optional<com.palantir.tracing.api.Span> complete(TagTranslator<? super T> tagTranslator, T data);
 }

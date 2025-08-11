@@ -24,6 +24,7 @@ import com.palantir.tracing.logger.spi.TraceLoggerFactorySpi;
 import java.util.List;
 import java.util.ServiceLoader;
 
+// TODO(pkoenig): SpanType
 public final class TraceLoggerFactory {
 
     private static final TraceLoggerFactorySpi TRACE_LOGGER_FACTORY_SPI = loadSpi();

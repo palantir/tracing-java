@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.logger.api;
+package com.palantir.tracing;
 
-public interface OpenSpan extends AutoCloseable {
+enum NopOpenSpan implements InternalOpenSpan {
+    INSTANCE;
 
     @Override
-    void close();
+    public void close() {}
 }

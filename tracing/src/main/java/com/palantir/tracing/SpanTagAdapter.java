@@ -14,10 +14,23 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.logger.api;
+package com.palantir.tracing;
 
-public interface OpenSpan extends AutoCloseable {
+import com.palantir.tracing.logger.api.Span;
+import java.util.Map;
+
+enum SpanTagAdapter implements TagTranslator.TagAdapter<Span> {
+    INSTANCE;
 
     @Override
-    void close();
+    public void tag(Span target, String key, String value) {
+        if (key != null && value != null) {
+            target.tag(key, value);
+        }
+    }
+
+    @Override
+    public void tag(Span target, Map<String, String> tags) {
+        tags.forEach(target::tag);
+    }
 }

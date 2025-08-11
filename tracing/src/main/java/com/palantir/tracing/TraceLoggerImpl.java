@@ -80,10 +80,6 @@ final class TraceLoggerImpl implements TraceLogger {
     }
 
     private Span span(Level level, String operation) {
-        if (Tracer.isEnabled(level, name)) {
-            return new EnabledSpan(Tracers.randomId(), Tracer.getCurrentSpanId(), operation, SpanType.LOCAL);
-        }
-
-        return DisabledSpan.INSTANCE;
+        return Tracer.newSpan(level, operation, SpanType.LOCAL);
     }
 }

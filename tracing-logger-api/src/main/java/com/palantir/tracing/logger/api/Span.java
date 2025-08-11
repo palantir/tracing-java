@@ -22,10 +22,17 @@ import java.util.Optional;
 
 public interface Span {
 
+    // TODO(pkoenig): isEnabled
+
     Optional<SpanMetadata> metadata();
 
     void tag(@Safe String name, @Safe String value);
 
     @MustBeClosed
     OpenSpan open();
+
+    @MustBeClosed
+    OpenSpan attach();
+
+    void complete();
 }

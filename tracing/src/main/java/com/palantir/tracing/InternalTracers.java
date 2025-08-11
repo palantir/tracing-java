@@ -28,24 +28,29 @@ public final class InternalTracers {
 
     /** Returns true if the provided detachedSpan is sampled. */
     public static boolean isSampled(DetachedSpan detachedSpan) {
-        return Tracer.isSampled(detachedSpan);
+        return Tracer.getTraceState(detachedSpan).isObservable();
     }
 
     /** Returns requestId of the provided detachedSpan. */
     public static Optional<String> getRequestId(DetachedSpan detachedSpan) {
-        return Tracer.getRequestId(detachedSpan);
+        return Optional.ofNullable(Tracer.getTraceState(detachedSpan).requestId());
     }
 
     /**
      * Returns the forUserAgent propagated inside the trace.
      */
     public static Optional<String> getForUserAgent() {
-        return Tracer.getForUserAgent();
+        TraceState traceState = Tracer.getTraceState();
+        if (traceState == null) {
+            return Optional.empty();
+        }
+
+        return Optional.ofNullable(traceState.forUserAgent());
     }
 
     /** Returns the forUserAgent in the provided detachedSpan. */
     public static Optional<String> getForUserAgent(DetachedSpan detachedSpan) {
-        return Optional.ofNullable(Tracer.getForUserAgent(detachedSpan));
+        return Optional.ofNullable(Tracer.getTraceState(detachedSpan).forUserAgent());
     }
 
     private InternalTracers() {}

@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.palantir.tracing.logger.api;
+package com.palantir.tracing;
 
-public interface OpenSpan extends AutoCloseable {
+sealed interface SpanStackEntry permits EnabledTrace, EnabledSpan, DisabledSpan {
 
-    @Override
-    void close();
+    TraceState traceState();
 }

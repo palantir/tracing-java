@@ -17,14 +17,14 @@
 package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.errorprone.annotations.MustBeClosed;
 import com.palantir.logsafe.Safe;
 import com.palantir.tracing.api.SpanType;
-import java.io.Closeable;
+import com.palantir.tracing.logger.api.OpenSpan;
+import com.palantir.tracing.logger.api.OpenTrace;
+import com.palantir.tracing.logger.api.Span;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -110,82 +110,26 @@ public final class DeferredTracer implements Serializable {
 
     /** Runs the given callable with the current trace at the time of construction of this {@link DeferredTracer}. */
     public <T, E extends Throwable> T withTrace(Tracers.ThrowingCallable<T, E> inner) throws E {
-        try (CloseableTrace ignored = withTrace()) {
+        if (traceState == null) {
+            return inner.call();
+        }
+
+        try (OpenTrace openTrace = Tracer.newTrace(traceState).open();
+                OpenSpan openSpan = newSpan().open()) {
             return inner.call();
         }
     }
 
-    @MustBeClosed
-    @SuppressWarnings("NullAway") // either both operation & parentSpanId are nullable or neither are
-    CloseableTrace withTrace() {
-        if (traceState == null) {
-            return NopCloseableTrace.INSTANCE;
+    @SuppressWarnings("NullAway")
+    private Span newSpan() {
+        Span span = parentSpanId != null
+                ? Tracer.newSpan(operation, Optional.of(parentSpanId), SpanType.LOCAL)
+                : Tracer.newSpan(operation, SpanType.LOCAL);
+
+        if (metadata != null) {
+            MapTagTranslator.INSTANCE.translate(SpanTagAdapter.INSTANCE, span, metadata);
         }
 
-        Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
-
-        Tracer.setTrace(Trace.of(traceState));
-        if (parentSpanId != null) {
-            Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
-        } else {
-            Tracer.fastStartSpan(operation);
-        }
-
-        if (traceState.isObservable() && metadata != null && !metadata.isEmpty()) {
-            return new TaggedCloseableTrace(originalTrace, metadata);
-        } else {
-            return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
-        }
-    }
-
-    private enum NopCloseableTrace implements CloseableTrace {
-        INSTANCE;
-
-        @Override
-        public void close() {}
-    }
-
-    private enum DefaultCloseableTrace implements CloseableTrace {
-        INSTANCE;
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan();
-            if (Tracer.hasTraceId()) {
-                Tracer.getAndClearTrace();
-            }
-        }
-    }
-
-    private static final class TaggedCloseableTrace implements CloseableTrace {
-        private final Map<String, String> metadata;
-        private final Optional<Trace> originalTrace;
-
-        TaggedCloseableTrace(Optional<Trace> originalTrace, Map<String, String> metadata) {
-            this.metadata = metadata;
-            this.originalTrace = originalTrace;
-        }
-
-        @Override
-        public void close() {
-            Tracer.fastCompleteSpan(metadata);
-            if (originalTrace.isPresent()) {
-                Tracer.setTrace(originalTrace.get());
-            } else if (Tracer.hasTraceId()) {
-                Tracer.getAndClearTrace();
-            }
-        }
-    }
-
-    @SuppressWarnings("UnnecessaryLambda") // this library is allocation sensitive
-    private static final Function<Trace, CloseableTrace> CLOSEABLE_TRACE_FUNCTION = originalTrace -> () -> {
-        DefaultCloseableTrace.INSTANCE.close();
-        Tracer.setTrace(originalTrace);
-    };
-
-    /** Package private mechanism to simplify internal {@link DeferredTracer} use. */
-    interface CloseableTrace extends Closeable {
-        @Override
-        void close();
+        return span;
     }
 }
