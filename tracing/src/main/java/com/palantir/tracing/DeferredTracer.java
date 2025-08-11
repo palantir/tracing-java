@@ -60,8 +60,6 @@ public final class DeferredTracer implements Serializable {
     @Nullable
     private final TraceState traceState;
 
-    private final boolean isObservable;
-
     @Nullable
     private final String operation;
 
@@ -96,13 +94,11 @@ public final class DeferredTracer implements Serializable {
         if (maybeTrace.isPresent()) {
             Trace trace = maybeTrace.get();
             this.traceState = trace.traceState();
-            this.isObservable = trace.isObservable();
             this.parentSpanId = trace.top().map(OpenSpan::getSpanId).orElse(null);
             this.operation = operation;
             this.metadata = metadata;
         } else {
             this.traceState = null;
-            this.isObservable = false;
             this.parentSpanId = null;
             this.operation = null;
             this.metadata = null;
@@ -129,14 +125,14 @@ public final class DeferredTracer implements Serializable {
 
         Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
 
-        Tracer.setTrace(Trace.of(isObservable, traceState));
+        Tracer.setTrace(Trace.of(traceState));
         if (parentSpanId != null) {
             Tracer.fastStartSpan(operation, parentSpanId, SpanType.LOCAL);
         } else {
             Tracer.fastStartSpan(operation);
         }
 
-        if (isObservable && metadata != null && !metadata.isEmpty()) {
+        if (traceState.isObservable() && metadata != null && !metadata.isEmpty()) {
             return new TaggedCloseableTrace(originalTrace, metadata);
         } else {
             return originalTrace.map(CLOSEABLE_TRACE_FUNCTION).orElse(DefaultCloseableTrace.INSTANCE);
