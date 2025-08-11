@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.util.Sets;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -58,7 +59,7 @@ public final class TracerTest {
     @Captor
     private ArgumentCaptor<Span> spanCaptor;
 
-    @AfterEach
+    @BeforeEach
     public void before() {
         Tracer.getAndClearTraceIfPresent();
         Tracer.setSampler(AlwaysSampler.INSTANCE);
