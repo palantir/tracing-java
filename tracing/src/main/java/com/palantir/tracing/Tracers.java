@@ -450,6 +450,8 @@ public final class Tracers {
      * instead of any trace already set on the thread used to execute the callable. Each execution of the callable will
      * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
      * create the initial span.
+     *
+     * @see {@link #wrapSupplierWithAlternateTraceId(String, String, Observability, Supplier)}
      */
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
@@ -497,6 +499,33 @@ public final class Tracers {
             try {
                 Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
                 delegate.run();
+            } finally {
+                Tracer.fastCompleteSpan();
+                restoreTrace(originalTrace);
+            }
+        };
+    }
+
+    /**
+     * Wraps the given {@link Supplier} such that it creates a fresh {@link Trace tracing state with the given traceId}
+     * for its execution. That is, the trace during its {@link Supplier#get() execution} will use the traceId provided
+     * instead of any trace already set on the thread used to execute the callable. Each execution of the callable will
+     * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
+     * create the initial span.
+     * <p>
+     * Compared to {@link #wrapWithAlternateTraceId(String, String, Observability, Callable)} which takes a {@link
+     * Callable}, using a {@link Supplier} can be easier for clients to work with since it does not have a checked
+     * exception in its signature.
+     */
+    public static <V> Supplier<V> wrapSupplierWithAlternateTraceId(
+            String traceId, String operation, Observability observability, Supplier<V> delegate) {
+        return () -> {
+            // clear the existing trace and keep it around for restoration when we're done
+            Optional<Trace> originalTrace = Tracer.getAndClearTraceIfPresent();
+
+            try {
+                Tracer.initTraceWithSpan(observability, traceId, operation, SpanType.LOCAL);
+                return delegate.get();
             } finally {
                 Tracer.fastCompleteSpan();
                 restoreTrace(originalTrace);
