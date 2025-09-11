@@ -450,8 +450,8 @@ public final class Tracers {
      * instead of any trace already set on the thread used to execute the callable. Each execution of the callable will
      * use a new {@link Trace tracing state} with the same given traceId. The given {@link String operation} is used to
      * create the initial span.
-     *
-     * @see {@link #wrapSupplierWithAlternateTraceId(String, String, Observability, Supplier)}
+     * <p>
+     * See also {@link #wrapSupplierWithAlternateTraceId(String, String, Observability, Supplier)}.
      */
     public static <V> Callable<V> wrapWithAlternateTraceId(
             String traceId, String operation, Observability observability, Callable<V> delegate) {
