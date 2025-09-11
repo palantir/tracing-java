@@ -133,6 +133,7 @@ public final class Tracers {
      */
     public static ScheduledExecutorService wrap(ScheduledExecutorService executorService) {
         return new WrappingScheduledExecutorService(executorService) {
+            @SuppressWarnings("for-rollout:deprecation")
             @Override
             protected Runnable wrapRecurring(Runnable runnable) {
                 return wrapWithNewTrace(runnable);
