@@ -834,6 +834,99 @@ public final class TracersTest {
         wrappedUnSampledRunnable.run();
     }
 
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test
+    public void testWrapSupplierWithAlternateTraceId_traceStateInsideSupplierUsesGivenTraceId() {
+        String traceIdBeforeConstruction = Tracer.getTraceId();
+        AtomicReference<String> traceId = new AtomicReference<>();
+        String traceIdToUse = "someTraceId";
+        Supplier<String> wrappedSupplier =
+                Tracers.wrapSupplierWithAlternateTraceId(traceIdToUse, "operation", Observability.UNDECIDED, () -> {
+                    traceId.set(Tracer.getTraceId());
+                    return "hi";
+                });
+
+        wrappedSupplier.get();
+
+        String traceIdAfterCall = Tracer.getTraceId();
+
+        assertThat(traceId.get())
+                .isNotEqualTo(traceIdBeforeConstruction)
+                .isNotEqualTo(traceIdAfterCall)
+                .isEqualTo(traceIdToUse);
+
+        assertThat(traceIdBeforeConstruction).isEqualTo(traceIdAfterCall);
+    }
+
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test
+    public void testWrapSupplierWithAlternateTraceId_traceStateInsideSupplierHasGivenSpan() {
+        List<List<OpenSpan>> spans = new ArrayList<>();
+
+        String traceIdToUse = "someTraceId";
+        Supplier<String> wrappedSupplier =
+                Tracers.wrapSupplierWithAlternateTraceId(traceIdToUse, "operation", Observability.UNDECIDED, () -> {
+                    spans.add(getCurrentTrace());
+                    return "hi";
+                });
+
+        wrappedSupplier.get();
+
+        assertThat(spans.get(0)).hasSize(1);
+
+        OpenSpan span = spans.get(0).get(0);
+
+        assertThat(span.getOperation()).isEqualTo("operation");
+        assertThat(span.getParentSpanId()).isEmpty();
+    }
+
+    @Test
+    public void testWrapSupplierWithAlternateTraceId_traceStateRestoredWhenThrows() {
+        String traceIdBeforeConstruction = Tracer.getTraceId();
+        Supplier<String> rawSupplier = () -> {
+            throw new IllegalStateException("oopsies");
+        };
+        Supplier<String> wrappedSupplier = Tracers.wrapSupplierWithAlternateTraceId(
+                "someTraceId", "operation", Observability.UNDECIDED, rawSupplier);
+
+        assertThatThrownBy(wrappedSupplier::get)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("oopsies");
+        assertThat(Tracer.getTraceId()).isEqualTo(traceIdBeforeConstruction);
+    }
+
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test
+    public void testWrapSupplierWithAlternateTraceId_traceStateRestoredToCleared() {
+        // Clear out the default initialized trace
+        Tracer.getAndClearTraceIfPresent();
+        Tracers.wrapSupplierWithAlternateTraceId("someTraceId", "operation", Observability.UNDECIDED, () -> "hi")
+                .get();
+        assertThat(Tracer.hasTraceId()).isFalse();
+    }
+
+    @SuppressWarnings("ReturnValueIgnored")
+    @Test
+    public void testWrapSupplierWithAlternateTraceId_canSpecifyObservability() {
+        Supplier<String> sampledSupplier = () -> {
+            assertThat(Tracer.getTrace().traceState().isObservable()).isTrue();
+            return "hi";
+        };
+        Supplier<String> wrappedSampledSupplier = Tracers.wrapSupplierWithAlternateTraceId(
+                "someTraceId", "operation", Observability.SAMPLE, sampledSupplier);
+
+        wrappedSampledSupplier.get();
+
+        Supplier<String> unSampledSupplier = () -> {
+            assertThat(Tracer.getTrace().traceState().isObservable()).isFalse();
+            return "hi";
+        };
+        Supplier<String> wrappedUnSampledSupplier = Tracers.wrapSupplierWithAlternateTraceId(
+                "someTraceId", "operation", Observability.DO_NOT_SAMPLE, unSampledSupplier);
+
+        wrappedUnSampledSupplier.get();
+    }
+
     @Test
     public void testTraceIdGeneration() throws Exception {
         assertThat(Tracers.randomId()).hasSize(16); // fails with p=1/16 if generated string is not padded
