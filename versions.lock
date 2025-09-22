@@ -1,22 +1,22 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.41.0 (9 constraints: 40968a11)
+com.google.errorprone:error_prone_annotations:2.41.0 (9 constraints: 3c963f0b)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
-com.google.guava:guava:33.4.8-jre (5 constraints: 255e6b47)
+com.google.guava:guava:33.5.0-jre (5 constraints: 1e5ea344)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
-com.google.j2objc:j2objc-annotations:3.0.0 (1 constraints: 150aeab4)
+com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.9.0 (4 constraints: be3d5eae)
+com.palantir.safe-logging:logger:3.9.0 (4 constraints: c33d3aaf)
 
 com.palantir.safe-logging:logger-slf4j:3.9.0 (1 constraints: 070e6e42)
 
 com.palantir.safe-logging:logger-spi:3.9.0 (2 constraints: 1d1e0c7c)
 
-com.palantir.safe-logging:preconditions:3.9.0 (9 constraints: 7a91d4b5)
+com.palantir.safe-logging:preconditions:3.9.0 (9 constraints: 7f9196b7)
 
 com.palantir.safe-logging:safe-logging:3.9.0 (10 constraints: d5a3cd47)
 
@@ -48,7 +48,7 @@ org.glassfish.jersey.core:jersey-common:3.0.6 (5 constraints: ae616db7)
 
 org.glassfish.jersey.core:jersey-server:3.0.6 (2 constraints: cd1e8a63)
 
-org.immutables:value:2.11.3 (2 constraints: 0015e8c1)
+org.immutables:value:2.11.3 (2 constraints: 0215eac1)
 
 org.jboss.logging:jboss-logging:3.4.1.Final (3 constraints: f03036d7)
 
@@ -66,7 +66,7 @@ org.openjdk.jmh:jmh-core:1.37 (5 constraints: 52476be6)
 
 org.openjdk.jmh:jmh-generator-annprocess:1.37 (1 constraints: df04fc30)
 
-org.slf4j:slf4j-api:2.0.17 (8 constraints: 2875c85f)
+org.slf4j:slf4j-api:2.0.17 (8 constraints: 2175455a)
 
 org.wildfly.client:wildfly-client-config:1.0.1.Final (1 constraints: 940c6308)
 
@@ -80,11 +80,11 @@ ch.qos.logback:logback-classic:1.3.15 (1 constraints: 3c05363b)
 
 ch.qos.logback:logback-core:1.3.15 (1 constraints: 3b0d3b2a)
 
-com.fasterxml.jackson.core:jackson-annotations:2.19.2 (9 constraints: 43b7d142)
+com.fasterxml.jackson.core:jackson-annotations:2.19.2 (9 constraints: 48b71644)
 
 com.fasterxml.jackson.core:jackson-core:2.19.2 (11 constraints: 11fea95c)
 
-com.fasterxml.jackson.core:jackson-databind:2.19.2 (14 constraints: f73b56d0)
+com.fasterxml.jackson.core:jackson-databind:2.19.2 (14 constraints: fc3b9bd1)
 
 com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.19.2 (1 constraints: 841cada4)
 
@@ -106,29 +106,29 @@ com.google.code.findbugs:annotations:3.0.1u2 (1 constraints: 450b07da)
 
 com.google.code.findbugs:jsr305:3.0.2 (4 constraints: b44881b5)
 
-com.palantir.conjure.java:conjure-lib:8.53.0 (1 constraints: 861ccda4)
+com.palantir.conjure.java:conjure-lib:8.56.0 (1 constraints: 891cd6a4)
 
-com.palantir.conjure.java.api:errors:2.62.0 (1 constraints: 2210a4a9)
+com.palantir.conjure.java.api:errors:2.65.0 (1 constraints: 2510ada9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.24.0 (1 constraints: 841cc4a4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.25.0 (1 constraints: 851cc7a4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.24.0 (1 constraints: 4005633b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.25.0 (1 constraints: 4105663b)
 
 com.palantir.ri:resource-identifier:2.11.0 (1 constraints: 1c108da9)
 
 com.palantir.safe-logging:preconditions-assertj:3.9.0 (1 constraints: 3c05413b)
 
-com.palantir.tokens:auth-tokens:3.18.0 (1 constraints: 2410a8a9)
+com.palantir.tokens:auth-tokens:3.19.0 (1 constraints: 2510aba9)
 
-com.palantir.tritium:tritium-ids:0.109.0 (1 constraints: f60f80a6)
+com.palantir.tritium:tritium-ids:0.109.0 (1 constraints: f80f86a6)
 
-com.palantir.tritium:tritium-registry:0.109.0 (1 constraints: ab1c39c1)
+com.palantir.tritium:tritium-registry:0.109.0 (1 constraints: b01c48c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
 com.sun.activation:jakarta.activation:2.0.1 (1 constraints: 8c0f4591)
 
-io.dropwizard.metrics:metrics-core:4.2.37 (2 constraints: 4b2d0797)
+io.dropwizard.metrics:metrics-core:4.2.37 (2 constraints: 4f2dc797)
 
 io.undertow:undertow-servlet-jakarta:2.2.18.Final (1 constraints: 57074361)
 
@@ -162,7 +162,7 @@ org.apache.logging.log4j:log4j-slf4j2-impl:2.24.0 (1 constraints: 3a053f3b)
 
 org.apiguardian:apiguardian-api:1.1.2 (6 constraints: 5366ce6e)
 
-org.assertj:assertj-core:3.27.5 (2 constraints: a61994e0)
+org.assertj:assertj-core:3.27.6 (2 constraints: a719cee0)
 
 org.eclipse.collections:eclipse-collections:13.0.0 (1 constraints: 1c1091a9)
 
