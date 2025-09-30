@@ -18,6 +18,7 @@ package com.palantir.tracing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.palantir.logsafe.Preconditions;
 import com.palantir.tracing.api.Serialization;
 import com.palantir.tracing.api.Span;
 import java.nio.file.Files;
@@ -46,7 +47,7 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
     @Override
     public void beforeTestExecution(ExtensionContext context) {
         TestTracingSubscriber subscriber = context.getStore(NAMESPACE)
-                .getOrComputeIfAbsent(SUBSCRIBER_KEY, _k -> new TestTracingSubscriber(), TestTracingSubscriber.class);
+                .computeIfAbsent(SUBSCRIBER_KEY, _k -> new TestTracingSubscriber(), TestTracingSubscriber.class);
         Tracer.setSampler(AlwaysSampler.INSTANCE);
         Tracer.subscribe(context.getUniqueId(), subscriber);
 
@@ -58,8 +59,8 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
     public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);
         Tracer.unsubscribe(context.getUniqueId());
-        TestTracingSubscriber subscriber =
-                context.getStore(NAMESPACE).remove(SUBSCRIBER_KEY, TestTracingSubscriber.class);
+        TestTracingSubscriber subscriber = Preconditions.checkNotNull(
+                context.getStore(NAMESPACE).remove(SUBSCRIBER_KEY, TestTracingSubscriber.class));
 
         Path outputPath = getOutputPath(name);
         Path snapshotFile = Paths.get("src/test/resources/tracing").resolve(name + ".log");
