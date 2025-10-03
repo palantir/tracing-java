@@ -32,7 +32,6 @@ import okhttp3.Response;
  */
 @Deprecated
 public enum OkhttpTraceInterceptor implements Interceptor {
-    @SuppressWarnings("for-rollout:deprecation")
     INSTANCE;
 
     /** The HTTP header used to communicate API endpoint names internally. Not considered public API. */
