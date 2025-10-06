@@ -68,7 +68,7 @@ subprojects {
     tasks.check.dependsOn(javadoc)
 
     tasks.withType(JavaCompile) {
-        options.compilerArgs += ['-Xlint:deprecation', '-Werror']
+        options.compilerArgs += ['-Werror']
     }
 
     plugins.withId('com.palantir.baseline-error-prone', {
