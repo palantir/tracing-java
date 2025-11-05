@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -51,27 +50,14 @@ abstract class WrappingExecutorService implements ExecutorService {
     }
 
     /**
-     * Wraps a {@code Callable} for submission to the underlying executor. This method is also applied to any
-     * {@code Runnable} passed to the default implementation of {@link #wrapTask(Runnable)}.
+     * Wraps a {@code Callable} for submission to the underlying executor.
      */
     protected abstract <T> Callable<T> wrapTask(Callable<T> callable);
 
     /**
-     * Wraps a {@code Runnable} for submission to the underlying executor. The default implementation delegates to
-     * {@link #wrapTask(Callable)}.
+     * Wraps a {@code Runnable} for submission to the underlying executor.
      */
-    protected Runnable wrapTask(Runnable command) {
-        final Callable<Object> wrapped = wrapTask(Executors.callable(command, null));
-        return () -> {
-            try {
-                wrapped.call();
-            } catch (RuntimeException | Error e) {
-                throw e;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        };
-    }
+    protected abstract Runnable wrapTask(Runnable command);
 
     /**
      * Wraps a collection of tasks.
