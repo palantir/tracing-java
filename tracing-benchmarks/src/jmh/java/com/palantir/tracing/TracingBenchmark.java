@@ -45,7 +45,7 @@ import org.openjdk.jmh.runner.options.TimeValue;
 @Measurement(iterations = 3, time = 3, timeUnit = TimeUnit.SECONDS)
 @Fork(value = 1, jvmArgsAppend = "-Dlog4j2.garbagefreeThreadContextMap=true")
 @Threads(4)
-@SuppressWarnings({"checkstyle:hideutilityclassconstructor", "checkstyle:VisibilityModifier"})
+@SuppressWarnings({"checkstyle:VisibilityModifier", "checkstyle:hideutilityclassconstructor"})
 public class TracingBenchmark {
 
     private static final Runnable nestedSpans = createNestedSpan(100);
