@@ -188,7 +188,6 @@ class TracingDemos {
 
     @Test
     @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
-    @SuppressWarnings("CheckReturnValue")
     void transformed_future() throws InterruptedException {
         SettableFuture<Object> future = SettableFuture.create();
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(2);
