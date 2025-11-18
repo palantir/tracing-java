@@ -48,7 +48,7 @@ org.glassfish.jersey.core:jersey-common:3.0.6 (5 constraints: ae616db7)
 
 org.glassfish.jersey.core:jersey-server:3.0.6 (2 constraints: cd1e8a63)
 
-org.immutables:value:2.11.6 (2 constraints: 051577c2)
+org.immutables:value:2.11.7 (2 constraints: 0615a6c2)
 
 org.jboss.logging:jboss-logging:3.4.1.Final (3 constraints: f03036d7)
 
@@ -148,11 +148,11 @@ net.jcip:jcip-annotations:1.0 (1 constraints: 560ff165)
 
 org.apache-extras.beanshell:bsh:2.0b6 (1 constraints: ac07626b)
 
-org.apache.httpcomponents.client5:httpclient5:5.3.1 (1 constraints: 0b050e36)
+org.apache.httpcomponents.client5:httpclient5:5.5.1 (1 constraints: 0d051436)
 
-org.apache.httpcomponents.core5:httpcore5:5.2.4 (2 constraints: 98254d58)
+org.apache.httpcomponents.core5:httpcore5:5.3.6 (2 constraints: 9e25f658)
 
-org.apache.httpcomponents.core5:httpcore5-h2:5.2.4 (1 constraints: 3f130d3c)
+org.apache.httpcomponents.core5:httpcore5-h2:5.3.6 (1 constraints: 4213123c)
 
 org.apache.logging.log4j:log4j-api:2.24.0 (2 constraints: c01f6e63)
 
