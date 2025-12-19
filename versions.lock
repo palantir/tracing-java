@@ -148,7 +148,7 @@ net.jcip:jcip-annotations:1.0 (1 constraints: 560ff165)
 
 org.apache-extras.beanshell:bsh:2.0b6 (1 constraints: ac07626b)
 
-org.apache.httpcomponents.client5:httpclient5:5.5.1 (1 constraints: 0d051436)
+org.apache.httpcomponents.client5:httpclient5:5.5.2 (1 constraints: 0e051536)
 
 org.apache.httpcomponents.core5:httpcore5:5.3.6 (2 constraints: 9e25f658)
 
