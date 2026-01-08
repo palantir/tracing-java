@@ -1,6 +1,6 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.41.0 (9 constraints: 969668cb)
+com.google.errorprone:error_prone_annotations:2.41.0 (9 constraints: ca959ab9)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
@@ -10,15 +10,15 @@ com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 c
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.9.0 (4 constraints: c33d3aaf)
+com.palantir.safe-logging:logger:3.10.0 (4 constraints: eb3d0fed)
 
-com.palantir.safe-logging:logger-slf4j:3.9.0 (1 constraints: 070e6e42)
+com.palantir.safe-logging:logger-slf4j:3.10.0 (1 constraints: 2f0e8750)
 
-com.palantir.safe-logging:logger-spi:3.9.0 (2 constraints: 1d1e0c7c)
+com.palantir.safe-logging:logger-spi:3.10.0 (2 constraints: 6d1ed4af)
 
-com.palantir.safe-logging:preconditions:3.9.0 (9 constraints: 7f9196b7)
+com.palantir.safe-logging:preconditions:3.10.0 (9 constraints: f791874a)
 
-com.palantir.safe-logging:safe-logging:3.9.0 (10 constraints: d5a3cd47)
+com.palantir.safe-logging:safe-logging:3.10.0 (10 constraints: 9da4a419)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -116,13 +116,13 @@ com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.29.0 (1 c
 
 com.palantir.ri:resource-identifier:2.11.0 (1 constraints: 1c108da9)
 
-com.palantir.safe-logging:preconditions-assertj:3.9.0 (1 constraints: 3c05413b)
+com.palantir.safe-logging:preconditions-assertj:3.10.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:3.20.0 (1 constraints: 1d1094a9)
 
-com.palantir.tritium:tritium-ids:0.122.0 (1 constraints: fc0f93a6)
+com.palantir.tritium:tritium-ids:0.123.0 (1 constraints: fc0f93a6)
 
-com.palantir.tritium:tritium-registry:0.122.0 (1 constraints: ab1c3bc1)
+com.palantir.tritium:tritium-registry:0.123.0 (1 constraints: ab1c3bc1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
@@ -162,7 +162,7 @@ org.apache.logging.log4j:log4j-slf4j2-impl:2.24.0 (1 constraints: 3a053f3b)
 
 org.apiguardian:apiguardian-api:1.1.2 (6 constraints: 5366ce6e)
 
-org.assertj:assertj-core:3.27.6 (2 constraints: a719cee0)
+org.assertj:assertj-core:3.27.6 (2 constraints: aa19d1e0)
 
 org.eclipse.collections:eclipse-collections:13.0.0 (1 constraints: 1c1091a9)
 
