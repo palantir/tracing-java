@@ -10,15 +10,15 @@ com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 c
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.11.0 (4 constraints: 153ee51b)
+com.palantir.safe-logging:logger:3.12.0 (4 constraints: 163ee81b)
 
-com.palantir.safe-logging:logger-slf4j:3.11.0 (1 constraints: 300e8a50)
+com.palantir.safe-logging:logger-slf4j:3.12.0 (1 constraints: 310e8d50)
 
-com.palantir.safe-logging:logger-spi:3.11.0 (2 constraints: 6f1e0ab0)
+com.palantir.safe-logging:logger-spi:3.12.0 (2 constraints: 711e40b0)
 
-com.palantir.safe-logging:preconditions:3.11.0 (9 constraints: 4b92b2fd)
+com.palantir.safe-logging:preconditions:3.12.0 (9 constraints: 4e926bfe)
 
-com.palantir.safe-logging:safe-logging:3.11.0 (10 constraints: f3a483df)
+com.palantir.safe-logging:safe-logging:3.12.0 (10 constraints: f8a489e1)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -58,7 +58,7 @@ org.jboss.xnio:xnio-api:3.8.7.Final (2 constraints: 771a3146)
 
 org.jboss.xnio:xnio-nio:3.8.7.Final (1 constraints: c80dcb30)
 
-org.jetbrains:annotations:26.0.2 (2 constraints: 0221656e)
+org.jetbrains:annotations:26.1.0 (2 constraints: 0121666e)
 
 org.jspecify:jspecify:1.0.0 (10 constraints: 3a9555f5)
 
@@ -116,13 +116,13 @@ com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.31.0 (1 c
 
 com.palantir.ri:resource-identifier:2.12.0 (1 constraints: 1d1090a9)
 
-com.palantir.safe-logging:preconditions-assertj:3.11.0 (1 constraints: 3c05413b)
+com.palantir.safe-logging:preconditions-assertj:3.12.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:3.21.0 (1 constraints: 1e1097a9)
 
-com.palantir.tritium:tritium-ids:0.124.0 (1 constraints: f80f88a6)
+com.palantir.tritium:tritium-ids:0.125.0 (1 constraints: f80f88a6)
 
-com.palantir.tritium:tritium-registry:0.124.0 (1 constraints: ad1c41c1)
+com.palantir.tritium:tritium-registry:0.125.0 (1 constraints: ad1c41c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
@@ -162,7 +162,7 @@ org.apache.logging.log4j:log4j-slf4j2-impl:2.24.0 (1 constraints: 3a053f3b)
 
 org.apiguardian:apiguardian-api:1.1.2 (6 constraints: 5366ce6e)
 
-org.assertj:assertj-core:3.27.7 (2 constraints: ab190be1)
+org.assertj:assertj-core:3.27.7 (2 constraints: ac190ce1)
 
 org.eclipse.collections:eclipse-collections:13.0.0 (1 constraints: 1c1091a9)
 
