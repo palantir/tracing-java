@@ -1,6 +1,6 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.41.0 (9 constraints: ca959ab9)
+com.google.errorprone:error_prone_annotations:2.43.0 (9 constraints: cc95c2bb)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
@@ -10,15 +10,15 @@ com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 c
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.12.0 (4 constraints: 163ee81b)
+com.palantir.safe-logging:logger:3.12.0 (4 constraints: 403e9d52)
 
 com.palantir.safe-logging:logger-slf4j:3.12.0 (1 constraints: 310e8d50)
 
 com.palantir.safe-logging:logger-spi:3.12.0 (2 constraints: 711e40b0)
 
-com.palantir.safe-logging:preconditions:3.12.0 (9 constraints: 4e926bfe)
+com.palantir.safe-logging:preconditions:3.12.0 (9 constraints: cb92c747)
 
-com.palantir.safe-logging:safe-logging:3.12.0 (10 constraints: f8a489e1)
+com.palantir.safe-logging:safe-logging:3.12.0 (10 constraints: 4ca52fbb)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -80,49 +80,49 @@ ch.qos.logback:logback-classic:1.5.32 (1 constraints: 3d053f3b)
 
 ch.qos.logback:logback-core:1.5.32 (1 constraints: 3c0d442a)
 
-com.fasterxml.jackson.core:jackson-annotations:2.21 (10 constraints: e7b827f1)
+com.fasterxml.jackson.core:jackson-annotations:2.21 (10 constraints: eab85df2)
 
-com.fasterxml.jackson.core:jackson-core:2.21.0 (11 constraints: aefdffdb)
+com.fasterxml.jackson.core:jackson-core:2.21.1 (11 constraints: b8fdece9)
 
-com.fasterxml.jackson.core:jackson-databind:2.21.0 (14 constraints: 873bc80a)
+com.fasterxml.jackson.core:jackson-databind:2.21.1 (14 constraints: 913b5d1e)
 
-com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.21.0 (1 constraints: 7b1c97a4)
+com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.21.1 (1 constraints: 7c1c98a4)
 
-com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.21.0 (1 constraints: 7b1c97a4)
+com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.21.1 (1 constraints: 7c1c98a4)
 
-com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.0 (1 constraints: 3a05383b)
+com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.21.1 (1 constraints: 3a05383b)
 
-com.fasterxml.jackson.datatype:jackson-datatype-guava:2.21.0 (1 constraints: 7b1c97a4)
+com.fasterxml.jackson.datatype:jackson-datatype-guava:2.21.1 (1 constraints: 7c1c98a4)
 
-com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.21.0 (1 constraints: 7b1c97a4)
+com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.21.1 (1 constraints: 7c1c98a4)
 
-com.fasterxml.jackson.datatype:jackson-datatype-joda:2.21.0 (1 constraints: 7b1c97a4)
+com.fasterxml.jackson.datatype:jackson-datatype-joda:2.21.1 (1 constraints: 7c1c98a4)
 
-com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.0 (1 constraints: 7b1c97a4)
+com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.1 (1 constraints: 7c1c98a4)
 
-com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.21.0 (1 constraints: ef1514e9)
+com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.21.1 (1 constraints: ef1514e9)
 
 com.google.code.findbugs:annotations:3.0.1u2 (1 constraints: 450b07da)
 
 com.google.code.findbugs:jsr305:3.0.2 (4 constraints: b44881b5)
 
-com.palantir.conjure.java:conjure-lib:8.69.0 (1 constraints: 8d1ce3a4)
+com.palantir.conjure.java:conjure-lib:8.70.0 (1 constraints: 851ccca4)
 
-com.palantir.conjure.java.api:errors:2.68.0 (1 constraints: 2810b6a9)
+com.palantir.conjure.java.api:errors:2.69.0 (1 constraints: 2910b9a9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.31.0 (1 constraints: 821cbfa4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.32.0 (1 constraints: 831cc2a4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.31.0 (1 constraints: 3e055e3b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.32.0 (1 constraints: 3f05613b)
 
-com.palantir.ri:resource-identifier:2.12.0 (1 constraints: 1d1090a9)
+com.palantir.ri:resource-identifier:2.13.0 (1 constraints: 1e1093a9)
 
 com.palantir.safe-logging:preconditions-assertj:3.12.0 (1 constraints: 3c05413b)
 
-com.palantir.tokens:auth-tokens:3.21.0 (1 constraints: 1e1097a9)
+com.palantir.tokens:auth-tokens:3.22.0 (1 constraints: 1f109aa9)
 
-com.palantir.tritium:tritium-ids:0.125.0 (1 constraints: f80f88a6)
+com.palantir.tritium:tritium-ids:0.125.0 (1 constraints: fa0f8ea6)
 
-com.palantir.tritium:tritium-registry:0.125.0 (1 constraints: ad1c41c1)
+com.palantir.tritium:tritium-registry:0.125.0 (1 constraints: ae1c44c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
@@ -226,4 +226,4 @@ org.opentest4j:opentest4j:1.3.0 (2 constraints: cf209249)
 
 org.ow2.asm:asm:9.0 (2 constraints: 641531ca)
 
-org.yaml:snakeyaml:2.4 (1 constraints: 3e178d10)
+org.yaml:snakeyaml:2.5 (1 constraints: 3f178e10)
