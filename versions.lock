@@ -1,6 +1,6 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.43.0 (9 constraints: cc95c2bb)
+com.google.errorprone:error_prone_annotations:2.43.0 (9 constraints: ce95c8bb)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
@@ -10,15 +10,15 @@ com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 c
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.12.0 (4 constraints: 403e9d52)
+com.palantir.safe-logging:logger:3.13.0 (4 constraints: 413ea052)
 
-com.palantir.safe-logging:logger-slf4j:3.12.0 (1 constraints: 310e8d50)
+com.palantir.safe-logging:logger-slf4j:3.13.0 (1 constraints: 320e9050)
 
-com.palantir.safe-logging:logger-spi:3.12.0 (2 constraints: 711e40b0)
+com.palantir.safe-logging:logger-spi:3.13.0 (2 constraints: 731e76b0)
 
-com.palantir.safe-logging:preconditions:3.12.0 (9 constraints: cb92c747)
+com.palantir.safe-logging:preconditions:3.13.0 (9 constraints: ce928148)
 
-com.palantir.safe-logging:safe-logging:3.12.0 (10 constraints: 4ca52fbb)
+com.palantir.safe-logging:safe-logging:3.13.0 (10 constraints: 51a535bd)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -116,13 +116,13 @@ com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.32.0 (1 c
 
 com.palantir.ri:resource-identifier:2.13.0 (1 constraints: 1e1093a9)
 
-com.palantir.safe-logging:preconditions-assertj:3.12.0 (1 constraints: 3c05413b)
+com.palantir.safe-logging:preconditions-assertj:3.13.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:3.22.0 (1 constraints: 1f109aa9)
 
-com.palantir.tritium:tritium-ids:0.125.0 (1 constraints: fa0f8ea6)
+com.palantir.tritium:tritium-ids:0.126.0 (1 constraints: fa0f8ea6)
 
-com.palantir.tritium:tritium-registry:0.125.0 (1 constraints: ae1c44c1)
+com.palantir.tritium:tritium-registry:0.126.0 (1 constraints: ae1c44c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
