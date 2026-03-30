@@ -1,6 +1,6 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.43.0 (9 constraints: ce95c8bb)
+com.google.errorprone:error_prone_annotations:2.43.0 (9 constraints: d0958cbe)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
@@ -10,15 +10,15 @@ com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 c
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.13.0 (4 constraints: 413ea052)
+com.palantir.safe-logging:logger:3.13.0 (4 constraints: 433e2353)
 
 com.palantir.safe-logging:logger-slf4j:3.13.0 (1 constraints: 320e9050)
 
 com.palantir.safe-logging:logger-spi:3.13.0 (2 constraints: 731e76b0)
 
-com.palantir.safe-logging:preconditions:3.13.0 (9 constraints: ce928148)
+com.palantir.safe-logging:preconditions:3.13.0 (9 constraints: d4928d4e)
 
-com.palantir.safe-logging:safe-logging:3.13.0 (10 constraints: 51a535bd)
+com.palantir.safe-logging:safe-logging:3.13.0 (10 constraints: 56a5f3c3)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -58,9 +58,9 @@ org.jboss.xnio:xnio-api:3.8.7.Final (2 constraints: 771a3146)
 
 org.jboss.xnio:xnio-nio:3.8.7.Final (1 constraints: c80dcb30)
 
-org.jetbrains:annotations:26.1.0 (2 constraints: 0121666e)
+org.jetbrains:annotations:26.1.0 (2 constraints: 0021366e)
 
-org.jspecify:jspecify:1.0.0 (10 constraints: 3a9555f5)
+org.jspecify:jspecify:1.0.0 (11 constraints: 09a386f3)
 
 org.openjdk.jmh:jmh-core:1.37 (5 constraints: 52476be6)
 
@@ -82,9 +82,9 @@ ch.qos.logback:logback-core:1.5.32 (1 constraints: 3c0d442a)
 
 com.fasterxml.jackson.core:jackson-annotations:2.21 (10 constraints: eab85df2)
 
-com.fasterxml.jackson.core:jackson-core:2.21.1 (11 constraints: b8fdece9)
+com.fasterxml.jackson.core:jackson-core:2.21.1 (11 constraints: b9fd3bea)
 
-com.fasterxml.jackson.core:jackson-databind:2.21.1 (14 constraints: 913b5d1e)
+com.fasterxml.jackson.core:jackson-databind:2.21.1 (14 constraints: 943bd220)
 
 com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.21.1 (1 constraints: 7c1c98a4)
 
@@ -106,23 +106,23 @@ com.google.code.findbugs:annotations:3.0.1u2 (1 constraints: 450b07da)
 
 com.google.code.findbugs:jsr305:3.0.2 (4 constraints: b44881b5)
 
-com.palantir.conjure.java:conjure-lib:8.70.0 (1 constraints: 851ccca4)
+com.palantir.conjure.java:conjure-lib:8.75.0 (1 constraints: 8a1cdba4)
 
-com.palantir.conjure.java.api:errors:2.69.0 (1 constraints: 2910b9a9)
+com.palantir.conjure.java.api:errors:2.70.0 (1 constraints: 2110a2a9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.32.0 (1 constraints: 831cc2a4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.33.0 (1 constraints: 841cc5a4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.32.0 (1 constraints: 3f05613b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.33.0 (1 constraints: 4005643b)
 
-com.palantir.ri:resource-identifier:2.13.0 (1 constraints: 1e1093a9)
+com.palantir.ri:resource-identifier:2.14.0 (1 constraints: 1f1096a9)
 
 com.palantir.safe-logging:preconditions-assertj:3.13.0 (1 constraints: 3c05413b)
 
-com.palantir.tokens:auth-tokens:3.22.0 (1 constraints: 1f109aa9)
+com.palantir.tokens:auth-tokens:4.2.0 (1 constraints: ee0f7a99)
 
-com.palantir.tritium:tritium-ids:0.126.0 (1 constraints: fa0f8ea6)
+com.palantir.tritium:tritium-ids:0.126.0 (1 constraints: fb0f91a6)
 
-com.palantir.tritium:tritium-registry:0.126.0 (1 constraints: ae1c44c1)
+com.palantir.tritium:tritium-registry:0.126.0 (1 constraints: af1c47c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
