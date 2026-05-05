@@ -120,9 +120,9 @@ com.palantir.safe-logging:preconditions-assertj:3.14.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:4.3.0 (1 constraints: ef0f7d99)
 
-com.palantir.tritium:tritium-ids:0.127.0 (1 constraints: fc0f94a6)
+com.palantir.tritium:tritium-ids:0.128.0 (1 constraints: fc0f94a6)
 
-com.palantir.tritium:tritium-registry:0.127.0 (1 constraints: af1c47c1)
+com.palantir.tritium:tritium-registry:0.128.0 (1 constraints: af1c47c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
