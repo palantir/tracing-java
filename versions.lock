@@ -120,15 +120,15 @@ com.palantir.safe-logging:preconditions-assertj:3.15.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:4.4.0 (1 constraints: f00f8099)
 
-com.palantir.tritium:tritium-ids:0.130.0 (1 constraints: fd0f97a6)
+com.palantir.tritium:tritium-ids:0.131.0 (1 constraints: fd0f97a6)
 
-com.palantir.tritium:tritium-registry:0.130.0 (1 constraints: aa1c39c1)
+com.palantir.tritium:tritium-registry:0.131.0 (1 constraints: aa1c39c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
 com.sun.activation:jakarta.activation:2.0.1 (1 constraints: 8c0f4591)
 
-io.dropwizard.metrics:metrics-core:4.2.38 (2 constraints: 512df897)
+io.dropwizard.metrics:metrics-core:4.2.39 (2 constraints: 522df997)
 
 io.undertow:undertow-servlet-jakarta:2.2.18.Final (1 constraints: 57074361)
 
