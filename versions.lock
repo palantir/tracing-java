@@ -110,9 +110,9 @@ com.palantir.conjure.java:conjure-lib:8.78.0 (1 constraints: 8d1ce4a4)
 
 com.palantir.conjure.java.api:errors:2.72.0 (1 constraints: 2310a8a9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.35.0 (1 constraints: 861ccba4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.36.0 (1 constraints: 871ccea4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.35.0 (1 constraints: 42056a3b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.36.0 (1 constraints: 43056d3b)
 
 com.palantir.ri:resource-identifier:2.17.0 (1 constraints: 22109fa9)
 
@@ -122,13 +122,13 @@ com.palantir.tokens:auth-tokens:4.4.0 (1 constraints: f00f8099)
 
 com.palantir.tritium:tritium-ids:0.131.0 (1 constraints: fd0f97a6)
 
-com.palantir.tritium:tritium-registry:0.131.0 (1 constraints: aa1c39c1)
+com.palantir.tritium:tritium-registry:0.131.0 (1 constraints: ab1c3cc1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
 com.sun.activation:jakarta.activation:2.0.1 (1 constraints: 8c0f4591)
 
-io.dropwizard.metrics:metrics-core:4.2.39 (2 constraints: 522df997)
+io.dropwizard.metrics:metrics-core:4.2.39 (2 constraints: 532d2998)
 
 io.undertow:undertow-servlet-jakarta:2.2.18.Final (1 constraints: 57074361)
 
