@@ -10,15 +10,15 @@ com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 c
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.16.0 (4 constraints: 4b3eb254)
+com.palantir.safe-logging:logger:3.16.0 (4 constraints: 4c3eb554)
 
 com.palantir.safe-logging:logger-slf4j:3.16.0 (1 constraints: 350e9950)
 
 com.palantir.safe-logging:logger-spi:3.16.0 (2 constraints: 791e18b1)
 
-com.palantir.safe-logging:preconditions:3.16.0 (9 constraints: ea92755e)
+com.palantir.safe-logging:preconditions:3.16.0 (9 constraints: ec92aa5e)
 
-com.palantir.safe-logging:safe-logging:3.16.0 (10 constraints: 70a565d9)
+com.palantir.safe-logging:safe-logging:3.16.0 (10 constraints: 71a568d9)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -120,9 +120,9 @@ com.palantir.safe-logging:preconditions-assertj:3.16.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:4.5.0 (1 constraints: f10f8399)
 
-com.palantir.tritium:tritium-ids:0.131.0 (1 constraints: fe0f9aa6)
+com.palantir.tritium:tritium-ids:0.133.0 (1 constraints: fe0f9aa6)
 
-com.palantir.tritium:tritium-registry:0.131.0 (1 constraints: ab1c3cc1)
+com.palantir.tritium:tritium-registry:0.133.0 (1 constraints: ab1c3cc1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
