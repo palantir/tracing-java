@@ -80,7 +80,7 @@ ch.qos.logback:logback-classic:1.5.32 (1 constraints: 3d053f3b)
 
 ch.qos.logback:logback-core:1.5.32 (1 constraints: 3c0d442a)
 
-com.fasterxml.jackson.core:jackson-annotations:2.21 (11 constraints: 06d54104)
+com.fasterxml.jackson.core:jackson-annotations:2.22 (11 constraints: 07d58406)
 
 com.fasterxml.jackson.core:jackson-core:2.21.4 (11 constraints: dafdf814)
 
