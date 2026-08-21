@@ -697,6 +697,7 @@ public final class Tracer {
      * The inverse of {@link #subscribe}: removes the observer registered for the given name. Returns the removed
      * observer if it existed, or null otherwise.
      */
+    @SuppressWarnings("for-rollout:NullAway")
     public static synchronized SpanObserver unsubscribe(String name) {
         SpanObserver removedObserver = observers.remove(name);
         computeObserversList();
