@@ -1,24 +1,24 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.49.0 (9 constraints: e895c8d6)
+com.google.errorprone:error_prone_annotations:2.50.0 (9 constraints: da954ccd)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
-com.google.guava:guava:33.6.0-jre (5 constraints: 135ea543)
+com.google.guava:guava:33.7.1-jre (5 constraints: 175e2344)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.17.0 (4 constraints: 4f3e3b55)
+com.palantir.safe-logging:logger:3.18.0 (4 constraints: 503e3e55)
 
-com.palantir.safe-logging:logger-slf4j:3.17.0 (1 constraints: 360e9c50)
+com.palantir.safe-logging:logger-slf4j:3.18.0 (1 constraints: 370e9f50)
 
-com.palantir.safe-logging:logger-spi:3.17.0 (2 constraints: 7b1e4eb1)
+com.palantir.safe-logging:logger-spi:3.18.0 (2 constraints: 7d1e84b1)
 
-com.palantir.safe-logging:preconditions:3.17.0 (9 constraints: f6920066)
+com.palantir.safe-logging:preconditions:3.18.0 (9 constraints: f992ba66)
 
-com.palantir.safe-logging:safe-logging:3.17.0 (10 constraints: 7ca5f2e2)
+com.palantir.safe-logging:safe-logging:3.18.0 (10 constraints: 81a5f8e4)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -60,7 +60,7 @@ org.jboss.xnio:xnio-nio:3.8.7.Final (1 constraints: c80dcb30)
 
 org.jetbrains:annotations:26.1.0 (2 constraints: 0021366e)
 
-org.jspecify:jspecify:1.0.0 (11 constraints: 09a386f3)
+org.jspecify:jspecify:1.0.1 (11 constraints: 0ba34af6)
 
 org.openjdk.jmh:jmh-core:1.37 (5 constraints: 52476be6)
 
@@ -116,13 +116,13 @@ com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.40.0 (1 c
 
 com.palantir.ri:resource-identifier:2.20.0 (1 constraints: 1c108ea9)
 
-com.palantir.safe-logging:preconditions-assertj:3.17.0 (1 constraints: 3c05413b)
+com.palantir.safe-logging:preconditions-assertj:3.18.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:4.7.0 (1 constraints: f30f8999)
 
-com.palantir.tritium:tritium-ids:0.136.0 (1 constraints: fe0f9aa6)
+com.palantir.tritium:tritium-ids:0.137.0 (1 constraints: fe0f9aa6)
 
-com.palantir.tritium:tritium-registry:0.136.0 (1 constraints: af1c48c1)
+com.palantir.tritium:tritium-registry:0.137.0 (1 constraints: af1c48c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
