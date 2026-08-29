@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Tracing no longer depends on afterburner
-  links:
-  - https://github.com/palantir/tracing-java/pull/746

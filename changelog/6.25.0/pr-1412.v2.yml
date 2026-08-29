@@ -1,5 +1,0 @@
-type: fix
-fix:
-  description: '`./gradlew jmh` works'
-  links:
-  - https://github.com/palantir/tracing-java/pull/1412

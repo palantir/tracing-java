@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Jersey tracing uses standardized tags
-  links:
-  - https://github.com/palantir/tracing-java/pull/723

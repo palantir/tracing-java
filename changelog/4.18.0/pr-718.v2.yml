@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Tracer gracefully handles null tags. Not a problem, but will be helpful once we start adding more standard http tags from nullable sources.
-  links:
-  - https://github.com/palantir/tracing-java/pull/718

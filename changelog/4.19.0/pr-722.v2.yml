@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Redact the HTTP_URL_HOST constant for now
-  links:
-  - https://github.com/palantir/tracing-java/pull/722
