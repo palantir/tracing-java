@@ -1,7 +1,0 @@
-type: fix
-fix:
-  description: Fix issue with test tracing snapshot accumulating spans in parameterized
-    testing context. Existing parameterized tests will fail due to extra entries in
-    the expected spans that were wrongly added previously.
-  links:
-  - https://github.com/palantir/tracing-java/pull/1406

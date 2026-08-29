@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Undertow tracing supports configurable root request spans
-  links:
-  - https://github.com/palantir/tracing-java/pull/725

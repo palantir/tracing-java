@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: add a Parent-Request-Id header
-  links:
-  - https://github.com/palantir/tracing-java/pull/1365

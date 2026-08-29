@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Remove unnecessary debug logging
-  links:
-  - https://github.com/palantir/tracing-java/pull/1413

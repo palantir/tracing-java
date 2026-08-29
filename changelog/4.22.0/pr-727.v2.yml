@@ -1,5 +1,0 @@
-type: improvement
-improvement:
-  description: Add @Safe annotations to tracer APIs
-  links:
-  - https://github.com/palantir/tracing-java/pull/727
