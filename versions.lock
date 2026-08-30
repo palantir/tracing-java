@@ -1,24 +1,24 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.50.0 (9 constraints: da954ccd)
+com.google.errorprone:error_prone_annotations:2.50.0 (9 constraints: d295adc4)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
-com.google.guava:guava:33.7.1-jre (5 constraints: 175e2344)
+com.google.guava:guava:33.7.1-jre (5 constraints: 185e8b44)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
 com.google.j2objc:j2objc-annotations:3.1 (1 constraints: b809f1a0)
 
-com.palantir.safe-logging:logger:3.18.0 (4 constraints: 503e3e55)
+com.palantir.safe-logging:logger:3.18.0 (4 constraints: 513e9455)
 
 com.palantir.safe-logging:logger-slf4j:3.18.0 (1 constraints: 370e9f50)
 
 com.palantir.safe-logging:logger-spi:3.18.0 (2 constraints: 7d1e84b1)
 
-com.palantir.safe-logging:preconditions:3.18.0 (9 constraints: f992ba66)
+com.palantir.safe-logging:preconditions:3.18.0 (9 constraints: fa92a567)
 
-com.palantir.safe-logging:safe-logging:3.18.0 (10 constraints: 81a5f8e4)
+com.palantir.safe-logging:safe-logging:3.18.0 (10 constraints: 82a519e6)
 
 com.squareup.okhttp3:okhttp:3.9.0 (1 constraints: 0e051536)
 
@@ -110,9 +110,9 @@ com.palantir.conjure.java:conjure-lib:8.84.0 (1 constraints: 8a1cdca4)
 
 com.palantir.conjure.java.api:errors:2.76.0 (1 constraints: 2710b4a9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.40.0 (1 constraints: 821cc0a4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.41.0 (1 constraints: 831cc3a4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.40.0 (1 constraints: 3e055f3b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.41.0 (1 constraints: 3f05623b)
 
 com.palantir.ri:resource-identifier:2.20.0 (1 constraints: 1c108ea9)
 
@@ -122,7 +122,7 @@ com.palantir.tokens:auth-tokens:4.7.0 (1 constraints: f30f8999)
 
 com.palantir.tritium:tritium-ids:0.137.0 (1 constraints: fe0f9aa6)
 
-com.palantir.tritium:tritium-registry:0.137.0 (1 constraints: af1c48c1)
+com.palantir.tritium:tritium-registry:0.137.0 (1 constraints: b01c4bc1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
