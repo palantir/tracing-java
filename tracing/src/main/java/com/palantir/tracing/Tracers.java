@@ -270,10 +270,12 @@ public final class Tracers {
             return;
         }
         TraceMetadata traceMetadata = maybeTraceMetadata.get();
+        boolean isTraceObservable = Tracer.isTraceObservable();
+        tracingHeadersEnrichingFunction.addHeader(
+                "traceparent", traceParentHeader(traceMetadata, isTraceObservable), state);
         tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.TRACE_ID, traceMetadata.getTraceId(), state);
         tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.SPAN_ID, traceMetadata.getSpanId(), state);
-        tracingHeadersEnrichingFunction.addHeader(
-                TraceHttpHeaders.IS_SAMPLED, Tracer.isTraceObservable() ? "1" : "0", state);
+        tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.IS_SAMPLED, isTraceObservable ? "1" : "0", state);
         Optional<String> forUserAgent = Tracer.getForUserAgent();
         if (forUserAgent.isPresent()) {
             tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.FOR_USER_AGENT, forUserAgent.get(), state);
@@ -282,6 +284,12 @@ public final class Tracers {
         if (requestId.isPresent()) {
             tracingHeadersEnrichingFunction.addHeader(TraceHttpHeaders.PARENT_REQUEST_ID, requestId.get(), state);
         }
+    }
+
+    // This function assumes that the trace ID and span ID were generated with Tracers.randomId().
+    private static final String traceParentHeader(TraceMetadata traceMetadata, boolean isTraceObservable) {
+        return "00-00000000" + traceMetadata.getTraceId() + "-" + traceMetadata.getSpanId()
+                + (Tracer.isTraceObservable() ? "-01" : "-00");
     }
 
     private static final class ListenableFutureSpanListener implements Runnable {
