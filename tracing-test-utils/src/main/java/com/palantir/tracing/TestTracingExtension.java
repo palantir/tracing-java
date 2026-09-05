@@ -54,7 +54,6 @@ final class TestTracingExtension implements BeforeTestExecutionCallback, AfterTe
         // TODO(forozco): cleanup stale snapshots from outdated tests cases/classes
     }
 
-    @SuppressWarnings("for-rollout:StringConcatToTextBlock")
     @Override
     public void afterTestExecution(ExtensionContext context) throws Exception {
         String name = testName(context);

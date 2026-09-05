@@ -90,7 +90,6 @@ public abstract class OpenSpan {
      *
      * @deprecated Use the variant without an originating span id
      */
-    @SuppressWarnings("InlineMeSuggester")
     @Deprecated
     public static OpenSpan of(
             String operation,

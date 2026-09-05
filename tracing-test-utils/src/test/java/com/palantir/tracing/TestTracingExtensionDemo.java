@@ -78,7 +78,6 @@ public final class TestTracingExtensionDemo {
 
     @Test
     @TestTracing(snapshot = true, layout = LayoutStrategy.SPLIT_BY_TRACE)
-    @SuppressWarnings("FutureReturnValueIgnored")
     void handles_async_spans() throws Exception {
         int numThreads = 2;
         int numTasks = 4;
