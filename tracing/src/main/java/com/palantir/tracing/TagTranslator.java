@@ -51,7 +51,7 @@ public interface TagTranslator<S> {
      * required to implement. It is always safe to return {@code false} even if
      * {@link #translate(TagAdapter, Object, Object)} may not produce any tags.
      */
-    default boolean isEmpty(@SuppressWarnings("unused") S data) {
+    default boolean isEmpty(S data) {
         return false;
     }
 

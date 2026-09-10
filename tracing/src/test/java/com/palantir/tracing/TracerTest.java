@@ -76,7 +76,7 @@ public final class TracerTest {
     }
 
     @Test
-    @SuppressWarnings("ResultOfMethodCallIgnored") // testing that exceptions are thrown
+    // testing that exceptions are thrown
     public void testIdsMustBeNonNullAndNotEmpty() throws Exception {
         assertThatLoggableExceptionThrownBy(
                         () -> Tracer.initTraceWithSpan(Observability.UNDECIDED, null, "op", SpanType.LOCAL))
