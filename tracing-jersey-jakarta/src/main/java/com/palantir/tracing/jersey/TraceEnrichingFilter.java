@@ -67,9 +67,8 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
     // Handles incoming request
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        String path = getPathTemplate();
+        String operation = "Jersey: " + requestContext.getMethod() + " " + getPathTemplate();
 
-        String operation = "Jersey: " + requestContext.getMethod() + " " + path;
         // The following strings are all nullable
         String traceId = requestContext.getHeaderString(TraceHttpHeaders.TRACE_ID);
         String spanId = requestContext.getHeaderString(TraceHttpHeaders.SPAN_ID);
@@ -161,8 +160,17 @@ public final class TraceEnrichingFilter implements ContainerRequestFilter, Conta
 
     private String getPathTemplate() {
         return Optional.ofNullable(uriInfo)
-                .map(ExtendedUriInfo::getMatchedModelResource)
-                .map(Resource::getPath)
+                .map(info -> {
+                    Resource resource = info.getMatchedModelResource();
+                    if (resource == null) {
+                        return null;
+                    }
+
+                    String resourcePath = resource.getPath();
+
+                    return info.getBaseUri().getPath()
+                            + (resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath);
+                })
                 .orElse("(unknown)");
     }
 

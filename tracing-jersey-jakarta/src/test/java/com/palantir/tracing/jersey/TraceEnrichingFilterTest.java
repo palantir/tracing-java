@@ -93,7 +93,7 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withHeaderUsesTraceId() {
-        HttpGet get = new HttpGet("/trace");
+        HttpGet get = new HttpGet("/context/jersey/trace");
         get.addHeader(TraceHttpHeaders.TRACE_ID, "traceId");
         get.addHeader(TraceHttpHeaders.SPAN_ID, "spanId");
         undertow.runRequest(get, response -> {
@@ -101,13 +101,13 @@ public final class TraceEnrichingFilterTest {
                     .isEqualTo("traceId");
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
-            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace");
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /context/jersey/trace");
         });
     }
 
     @Test
     public void testTraceState_respectsMethod() {
-        HttpPost post = new HttpPost("/trace");
+        HttpPost post = new HttpPost("/context/jersey/trace");
         post.addHeader(TraceHttpHeaders.TRACE_ID, "traceId");
         post.addHeader(TraceHttpHeaders.SPAN_ID, "spanId");
         post.setEntity(new StringEntity("{}", ContentType.APPLICATION_JSON));
@@ -116,13 +116,13 @@ public final class TraceEnrichingFilterTest {
                     .isEqualTo("traceId");
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
-            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: POST /trace");
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: POST /context/jersey/trace");
         });
     }
 
     @Test
     public void testTraceState_doesNotIncludePathParams() {
-        HttpGet get = new HttpGet("/trace/no");
+        HttpGet get = new HttpGet("/context/jersey/trace/no");
         get.addHeader(TraceHttpHeaders.TRACE_ID, "traceId");
         get.addHeader(TraceHttpHeaders.SPAN_ID, "spanId");
         undertow.runRequest(get, response -> {
@@ -130,18 +130,18 @@ public final class TraceEnrichingFilterTest {
                     .isEqualTo("traceId");
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
-            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace/{param}");
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /context/jersey/trace/{param}");
         });
     }
 
     @Test
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeaders() {
-        undertow.runRequest(new HttpGet("/trace"), response -> {
+        undertow.runRequest(new HttpGet("/context/jersey/trace"), response -> {
             assertThat(response.getFirstHeader(TraceHttpHeaders.TRACE_ID)).isNotNull();
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
             Span span = spanCaptor.getValue();
-            assertThat(span.getOperation()).isEqualTo("Jersey: GET /trace");
+            assertThat(span.getOperation()).isEqualTo("Jersey: GET /context/jersey/trace");
             assertThat(span.getMetadata())
                     .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getCode()));
         });
@@ -149,12 +149,12 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_setsResponseStatus() {
-        undertow.runRequest(new HttpPost("/trace"), response -> {
+        undertow.runRequest(new HttpPost("/context/jersey/trace"), response -> {
             assertThat(response.getFirstHeader(TraceHttpHeaders.TRACE_ID)).isNotNull();
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
             Span span = spanCaptor.getValue();
-            assertThat(span.getOperation()).isEqualTo("Jersey: POST /trace");
+            assertThat(span.getOperation()).isEqualTo("Jersey: POST /context/jersey/trace");
             assertThat(span.getMetadata())
                     .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getCode()))
                     .containsEntry(TraceTags.HTTP_URL_PATH_TEMPLATE, "/trace")
@@ -165,12 +165,12 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenFailing() {
-        undertow.runRequest(new HttpGet("/failing-trace"), response -> {
+        undertow.runRequest(new HttpGet("/context/jersey/failing-trace"), response -> {
             assertThat(response.getFirstHeader(TraceHttpHeaders.TRACE_ID)).isNotNull();
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
             Span span = spanCaptor.getValue();
-            assertThat(span.getOperation()).isEqualTo("Jersey: GET /failing-trace");
+            assertThat(span.getOperation()).isEqualTo("Jersey: GET /context/jersey/failing-trace");
             assertThat(span.getMetadata())
                     .containsEntry(TraceTags.HTTP_STATUS_CODE, Integer.toString(response.getCode()));
         });
@@ -178,30 +178,31 @@ public final class TraceEnrichingFilterTest {
 
     @Test
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenStreaming() {
-        undertow.runRequest(new HttpGet("/streaming-trace"), response -> {
+        undertow.runRequest(new HttpGet("/context/jersey/streaming-trace"), response -> {
             assertThat(response.getFirstHeader(TraceHttpHeaders.TRACE_ID)).isNotNull();
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
-            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /streaming-trace");
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /context/jersey/streaming-trace");
         });
     }
 
     @Test
     public void testTraceState_withoutRequestHeadersGeneratesValidTraceResponseHeadersWhenFailingToStream() {
-        undertow.runRequest(new HttpGet("/failing-streaming-trace"), response -> {
+        undertow.runRequest(new HttpGet("/context/jersey/failing-streaming-trace"), response -> {
             assertThat(response.getFirstHeader(TraceHttpHeaders.TRACE_ID)).isNotNull();
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
-            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /failing-streaming-trace");
+            assertThat(spanCaptor.getValue().getOperation())
+                    .isEqualTo("Jersey: GET /context/jersey/failing-streaming-trace");
         });
     }
 
     @Test
     public void testTraceState_withSamplingHeaderWithoutTraceIdDoesNotUseTraceSampler() {
-        HttpGet notSampled = new HttpGet("/trace");
+        HttpGet notSampled = new HttpGet("/context/jersey/trace");
         notSampled.setHeader(TraceHttpHeaders.IS_SAMPLED, "0");
 
-        HttpGet sampled = new HttpGet("/trace");
+        HttpGet sampled = new HttpGet("/context/jersey/trace");
         sampled.setHeader(TraceHttpHeaders.IS_SAMPLED, "1");
         undertow.runRequest(notSampled, _response -> {
             verify(traceSampler, never()).sample();
@@ -211,20 +212,20 @@ public final class TraceEnrichingFilterTest {
             verify(traceSampler, never()).sample();
         });
 
-        undertow.runRequest(new HttpGet("/trace"), _response -> {
+        undertow.runRequest(new HttpGet("/context/jersey/trace"), _response -> {
             verify(traceSampler, times(1)).sample();
         });
     }
 
     @Test
     public void testTraceState_withEmptyTraceIdGeneratesValidTraceResponseHeaders() {
-        HttpGet get = new HttpGet("/trace");
+        HttpGet get = new HttpGet("/context/jersey/trace");
         get.addHeader(TraceHttpHeaders.TRACE_ID, "");
         undertow.runRequest(get, response -> {
             assertThat(response.getFirstHeader(TraceHttpHeaders.TRACE_ID)).isNotNull();
             assertThat(response.getFirstHeader(TraceHttpHeaders.SPAN_ID)).isNull();
             verify(observer).consume(spanCaptor.capture());
-            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /trace");
+            assertThat(spanCaptor.getValue().getOperation()).isEqualTo("Jersey: GET /context/jersey/trace");
         });
     }
 

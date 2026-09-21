@@ -45,7 +45,7 @@ public class LeakedTraceFilterTest {
 
     @Test
     public void testFilter_noLeaks() throws IOException {
-        undertow.runRequest(new HttpGet("/standard"), response -> {
+        undertow.runRequest(new HttpGet("/context/standard"), response -> {
             assertThat(response.getCode()).isBetween(200, 299);
             assertThat(response.getFirstHeader("Servlet-Has-Trace").getValue()).isEqualTo("false");
             assertThat(response.getFirstHeader("Pre-Leak").getValue()).isEqualTo("false");
@@ -55,7 +55,7 @@ public class LeakedTraceFilterTest {
 
     @Test
     public void testFilter_previousRequestLeaked() throws IOException {
-        undertow.runRequest(new HttpGet("/previous-request-leaked"), response -> {
+        undertow.runRequest(new HttpGet("/context/previous-request-leaked"), response -> {
             assertThat(response.getCode()).isBetween(200, 299);
             assertThat(response.getFirstHeader("Pre-Leak").getValue()).isEqualTo("true");
             // But the leaked trace filter fixes thread state prior to allowing our servlet to execute
@@ -66,7 +66,7 @@ public class LeakedTraceFilterTest {
 
     @Test
     public void testFilter_aroundLeakyOperation() throws IOException {
-        undertow.runRequest(new HttpGet("/leaky"), response -> {
+        undertow.runRequest(new HttpGet("/context/leaky"), response -> {
             assertThat(response.getCode()).isBetween(200, 299);
             assertThat(response.getFirstHeader("Pre-Leak").getValue()).isEqualTo("false");
             // Validate the test executed the leaky servlet

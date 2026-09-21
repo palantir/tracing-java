@@ -96,7 +96,7 @@ public final class UndertowServerExtension implements BeforeAllCallback, AfterAl
     public void beforeAll(ExtensionContext _context) throws ServletException {
         DeploymentInfo servletBuilder = Servlets.deployment()
                 .setDeploymentName("test")
-                .setContextPath("/")
+                .setContextPath("/context")
                 .setClassLoader(UndertowServerExtension.class.getClassLoader());
 
         servletBuilder.addServlets(servlets);
@@ -118,7 +118,7 @@ public final class UndertowServerExtension implements BeforeAllCallback, AfterAl
                             "jersey",
                             ServletContainer.class,
                             new ImmediateInstanceFactory<>(new ServletContainer(jerseyConfig)))
-                    .addMapping("/*"));
+                    .addMapping("/jersey/*"));
         }
 
         DeploymentManager manager = Servlets.defaultContainer().addDeployment(servletBuilder);
@@ -126,7 +126,7 @@ public final class UndertowServerExtension implements BeforeAllCallback, AfterAl
 
         server = Undertow.builder()
                 .addHttpListener(0, "0.0.0.0")
-                .setHandler(Handlers.path().addPrefixPath("/", manager.start()))
+                .setHandler(Handlers.path().addPrefixPath("/context", manager.start()))
                 .build();
         server.start();
 
