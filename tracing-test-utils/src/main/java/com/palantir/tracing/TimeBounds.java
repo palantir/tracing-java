@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 interface TimeBounds extends Comparable<TimeBounds> {
 
+    @SuppressWarnings("for-rollout:BoxingComparator")
     Comparator<TimeBounds> COMPARATOR =
             Comparator.comparingLong(TimeBounds::startMicros).thenComparing(TimeBounds::endNanos);
 

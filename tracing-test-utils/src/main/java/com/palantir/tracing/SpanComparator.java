@@ -21,6 +21,7 @@ import java.util.Comparator;
 
 final class SpanComparator {
 
+    @SuppressWarnings("for-rollout:BoxingComparator")
     public static final Comparator<Span> INSTANCE = Comparator.comparing(Span::getStartTimeMicroSeconds)
             .thenComparing(Span::getDurationNanoSeconds)
             .thenComparing(Span::getOperation);
