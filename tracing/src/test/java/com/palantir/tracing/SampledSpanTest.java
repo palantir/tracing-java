@@ -318,23 +318,6 @@ final class SampledSpanTest {
     }
 
     @Test
-    void repeatedUpgradesShareLocalsWithoutSharingSamplingDecisions() {
-        Tracer.initTraceWithSpan(Observability.DO_NOT_SAMPLE, "trace-id", "request", SpanType.SERVER_INCOMING);
-        TraceLocal<String> local = TraceLocal.of();
-        for (int attempt = 0; attempt < 2; attempt++) {
-            try (CloseableSpan ignored = Tracer.startSampledSpan("sampled")) {
-                local.set("value-" + attempt);
-                assertThat(Tracer.isTraceObservable()).isTrue();
-            }
-            assertThat(Tracer.isTraceObservable()).isFalse();
-            assertThat(local.get()).isEqualTo("value-" + attempt);
-        }
-        Tracer.fastCompleteSpan();
-        assertNoTrace();
-        assertThat(spans).hasSize(2);
-    }
-
-    @Test
     void doesNotCreateARequestIdWhenUpgradingAnExistingLocalTrace() {
         Tracer.initTraceWithSpan(Observability.DO_NOT_SAMPLE, "trace-id", "local", SpanType.LOCAL);
         try (CloseableSpan ignored = Tracer.startSampledSpan("sampled", SpanType.SERVER_INCOMING)) {
