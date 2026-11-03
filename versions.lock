@@ -1,10 +1,10 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.50.0 (9 constraints: ca959eb9)
+com.google.errorprone:error_prone_annotations:2.52.0 (9 constraints: ce95c6bc)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
-com.google.guava:guava:33.7.2-jre (5 constraints: 1c5e9445)
+com.google.guava:guava:33.8.0-jre (5 constraints: 1a5e5b45)
 
 com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava (1 constraints: bd17c918)
 
@@ -120,9 +120,9 @@ com.palantir.safe-logging:preconditions-assertj:3.21.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:4.13.0 (1 constraints: 20109fa9)
 
-com.palantir.tritium:tritium-ids:0.140.0 (1 constraints: fe0f9aa6)
+com.palantir.tritium:tritium-ids:0.141.0 (1 constraints: fe0f9aa6)
 
-com.palantir.tritium:tritium-registry:0.140.0 (1 constraints: ab1c3dc1)
+com.palantir.tritium:tritium-registry:0.141.0 (1 constraints: ab1c3dc1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
