@@ -66,7 +66,7 @@ org.openjdk.jmh:jmh-core:1.37 (5 constraints: 4645b83e)
 
 org.openjdk.jmh:jmh-generator-annprocess:1.37 (1 constraints: df04fc30)
 
-org.slf4j:slf4j-api:2.0.17 (8 constraints: 5275a5a3)
+org.slf4j:slf4j-api:2.0.19 (8 constraints: 5475e5a5)
 
 org.wildfly.client:wildfly-client-config:1.0.1.Final (1 constraints: 940c6308)
 
@@ -76,9 +76,9 @@ org.wildfly.common:wildfly-common:1.5.4.Final (2 constraints: 741cfbf1)
 
 [Test dependencies]
 
-ch.qos.logback:logback-classic:1.5.32 (1 constraints: 3d053f3b)
+ch.qos.logback:logback-classic:1.6.6 (1 constraints: 0f050836)
 
-ch.qos.logback:logback-core:1.5.32 (1 constraints: 3c0d442a)
+ch.qos.logback:logback-core:1.6.6 (1 constraints: 0e0d0e1d)
 
 com.fasterxml.jackson.core:jackson-annotations:2.22 (11 constraints: 10d57410)
 
