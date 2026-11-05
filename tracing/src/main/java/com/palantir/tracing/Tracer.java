@@ -231,6 +231,48 @@ public final class Tracer {
     }
 
     /**
+     * Starts a sampled {@link SpanType#LOCAL LOCAL} span, preserving the current trace's context.
+     * See {@link #startSampledSpan(String, SpanType)} for sampling and scope semantics.
+     */
+    @MustBeClosed
+    public static CloseableSpan startSampledSpan(@Safe String operation) {
+        return startSampledSpan(operation, SpanType.LOCAL);
+    }
+
+    /**
+     * Starts a sampled span on the current thread, regardless of the configured sampler. The returned scope must be
+     * closed on the same thread, in reverse order of creation, after its child spans have completed.
+     *
+     * <p>If the current trace is sampled, this starts an ordinary child span. Otherwise it starts a sampled scope
+     * preserving the trace ID, request ID, user agent, and shared {@link TraceLocal} values. Closing the scope restores
+     * the original trace and sampling decision without discarding its open spans. Unsampled spans cannot be recovered:
+     * the new sampled span has no parent when upgrading an unsampled trace, and only work started in the sampled scope
+     * is recorded.
+     *
+     * <p>Previously detached contexts retain their sampling decisions; contexts detached inside this scope are sampled.
+     * Trace-local updates remain visible across these contexts, including after this scope closes.
+     *
+     * <p>If there is no current trace, a new sampled trace is created and cleared when the scope closes. A request ID is
+     * generated for a new {@link SpanType#SERVER_INCOMING SERVER_INCOMING} trace; existing request IDs are preserved.
+     */
+    @MustBeClosed
+    public static CloseableSpan startSampledSpan(@Safe String operation, SpanType type) {
+        Trace originalTrace = currentTrace.get();
+        if (originalTrace != null && originalTrace.traceState().isObservable()) {
+            fastStartSpan(operation, type);
+            return DEFAULT_CLOSEABLE_SPAN;
+        }
+
+        TraceState traceState = originalTrace == null
+                ? TraceState.of(Tracers.randomId(), toRequestId(type), Optional.empty(), true)
+                : originalTrace.traceState().sampled();
+        Trace sampledTrace = Trace.of(traceState);
+        sampledTrace.fastStartSpan(operation, Optional.empty(), type);
+        setTrace(sampledTrace);
+        return originalTrace == null ? DEFAULT_CLOSEABLE_SPAN : new TraceRestoringCloseableSpan(originalTrace);
+    }
+
+    /**
      * Like {@link #startSpan(String, String, SpanType)}, but does not return an {@link OpenSpan}.
      */
     public static void fastStartSpan(@Safe String operation, String parentSpanId, SpanType type) {
@@ -539,8 +581,11 @@ public final class Tracer {
     private record TraceRestoringCloseableSpan(Trace original) implements CloseableSpan {
         @Override
         public void close() {
-            Tracer.fastCompleteSpan();
-            Tracer.setTrace(original);
+            try {
+                Tracer.fastCompleteSpan();
+            } finally {
+                Tracer.setTrace(original);
+            }
         }
     }
 
