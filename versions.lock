@@ -110,9 +110,9 @@ com.palantir.conjure.java:conjure-lib:8.99.0 (1 constraints: 901cefa4)
 
 com.palantir.conjure.java.api:errors:2.82.0 (1 constraints: 2410aca9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.48.0 (1 constraints: 8a1cd8a4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.49.0 (1 constraints: 8b1cdba4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.48.0 (1 constraints: 4605773b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.49.0 (1 constraints: 47057a3b)
 
 com.palantir.ri:resource-identifier:2.26.0 (1 constraints: 2210a0a9)
 
