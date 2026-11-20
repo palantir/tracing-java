@@ -1,6 +1,6 @@
 # Run ./gradlew writeVersionsLocks to regenerate this file. Blank lines are to minimize merge conflicts.
 
-com.google.errorprone:error_prone_annotations:2.52.0 (9 constraints: d095eebe)
+com.google.errorprone:error_prone_annotations:2.52.0 (9 constraints: d295b2c1)
 
 com.google.guava:failureaccess:1.0.3 (1 constraints: 160ae3b4)
 
@@ -106,13 +106,13 @@ com.google.code.findbugs:annotations:3.0.1u2 (1 constraints: 450b07da)
 
 com.google.code.findbugs:jsr305:3.0.2 (4 constraints: b44881b5)
 
-com.palantir.conjure.java:conjure-lib:8.99.0 (1 constraints: 901cefa4)
+com.palantir.conjure.java:conjure-lib:8.100.0 (1 constraints: af1c65c1)
 
-com.palantir.conjure.java.api:errors:2.82.0 (1 constraints: 2410aca9)
+com.palantir.conjure.java.api:errors:2.83.0 (1 constraints: 2510afa9)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.49.0 (1 constraints: 8b1cdba4)
+com.palantir.conjure.java.runtime:conjure-java-jackson-optimizations:8.50.0 (1 constraints: 831cc4a4)
 
-com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.49.0 (1 constraints: 47057a3b)
+com.palantir.conjure.java.runtime:conjure-java-jackson-serialization:8.50.0 (1 constraints: 3f05633b)
 
 com.palantir.ri:resource-identifier:2.26.0 (1 constraints: 2210a0a9)
 
@@ -122,7 +122,7 @@ com.palantir.tokens:auth-tokens:4.13.0 (1 constraints: 20109fa9)
 
 com.palantir.tritium:tritium-ids:0.143.0 (1 constraints: fe0f9aa6)
 
-com.palantir.tritium:tritium-registry:0.143.0 (1 constraints: ac1c40c1)
+com.palantir.tritium:tritium-registry:0.143.0 (1 constraints: ae1c46c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
