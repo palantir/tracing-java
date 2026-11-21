@@ -76,9 +76,9 @@ org.wildfly.common:wildfly-common:1.5.4.Final (2 constraints: 741cfbf1)
 
 [Test dependencies]
 
-ch.qos.logback:logback-classic:1.6.7 (1 constraints: 10050936)
+ch.qos.logback:logback-classic:1.6.8 (1 constraints: 11050a36)
 
-ch.qos.logback:logback-core:1.6.7 (1 constraints: 0f0d0f1d)
+ch.qos.logback:logback-core:1.6.8 (1 constraints: 100d101d)
 
 com.fasterxml.jackson.core:jackson-annotations:2.22 (11 constraints: 10d57410)
 
