@@ -66,7 +66,7 @@ org.openjdk.jmh:jmh-core:1.37 (5 constraints: 4645b83e)
 
 org.openjdk.jmh:jmh-generator-annprocess:1.37 (1 constraints: df04fc30)
 
-org.slf4j:slf4j-api:2.0.19 (8 constraints: 5475e5a5)
+org.slf4j:slf4j-api:2.0.19 (8 constraints: 567515a7)
 
 org.wildfly.client:wildfly-client-config:1.0.1.Final (1 constraints: 940c6308)
 
@@ -120,9 +120,9 @@ com.palantir.safe-logging:preconditions-assertj:3.21.0 (1 constraints: 3c05413b)
 
 com.palantir.tokens:auth-tokens:4.13.0 (1 constraints: 20109fa9)
 
-com.palantir.tritium:tritium-ids:0.143.0 (1 constraints: fe0f9aa6)
+com.palantir.tritium:tritium-ids:0.144.0 (1 constraints: fe0f9aa6)
 
-com.palantir.tritium:tritium-registry:0.143.0 (1 constraints: ae1c46c1)
+com.palantir.tritium:tritium-registry:0.144.0 (1 constraints: ae1c46c1)
 
 com.spotify.dataenum:dataenum:1.4.1 (1 constraints: 0805fd35)
 
