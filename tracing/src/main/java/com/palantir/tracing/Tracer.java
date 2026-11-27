@@ -70,6 +70,9 @@ public final class Tracer {
     private static volatile TraceSampler sampler = RandomSampler.create(0.0005f);
 
     private static boolean shouldObserve(Observability observability) {
+        if (Tracer.isTraceObservable()) {
+            return true;
+        }
         // Simplified implementation of 'switch(observability) {' for fast inlining (30 bytes)
         return observability == Observability.SAMPLE || (observability == Observability.UNDECIDED && sampler.sample());
     }
