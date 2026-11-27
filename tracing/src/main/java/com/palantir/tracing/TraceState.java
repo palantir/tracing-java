@@ -97,6 +97,18 @@ final class TraceState implements Serializable {
         return isObservable;
     }
 
+    TraceState sampled() {
+        if (isObservable) {
+            return this;
+        }
+        TraceState sampled = new TraceState(traceId, requestId, forUserAgent, true);
+        // Initialize through the original state's CAS so even previously detached contexts that have not yet used
+        // a TraceLocal share this map. Copying the entries, or leaving a null map, would split the context.
+        getOrCreateTraceLocals();
+        sampled.traceLocals = traceLocals;
+        return sampled;
+    }
+
     Map<TraceLocal<?>, Object> getOrCreateTraceLocals() {
         TraceLocalMap result = traceLocalsUpdater.get(this);
 

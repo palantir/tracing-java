@@ -40,6 +40,26 @@ try (CloseableTracer span = CloseableTracer.startSpan("do work")) {
 
 At the end of this try-with-resources block, any registered SpanObservers will be notified with a single immutable `Span` object. The above example demonstrates how to instrument chunks of code that start and finish on one thread. For cross-thread tracing, see `DetachedSpan`.
 
+### Sampling a portion of an existing trace
+
+Use `Tracer.startSampledSpan` when a decision made during a request requires tracing the remaining work:
+
+```java
+try (CloseableSpan span = Tracer.startSampledSpan("important work")) {
+    doWork();
+}
+```
+
+This explicitly samples the scope even when the surrounding trace is unsampled, preserving its trace ID,
+request ID, user agent, and shared `TraceLocal` values. Closing the scope restores the original trace and sampling
+state. An already sampled trace gets an ordinary child span. Without an existing trace, the scope creates a new
+sampled trace and clears it on close. An overload accepts a `SpanType`.
+
+Unsampled spans started before the scope cannot be reconstructed; the sampled span has no parent in that case.
+Previously detached contexts retain their sampling decisions, while work detached inside the scope is sampled.
+Both continue to share trace-local values. Close the scope on the creating thread, after its child spans finish.
+Existing `initTraceWithSpan` methods still initialize a fresh context rather than preserving the old one.
+
 ## Logging with SLF4J
 
 By default, the instrumentation forwards trace and span information through HTTP headers, but does not emit completed
